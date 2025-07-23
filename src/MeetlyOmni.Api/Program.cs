@@ -7,7 +7,7 @@ using MeetlyOmni.Api.Mapping;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
-
+Console.WriteLine("This is a test for CodeRabbit");
 // Logging config (optional, but recommended)
 builder.Logging.ClearProviders();
 builder.Logging.AddConsole();
