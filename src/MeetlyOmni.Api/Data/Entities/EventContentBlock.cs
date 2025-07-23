@@ -21,6 +21,7 @@ namespace MeetlyOmni.Api.Data.Entities
         public JsonObject? Content { get; set; }
 
         public int? OrderNum { get; set; }
+        /// Optional properties
 
         public bool? Visible { get; set; }
 
