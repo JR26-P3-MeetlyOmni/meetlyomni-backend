@@ -14,7 +14,7 @@ namespace MeetlyOmni.Api.Data
             : base(options)
         {
         }
-
+        // <summary>
         public DbSet<Member> Members { get; set; }
 
         public DbSet<Organization> Organizations { get; set; }
