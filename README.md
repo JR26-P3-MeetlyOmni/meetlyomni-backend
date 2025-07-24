@@ -7,6 +7,7 @@ This project is a .NET 8 Web API backend supporting the Meetly Omni application.
 **New to this project?** Follow our comprehensive [Setup Guide](./SETUP-GUIDE.md) to get everything running locally.
 
 ### For Experienced Developers
+
 ```bash
 # Quick setup (assumes PostgreSQL is running)
 git clone <repository-url>
@@ -56,6 +57,7 @@ This project uses Git pre-commit hooks to ensure code quality. New team members 
 ### Setup Instructions
 
 1. **Set up Git hooks** (required for new team members):
+
    ```powershell
    .\setup-git-hooks.ps1
    ```
@@ -68,6 +70,7 @@ This project uses Git pre-commit hooks to ensure code quality. New team members 
 ### What the hooks do
 
 The pre-commit hook automatically runs before each commit:
+
 - **Code formatting**: `dotnet format MeetlyOmni.sln`
 - **Build validation**: `dotnet build MeetlyOmni.sln --no-restore`
 - **Unit testing**: `dotnet test MeetlyOmni.sln --no-build`
@@ -77,6 +80,7 @@ If any step fails, the commit will be blocked until issues are resolved.
 ## API Documentation
 
 Once running, visit:
+
 - **Swagger UI**: https://localhost:5001/swagger
 - **Health Check**: https://localhost:5001/health
 
@@ -123,6 +127,7 @@ MeetlyOmni.Backend/
 ### 0. What does this Docker Compose include?
 
 This Docker Compose setup includes the following services:
+
 - **API Service**: The .NET 8 Web API for Meetly Omni.
 - **Database (PostgreSQL)**: A PostgreSQL database instance.
 - **SQL Query Tool (Adminer)**: A web-based database management tool.
@@ -130,6 +135,7 @@ This Docker Compose setup includes the following services:
 ### 1. Benefits of Using Docker Compose
 
 Using Docker Compose to start the API service, database, and Adminer has several advantages over setting them up individually:
+
 - **Simplified Setup**: Easily start all services with a single command.
 - **Consistency**: Ensures the same environment across different development machines.
 - **Isolation**: Runs each service in its own container, avoiding conflicts.
@@ -149,14 +155,15 @@ This command will start all the services in detached mode.
 ### 3. Accessing Services
 
 - **Adminer**: Once the services are up, you can access Adminer at `http://localhost:8081`. Use the following credentials to connect to the PostgreSQL database:
+
   - **System**: PostgreSQL
   - **Server**: db
   - **Username**: (your database username)
   - **Password**: (your database password)
   - **Database**: (your database name)
 
-- **API Swagger**: The API documentation is available at `http://localhost:5000/swagger`. You can use this interface to explore and test the API endpoints.
-=======
+- # **API Swagger**: The API documentation is available at `http://localhost:5000/swagger`. You can use this interface to explore and test the API endpoints.
+
 ## Support
 
 - 📖 **Setup Issues**: See [SETUP-GUIDE.md](./SETUP-GUIDE.md)
