@@ -22,10 +22,10 @@ namespace MeetlyOmni.Controllers
             return Ok(new { Users = users, ConnectionString = connectionString });
         }
 
-        // 故意的问题5: 同步方法中使用异步操作
+
         private List<string> GetUsersFromDatabase(string connectionString)
         {
-            // 模拟数据库操作
+  
             Task.Delay(1000).Wait();
             return new List<string> { "user1", "user2" };
         }
