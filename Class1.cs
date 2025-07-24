@@ -26,17 +26,8 @@ namespace MeetlyOmni.Controllers
         private List<string> GetUsersFromDatabase(string connectionString)
         {
             // 模拟数据库操作
-            Task.Delay(1000).Wait(); // 应该使用 await
+            Task.Delay(1000).Wait();
             return new List<string> { "user1", "user2" };
-        }
-
-        // 故意的问题6: 缺少输入验证
-        [HttpPost]
-        public IActionResult CreateUser(string userName, string email)
-        {
-            // 直接使用用户输入，没有验证
-            var user = $"Creating user: {userName} with email: {email}";
-            return Ok(user);
         }
     }
 }
