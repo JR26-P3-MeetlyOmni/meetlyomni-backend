@@ -1,0 +1,28 @@
+# Ignore build outputs
+bin/
+obj/
+
+# Ignore user-specific files
+*.user
+*.suo
+*.swp
+*.tmp
+
+# Ignore git and editor folders
+.git/
+.vs/
+.idea/
+
+# Ignore documentation and markdown
+*.md
+*.txt
+
+# Ignore test projects and configs
+../MeetlyOmni.Tests/
+
+# Ignore Docker-related files not needed in build context
+docker-compose.yml
+
+# Ignore Husky and GitHub workflows
+../../.husky/
+../../.github/ 

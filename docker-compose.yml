@@ -1,0 +1,41 @@
+services:
+  db:
+    image: postgres:alpine
+    restart: always
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASS}
+      POSTGRES_SHARED_BUFFERS: 512MB
+      POSTGRES_MAX_CONNECTIONS: 20
+    ports:
+      - "5432:5432"
+    mem_limit: 2g
+
+  api:
+    build:
+      context: ./src/MeetlyOmni.Api
+    depends_on:
+      - db
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - DB_NAME=${DB_NAME}
+      - DB_USER=${DB_USER}
+      - DB_PASS=${DB_PASS}
+      - ConnectionStrings__MeetlyOmniDb=Host=db;Port=5432;Database=${DB_NAME};Username=${DB_USER};Password=${DB_PASS}
+    ports:
+      - "5000:80"
+    volumes:
+      - ./src/MeetlyOmni.Api:/app
+    working_dir: /app
+    command: sh -c "dotnet ef database update && dotnet watch run --urls=http://0.0.0.0:80"
+    mem_limit: 2g
+
+  adminer:
+    image: adminer
+    restart: always
+    ports:
+      - "8081:8080"
+    depends_on:
+      - db
+    mem_limit: 512m

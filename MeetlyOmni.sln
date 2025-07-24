@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.13.35913.81
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MeetlyOmni.Api", "src\MeetlyOmni.Api\MeetlyOmni.Api.csproj", "{ADB06EB7-CC09-49AA-B0DE-DF6BB6FBF9CE}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MeetlyOmni.Tests", "src\MeetlyOmni.Tests\MeetlyOmni.Tests.csproj", "{56C456C3-1E2D-4CAA-85C5-BA0D1D719632}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{ADB06EB7-CC09-49AA-B0DE-DF6BB6FBF9CE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{ADB06EB7-CC09-49AA-B0DE-DF6BB6FBF9CE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{ADB06EB7-CC09-49AA-B0DE-DF6BB6FBF9CE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{ADB06EB7-CC09-49AA-B0DE-DF6BB6FBF9CE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{56C456C3-1E2D-4CAA-85C5-BA0D1D719632}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{56C456C3-1E2D-4CAA-85C5-BA0D1D719632}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{56C456C3-1E2D-4CAA-85C5-BA0D1D719632}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{56C456C3-1E2D-4CAA-85C5-BA0D1D719632}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {A15EF427-35BF-4AF5-AB17-B80D5ED4757D}
+	EndGlobalSection
+EndGlobal
