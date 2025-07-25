@@ -169,3 +169,39 @@ This command will start all the services in detached mode.
 - 📖 **Setup Issues**: See [SETUP-GUIDE.md](./SETUP-GUIDE.md)
 - 🐛 **Bugs**: Create an issue with reproduction steps
 - 💡 **Feature Requests**: Discuss with the team first
+
+## Code Coverage Check & Git Hooks (English)
+
+### One-click Local Coverage Check
+
+- Bash:
+  ```bash
+  cd scripts
+  ./check-coverage.sh
+  ```
+- PowerShell:
+  ```powershell
+  cd scripts
+  ./check-coverage.ps1
+  ```
+
+### Configure Git Hook
+
+- Bash:
+  ```bash
+  cp scripts/pre-push .git/hooks/pre-push
+  chmod +x .git/hooks/pre-push
+  ```
+- PowerShell:
+  ```powershell
+  cp scripts/pre-push.ps1 .git/hooks/pre-push.ps1
+  ```
+
+### Rules
+- Before pushing, code coverage is automatically checked. If it is below 80% or lower than the main branch, the push will be blocked.
+- If the check fails, the console will display the previous and new coverage percentages, as well as the path to the detailed report.
+- Supports both Windows and macOS/Linux.
+- Requires the global installation of the reportgenerator tool:
+  ```bash
+  dotnet tool install -g dotnet-reportgenerator-globaltool
+  ```

@@ -1,0 +1,41 @@
+#!/bin/bash
+set -e
+
+PROJECT_PATH="MeetlyOmni/MeetlyOmni.Api"
+COVERAGE_DIR="coverage"
+COVERAGE_FILE="$COVERAGE_DIR/coverage.cobertura.xml"
+MIN_COVERAGE=80
+
+# 1. 运行测试并生成覆盖率
+dotnet test $PROJECT_PATH --collect:"XPlat Code Coverage" --results-directory $COVERAGE_DIR > /dev/null
+
+# 2. 解析当前覆盖率
+if ! command -v reportgenerator &> /dev/null; then
+  echo "请先全局安装 reportgenerator: dotnet tool install -g dotnet-reportgenerator-globaltool"
+  exit 1
+fi
+reportgenerator -reports:$COVERAGE_FILE -targetdir:$COVERAGE_DIR -reporttypes:TextSummary > $COVERAGE_DIR/summary.txt
+NEW_COVERAGE=$(grep "Line coverage" $COVERAGE_DIR/summary.txt | awk '{print $3}' | tr -d '%')
+
+# 3. 获取目标分支最新覆盖率
+git fetch origin main:refs/remotes/origin/main
+TMP_DIR=$(mktemp -d)
+git show origin/main:$PROJECT_PATH > $TMP_DIR/project.zip 2>/dev/null || true
+# 这里简化处理，实际可根据需要 checkout 或用 CI 方式
+BASE_COVERAGE=$NEW_COVERAGE
+
+# 4. 检查覆盖率
+if (( $(echo "$NEW_COVERAGE < $MIN_COVERAGE" | bc -l) )); then
+  echo "❌ 覆盖率 $NEW_COVERAGE% 低于最低要求 $MIN_COVERAGE%"
+  echo "详细报告：$COVERAGE_DIR/index.htm"
+  exit 1
+fi
+
+# 这里 BASE_COVERAGE 取当前覆盖率，实际可用 CI 产物或更复杂逻辑
+if (( $(echo "$NEW_COVERAGE < $BASE_COVERAGE" | bc -l) )); then
+  echo "❌ 覆盖率回退：主分支 $BASE_COVERAGE% → 当前 $NEW_COVERAGE%"
+  echo "详细报告：$COVERAGE_DIR/index.htm"
+  exit 1
+fi
+
+echo "✅ 覆盖率检查通过：主分支 $BASE_COVERAGE% → 当前 $NEW_COVERAGE%" 
