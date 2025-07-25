@@ -13,7 +13,6 @@ builder.Logging.ClearProviders();
 builder.Logging.AddConsole();
 builder.Logging.AddDebug();
 
-
 var connectionString = builder.Configuration.GetConnectionString("MeetlyOmniDb");
 
 if (string.IsNullOrEmpty(connectionString))
@@ -52,3 +51,5 @@ app.MapControllers();
 app.MapHealthChecks("/health");
 
 app.Run();
+
+
