@@ -23,6 +23,7 @@ if (-not (Test-Path .git/hooks)) {
 # Create pre-commit hook content
 $preCommitContent = @'
 #!/bin/sh
+
 echo "Running dotnet format..."
 dotnet format MeetlyOmni.sln || exit 1
 
@@ -30,7 +31,7 @@ echo "Building solution..."
 dotnet build MeetlyOmni.sln --no-restore || exit 1
 
 echo "Running tests..."
-dotnet test MeetlyOmni.sln --no-build || exit 1
+dotnet test src/MeetlyOmni.Tests --no-build || exit 1
 '@
 
 # Write pre-commit hook
@@ -50,7 +51,7 @@ try {
 $prePushContent = @'
 #!/usr/bin/env pwsh
 $ErrorActionPreference = "Stop"
-$projectPath = "MeetlyOmni/MeetlyOmni.Tests"
+$projectPath = "src/MeetlyOmni.Tests"
 $coverageDir = "coverage"
 $minCoverage = 80
 

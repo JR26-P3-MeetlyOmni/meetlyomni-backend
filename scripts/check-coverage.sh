@@ -1,6 +1,6 @@
 #!/bin/bash
 set -e
-PROJECT_PATH="MeetlyOmni/MeetlyOmni.Api"
+PROJECT_PATH="src/MeetlyOmni.Tests"
 COVERAGE_DIR="coverage"
 COVERAGE_FILE="$COVERAGE_DIR/coverage.cobertura.xml"
 

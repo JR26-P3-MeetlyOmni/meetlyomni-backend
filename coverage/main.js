@@ -210,16 +210,57 @@ for (i = 0, l = charts.length; i < l; i++) {
 }
 
 var assemblies = [
+  {
+    "name": "MeetlyOmni.Api",
+    "classes": [
+      { "name": "EventConfiguration", "rp": "MeetlyOmni.Api_EventConfiguration.html", "cl": 0, "ucl": 24, "cal": 24, "tl": 51, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "MeetlyOmni.Api.Common.Extensions.ModelBuilderExtensions", "rp": "MeetlyOmni.Api_ModelBuilderExtensions.html", "cl": 0, "ucl": 48, "cal": 48, "tl": 146, "cb": 0, "tb": 8, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "MeetlyOmni.Api.Data.ApplicationDbContext", "rp": "MeetlyOmni.Api_ApplicationDbContext.html", "cl": 0, "ucl": 11, "cal": 11, "tl": 33, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "MeetlyOmni.Api.Data.Configurations.EventContentBlockConfiguration", "rp": "MeetlyOmni.Api_EventContentBlockConfiguration.html", "cl": 0, "ucl": 23, "cal": 23, "tl": 52, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "MeetlyOmni.Api.Data.Configurations.EventGameInstanceConfiguration", "rp": "MeetlyOmni.Api_EventGameInstanceConfiguration.html", "cl": 0, "ucl": 26, "cal": 26, "tl": 55, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "MeetlyOmni.Api.Data.Configurations.GameConfiguration", "rp": "MeetlyOmni.Api_GameConfiguration.html", "cl": 0, "ucl": 26, "cal": 26, "tl": 57, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "MeetlyOmni.Api.Data.Configurations.GameRecordConfiguration", "rp": "MeetlyOmni.Api_GameRecordConfiguration.html", "cl": 0, "ucl": 24, "cal": 24, "tl": 50, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "MeetlyOmni.Api.Data.Configurations.GuestConfiguration", "rp": "MeetlyOmni.Api_GuestConfiguration.html", "cl": 0, "ucl": 18, "cal": 18, "tl": 42, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "MeetlyOmni.Api.Data.Configurations.MemberActivityLogConfiguration", "rp": "MeetlyOmni.Api_MemberActivityLogConfiguration.html", "cl": 0, "ucl": 20, "cal": 20, "tl": 46, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "MeetlyOmni.Api.Data.Configurations.MemberConfiguration", "rp": "MeetlyOmni.Api_MemberConfiguration.html", "cl": 0, "ucl": 39, "cal": 39, "tl": 74, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "MeetlyOmni.Api.Data.Configurations.OrganizationConfiguration", "rp": "MeetlyOmni.Api_OrganizationConfiguration.html", "cl": 0, "ucl": 26, "cal": 26, "tl": 54, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "MeetlyOmni.Api.Data.Configurations.RaffleTicketConfiguration", "rp": "MeetlyOmni.Api_RaffleTicketConfiguration.html", "cl": 0, "ucl": 22, "cal": 22, "tl": 47, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "MeetlyOmni.Api.Data.Entities.Event", "rp": "MeetlyOmni.Api_Event.html", "cl": 15, "ucl": 1, "cal": 16, "tl": 44, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "MeetlyOmni.Api.Data.Entities.EventContentBlock", "rp": "MeetlyOmni.Api_EventContentBlock.html", "cl": 8, "ucl": 0, "cal": 8, "tl": 30, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "MeetlyOmni.Api.Data.Entities.EventGameInstance", "rp": "MeetlyOmni.Api_EventGameInstance.html", "cl": 9, "ucl": 2, "cal": 11, "tl": 36, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "MeetlyOmni.Api.Data.Entities.Game", "rp": "MeetlyOmni.Api_Game.html", "cl": 7, "ucl": 1, "cal": 8, "tl": 30, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "MeetlyOmni.Api.Data.Entities.GameRecord", "rp": "MeetlyOmni.Api_GameRecord.html", "cl": 7, "ucl": 3, "cal": 10, "tl": 32, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "MeetlyOmni.Api.Data.Entities.Guest", "rp": "MeetlyOmni.Api_Guest.html", "cl": 9, "ucl": 1, "cal": 10, "tl": 32, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "MeetlyOmni.Api.Data.Entities.Member", "rp": "MeetlyOmni.Api_Member.html", "cl": 18, "ucl": 1, "cal": 19, "tl": 50, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "MeetlyOmni.Api.Data.Entities.MemberActivityLog", "rp": "MeetlyOmni.Api_MemberActivityLog.html", "cl": 6, "ucl": 2, "cal": 8, "tl": 30, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "MeetlyOmni.Api.Data.Entities.Organization", "rp": "MeetlyOmni.Api_Organization.html", "cl": 19, "ucl": 0, "cal": 19, "tl": 50, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "MeetlyOmni.Api.Data.Entities.RaffleTicket", "rp": "MeetlyOmni.Api_RaffleTicket.html", "cl": 6, "ucl": 2, "cal": 8, "tl": 28, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "MeetlyOmni.Api.Mapping.MappingProfile", "rp": "MeetlyOmni.Api_MappingProfile.html", "cl": 0, "ucl": 3, "cal": 3, "tl": 17, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "MeetlyOmni.Api.Migrations.Add6moreentities", "rp": "MeetlyOmni.Api_Add6moreentities.html", "cl": 0, "ucl": 1060, "cal": 1060, "tl": 1183, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "MeetlyOmni.Api.Migrations.AddMissingConstraintsAndIndexes", "rp": "MeetlyOmni.Api_AddMissingConstraintsAndIndexes.html", "cl": 0, "ucl": 986, "cal": 986, "tl": 1129, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "MeetlyOmni.Api.Migrations.ApplicationDbContextModelSnapshot", "rp": "MeetlyOmni.Api_ApplicationDbContextModelSnapshot.html", "cl": 0, "ucl": 685, "cal": 685, "tl": 732, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "MeetlyOmni.Api.Migrations.InitialCreate", "rp": "MeetlyOmni.Api_InitialCreate.html", "cl": 0, "ucl": 391, "cal": 391, "tl": 461, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "MeetlyOmni.Api.Migrations.MemberUuidMigrationFixed", "rp": "MeetlyOmni.Api_MemberUuidMigrationFixed.html", "cl": 0, "ucl": 883, "cal": 883, "tl": 1011, "cb": 0, "tb": 0, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+      { "name": "Program", "rp": "MeetlyOmni.Api_Program.html", "cl": 0, "ucl": 27, "cal": 27, "tl": 53, "cb": 0, "tb": 4, "cm": 0, "fcm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "mfch": [], "hc": [], "metrics": { } },
+    ]},
 ];
 
-var metrics = [];
+var metrics = [{ "name": "Crap Score", "abbreviation": "crp", "explanationUrl": "https://googletesting.blogspot.de/2011/02/this-code-is-crap.html" }, { "name": "Cyclomatic complexity", "abbreviation": "cc", "explanationUrl": "https://en.wikipedia.org/wiki/Cyclomatic_complexity" }, { "name": "Line coverage", "abbreviation": "cov", "explanationUrl": "https://en.wikipedia.org/wiki/Code_coverage" }, { "name": "Branch coverage", "abbreviation": "bcov", "explanationUrl": "https://en.wikipedia.org/wiki/Code_coverage" }];
 
 var historicCoverageExecutionTimes = [];
 
 var riskHotspotMetrics = [
+      { "name": "Crap Score", "explanationUrl": "https://googletesting.blogspot.de/2011/02/this-code-is-crap.html" },
+      { "name": "Cyclomatic complexity", "explanationUrl": "https://en.wikipedia.org/wiki/Cyclomatic_complexity" },
 ];
 
 var riskHotspots = [
+  {
+    "assembly": "MeetlyOmni.Api", "class": "MeetlyOmni.Api.Common.Extensions.ModelBuilderExtensions", "reportPath": "MeetlyOmni.Api_ModelBuilderExtensions.html", "methodName": "ApplyEnumPropertySettings(Microsoft.EntityFrameworkCore.Metadata.Builders.PropertyBuilder`1<TProperty>,System.Int32,System.String,System.Object,System.Boolean)", "methodShortName": "ApplyEnumPropertySettings(...)", "fileIndex": 0, "line": 130,
+    "metrics": [
+      { "value": 42, "exceeded": true },
+      { "value": 6, "exceeded": false },
+    ]},
 ];
 
 var branchCoverageAvailable = true;
