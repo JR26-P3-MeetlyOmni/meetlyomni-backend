@@ -43,12 +43,8 @@ try {
     exit 1
 }
 
-# 检测操作系统并选择合适的 pre-push 钩子内容
-$isWindows = $env:OS -match "Windows"
-
-if ($isWindows) {
-    # Windows 环境使用 .bat 文件作为钩子
-    $prePushContent = @'
+# 为 Windows 环境创建 .bat 格式的 pre-push 钩子
+$prePushContent = @'
 @echo off
 setlocal enabledelayedexpansion
 
@@ -94,20 +90,10 @@ if %newCoverage% LSS %baseCoverage% (
 echo ✅ 覆盖率检查通过：主分支 %baseCoverage%%% → 当前 %newCoverage%%%
 exit /b 0
 '@
-    $hookFilePath = ".git/hooks/pre-push"
-} else {
-    # 非 Windows 环境使用 Bash 脚本
-    $prePushContent = Get-Content -Path "scripts/pre-push" -Raw
-    $hookFilePath = ".git/hooks/pre-push"
-}
 
 # 写入 pre-push 钩子
 try {
-    $prePushContent | Out-File -FilePath $hookFilePath -Encoding ASCII
-    if (-not $isWindows) {
-        # 在非 Windows 环境中设置执行权限
-        & chmod +x $hookFilePath
-    }
+    $prePushContent | Out-File -FilePath ".git/hooks/pre-push" -Encoding ASCII
     Write-Host "Pre-push hook created successfully!" -ForegroundColor Green
     Write-Host "Git hooks setup completed!" -ForegroundColor Green
     Write-Host "Pre-push hook will check code coverage before pushing:" -ForegroundColor Yellow

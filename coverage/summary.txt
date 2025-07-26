@@ -1,0 +1,6 @@
+2025-07-26T15:37:45: Arguments
+2025-07-26T15:37:45:  -reports:coverage/coverage.cobertura.xml
+2025-07-26T15:37:45:  -targetdir:coverage
+2025-07-26T15:37:45:  -reporttypes:TextSummary
+2025-07-26T15:37:45: The report file 'coverage/coverage.cobertura.xml' is invalid. File does not exist (Full path: 'D:\github\p3\meetlyomni-backend\coverage\coverage.cobertura.xml').
+2025-07-26T15:37:45: No report files specified.
