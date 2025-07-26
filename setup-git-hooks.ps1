@@ -43,8 +43,8 @@ try {
     exit 1
 }
 
-# 为 Windows 环境创建 .bat 格式的 pre-push 钩子
-$prePushContent = @'
+# 创建 Windows 批处理版本的 pre-push 钩子
+$prePushBatContent = @'
 @echo off
 setlocal enabledelayedexpansion
 
@@ -91,9 +91,16 @@ echo ✅ 覆盖率检查通过：主分支 %baseCoverage%%% → 当前 %newCover
 exit /b 0
 '@
 
-# 写入 pre-push 钩子
+# 创建 pre-push 钩子的包装脚本
+$prePushWrapperContent = @'
+#!/bin/sh
+exec "$(dirname "$0")/pre-push.bat"
+'@
+
+# 写入 pre-push 钩子文件
 try {
-    $prePushContent | Out-File -FilePath ".git/hooks/pre-push" -Encoding ASCII
+    $prePushBatContent | Out-File -FilePath ".git/hooks/pre-push.bat" -Encoding ASCII
+    $prePushWrapperContent | Out-File -FilePath ".git/hooks/pre-push" -Encoding ASCII
     Write-Host "Pre-push hook created successfully!" -ForegroundColor Green
     Write-Host "Git hooks setup completed!" -ForegroundColor Green
     Write-Host "Pre-push hook will check code coverage before pushing:" -ForegroundColor Yellow
