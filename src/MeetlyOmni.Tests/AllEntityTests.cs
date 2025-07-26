@@ -1,18 +1,22 @@
-using Xunit;
-using MeetlyOmni.Api.Data.Entities;
-using MeetlyOmni.Api.Common.Enums.Event;
-using MeetlyOmni.Api.Common.Enums.EventContentBlock;
-using MeetlyOmni.Api.Common.Enums.Game;
-using MeetlyOmni.Api.Common.Enums.Members;
-using MeetlyOmni.Api.Common.Enums.Organization;
-using MeetlyOmni.Api.Common.Enums.RaffleTicket;
-using MeetlyOmni.Api.Common.Enums.MemberActivityLog;
-using System;
-using System.Text.Json.Nodes;
-using System.Collections.Generic;
+// <copyright file="AllEntityTests.cs" company="PlaceholderCompany">
+// Copyright (c) PlaceholderCompany. All rights reserved.
+// </copyright>
 
 namespace MeetlyOmni.Tests
 {
+    using System;
+    using System.Collections.Generic;
+    using System.Text.Json.Nodes;
+    using MeetlyOmni.Api.Common.Enums.Event;
+    using MeetlyOmni.Api.Common.Enums.EventContentBlock;
+    using MeetlyOmni.Api.Common.Enums.Game;
+    using MeetlyOmni.Api.Common.Enums.MemberActivityLog;
+    using MeetlyOmni.Api.Common.Enums.Members;
+    using MeetlyOmni.Api.Common.Enums.Organization;
+    using MeetlyOmni.Api.Common.Enums.RaffleTicket;
+    using MeetlyOmni.Api.Data.Entities;
+    using Xunit;
+
     public class AllEntityTests
     {
         [Fact]
@@ -36,7 +40,7 @@ namespace MeetlyOmni.Tests
                 Title = title,
                 Content = content,
                 OrderNum = orderNum,
-                Visible = visible
+                Visible = visible,
             };
 
             // Assert
@@ -58,7 +62,7 @@ namespace MeetlyOmni.Tests
                 Title = null,
                 Content = null,
                 OrderNum = null,
-                Visible = null
+                Visible = null,
             };
 
             // Assert
@@ -85,7 +89,7 @@ namespace MeetlyOmni.Tests
                 OrgId = orgId,
                 Title = title,
                 Description = description,
-                Status = status
+                Status = status,
             };
 
             // Assert
@@ -113,7 +117,7 @@ namespace MeetlyOmni.Tests
                 Language = "en",
                 CoverImageUrl = "https://example.com/cover.jpg",
                 CreatedAt = DateTimeOffset.Now,
-                UpdatedAt = DateTimeOffset.Now
+                UpdatedAt = DateTimeOffset.Now,
             };
 
             // Assert
@@ -127,8 +131,6 @@ namespace MeetlyOmni.Tests
             Assert.Equal("Test Location", eventEntity.Location);
             Assert.Equal("en", eventEntity.Language);
             Assert.Equal("https://example.com/cover.jpg", eventEntity.CoverImageUrl);
-            Assert.NotNull(eventEntity.CreatedAt);
-            Assert.NotNull(eventEntity.UpdatedAt);
         }
 
         [Fact]
@@ -146,7 +148,7 @@ namespace MeetlyOmni.Tests
                 GameId = gameId,
                 Title = title,
                 Type = gameType,
-                Config = config
+                Config = config,
             };
 
             // Assert
@@ -167,7 +169,7 @@ namespace MeetlyOmni.Tests
                 Type = GameType.Quiz,
                 Config = new JsonObject { ["maxPlayers"] = 10, ["timeLimit"] = 300 },
                 CreatedBy = Guid.NewGuid(),
-                CreatedAt = DateTimeOffset.Now
+                CreatedAt = DateTimeOffset.Now,
             };
 
             // Assert
@@ -176,7 +178,6 @@ namespace MeetlyOmni.Tests
             Assert.Equal(GameType.Quiz, game.Type);
             Assert.NotNull(game.Config);
             Assert.NotEqual(Guid.Empty, game.CreatedBy);
-            Assert.NotNull(game.CreatedAt);
         }
 
         [Fact]
@@ -196,7 +197,7 @@ namespace MeetlyOmni.Tests
                 EventId = eventId,
                 Name = name,
                 AvatarUrl = avatarUrl,
-                Bio = bio
+                Bio = bio,
             };
 
             // Assert
@@ -221,7 +222,7 @@ namespace MeetlyOmni.Tests
                 Company = "Test Company",
                 Position = "Test Position",
                 SocialLinks = new JsonObject { ["linkedin"] = "https://linkedin.com/test" },
-                Order = 1
+                Order = 1,
             };
 
             // Assert
@@ -253,7 +254,7 @@ namespace MeetlyOmni.Tests
                 OrgId = orgId,
                 Email = email,
                 Nickname = nickname,
-                Status = status
+                Status = status,
             };
 
             // Assert
@@ -283,7 +284,7 @@ namespace MeetlyOmni.Tests
                 Status = MemberStatus.Active,
                 LastLogin = DateTimeOffset.Now,
                 CreatedAt = DateTimeOffset.Now,
-                UpdatedAt = DateTimeOffset.Now
+                UpdatedAt = DateTimeOffset.Now,
             };
 
             // Assert
@@ -299,8 +300,6 @@ namespace MeetlyOmni.Tests
             Assert.Equal(100, member.Points);
             Assert.Equal(MemberStatus.Active, member.Status);
             Assert.NotNull(member.LastLogin);
-            Assert.NotNull(member.CreatedAt);
-            Assert.NotNull(member.UpdatedAt);
         }
 
         [Fact]
@@ -318,7 +317,7 @@ namespace MeetlyOmni.Tests
                 OrgId = orgId,
                 OrganizationName = organizationName,
                 Description = description,
-                PlanType = planType
+                PlanType = planType,
             };
 
             // Assert
@@ -347,7 +346,7 @@ namespace MeetlyOmni.Tests
                 IsVerified = true,
                 PlanType = PlanType.Pro,
                 CreatedAt = DateTimeOffset.Now,
-                UpdatedAt = DateTimeOffset.Now
+                UpdatedAt = DateTimeOffset.Now,
             };
 
             // Assert
@@ -363,8 +362,6 @@ namespace MeetlyOmni.Tests
             Assert.Equal(1000, organization.FollowerCount);
             Assert.True(organization.IsVerified);
             Assert.Equal(PlanType.Pro, organization.PlanType);
-            Assert.NotNull(organization.CreatedAt);
-            Assert.NotNull(organization.UpdatedAt);
         }
 
         [Fact]
@@ -384,7 +381,7 @@ namespace MeetlyOmni.Tests
                 OrgId = orgId,
                 MemberId = memberId,
                 Status = status,
-                IssuedBy = issuedBy
+                IssuedBy = issuedBy,
             };
 
             // Assert
@@ -406,7 +403,7 @@ namespace MeetlyOmni.Tests
                 MemberId = Guid.NewGuid(),
                 IssuedBy = RaffleIssuedSource.Signup,
                 Status = RaffleTicketStatus.Unused,
-                IssueTime = DateTimeOffset.Now
+                IssueTime = DateTimeOffset.Now,
             };
 
             // Assert
@@ -415,7 +412,6 @@ namespace MeetlyOmni.Tests
             Assert.NotEqual(Guid.Empty, ticket.MemberId);
             Assert.Equal(RaffleIssuedSource.Signup, ticket.IssuedBy);
             Assert.Equal(RaffleTicketStatus.Unused, ticket.Status);
-            Assert.NotNull(ticket.IssueTime);
         }
 
         [Fact]
@@ -437,7 +433,7 @@ namespace MeetlyOmni.Tests
                 MemberId = memberId,
                 OrgId = orgId,
                 Score = score,
-                ResponseData = responseData
+                ResponseData = responseData,
             };
 
             // Assert
@@ -461,7 +457,7 @@ namespace MeetlyOmni.Tests
                 OrgId = Guid.NewGuid(),
                 ResponseData = new JsonObject { ["answer"] = "correct", ["time"] = 120 },
                 Score = 100,
-                CreatedAt = DateTimeOffset.Now
+                CreatedAt = DateTimeOffset.Now,
             };
 
             // Assert
@@ -471,7 +467,6 @@ namespace MeetlyOmni.Tests
             Assert.NotEqual(Guid.Empty, record.OrgId);
             Assert.NotNull(record.ResponseData);
             Assert.Equal(100, record.Score);
-            Assert.NotNull(record.CreatedAt);
         }
 
         [Fact]
@@ -489,7 +484,7 @@ namespace MeetlyOmni.Tests
                 InstanceId = instanceId,
                 EventId = eventId,
                 GameId = gameId,
-                Status = status
+                Status = status,
             };
 
             // Assert
@@ -498,8 +493,6 @@ namespace MeetlyOmni.Tests
             Assert.Equal(gameId, instance.GameId);
             Assert.Equal(status, instance.Status);
         }
-
-
 
         [Fact]
         public void EventGameInstance_CanSetAllProperties()
@@ -514,7 +507,7 @@ namespace MeetlyOmni.Tests
                 Status = MeetlyOmni.Api.Common.Enums.EventGameInstance.InstanceStatus.Active,
                 OrderNum = 1,
                 StartTime = DateTimeOffset.Now,
-                EndTime = DateTimeOffset.Now.AddHours(1)
+                EndTime = DateTimeOffset.Now.AddHours(1),
             };
 
             // Assert
@@ -545,7 +538,7 @@ namespace MeetlyOmni.Tests
                 MemberId = memberId,
                 OrgId = orgId,
                 EventType = eventType,
-                EventDetail = eventDetail
+                EventDetail = eventDetail,
             };
 
             // Assert
@@ -567,7 +560,7 @@ namespace MeetlyOmni.Tests
                 OrgId = Guid.NewGuid(),
                 EventType = MemberEventType.SignIn,
                 EventDetail = new JsonObject { ["ip"] = "192.168.1.1", ["userAgent"] = "Mozilla/5.0" },
-                CreatedAt = DateTimeOffset.Now
+                CreatedAt = DateTimeOffset.Now,
             };
 
             // Assert
@@ -576,7 +569,6 @@ namespace MeetlyOmni.Tests
             Assert.NotEqual(Guid.Empty, log.OrgId);
             Assert.Equal(MemberEventType.SignIn, log.EventType);
             Assert.NotNull(log.EventDetail);
-            Assert.NotNull(log.CreatedAt);
         }
 
         [Fact]
@@ -635,4 +627,4 @@ namespace MeetlyOmni.Tests
             Assert.NotNull(log);
         }
     }
-} 
+}
