@@ -7,6 +7,7 @@ namespace MeetlyOmni.Tests
     using System;
     using System.Collections.Generic;
     using System.Text.Json.Nodes;
+
     using MeetlyOmni.Api.Common.Enums.Event;
     using MeetlyOmni.Api.Common.Enums.EventContentBlock;
     using MeetlyOmni.Api.Common.Enums.Game;
@@ -15,6 +16,7 @@ namespace MeetlyOmni.Tests
     using MeetlyOmni.Api.Common.Enums.Organization;
     using MeetlyOmni.Api.Common.Enums.RaffleTicket;
     using MeetlyOmni.Api.Data.Entities;
+
     using Xunit;
 
     public class AllEntityTests
