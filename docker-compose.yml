@@ -3,32 +3,37 @@ services:
     image: postgres:alpine
     restart: always
     environment:
-      POSTGRES_DB: ${DB_NAME}
-      POSTGRES_USER: ${DB_USER}
-      POSTGRES_PASSWORD: ${DB_PASS}
+      POSTGRES_DB: ${DB_NAME:-meetlyomni}
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASS:-postgres}
       POSTGRES_SHARED_BUFFERS: 512MB
       POSTGRES_MAX_CONNECTIONS: 20
     ports:
       - "5432:5432"
     mem_limit: 2g
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
 
   api:
     build:
-      context: ./src/MeetlyOmni.Api
+      context: .
+      dockerfile: src/MeetlyOmni.Api/Dockerfile
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
-      - DB_NAME=${DB_NAME}
-      - DB_USER=${DB_USER}
-      - DB_PASS=${DB_PASS}
-      - ConnectionStrings__MeetlyOmniDb=Host=db;Port=5432;Database=${DB_NAME};Username=${DB_USER};Password=${DB_PASS}
+      - DB_NAME=${DB_NAME:-meetlyomni}
+      - DB_USER=${DB_USER:-postgres}
+      - DB_PASS=${DB_PASS:-postgres}
+      - ConnectionStrings__MeetlyOmniDb=Host=db;Port=5432;Database=${DB_NAME:-meetlyomni};Username=${DB_USER:-postgres};Password=${DB_PASS:-postgres}
+      - Database__ApplyMigrationsOnStartup=true
+      - Database__SeedOnStartup=true
     ports:
-      - "5000:80"
-    volumes:
-      - ./src/MeetlyOmni.Api:/app
-    working_dir: /app
-    command: sh -c "dotnet ef database update && dotnet watch run --urls=http://0.0.0.0:80"
+      - "5000:8080"
     mem_limit: 2g
 
   adminer:

@@ -13,15 +13,17 @@ obj/
 .vs/
 .idea/
 
-# Ignore documentation and markdown
+# Ignore documentation and markdown (allow README example files)
 *.md
 *.txt
 
 # Ignore test projects and configs
 ../MeetlyOmni.Tests/
 
-# Ignore Docker-related files not needed in build context
+# Ignore Docker-related files not needed when building from project folder
 docker-compose.yml
+../docker-compose.yml
+../../docker-compose.yml
 
 # Ignore Husky and GitHub workflows
 ../../.husky/
