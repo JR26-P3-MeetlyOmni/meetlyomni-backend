@@ -15,6 +15,7 @@ services:
   api:
     build:
       context: ./src/MeetlyOmni.Api
+      dockerfile: ./src/MeetlyOmni.Api/Dockerfile
     depends_on:
       - db
     environment:
