@@ -402,3 +402,25 @@ FodyWeavers.xsd
 # JetBrains Rider
 *.sln.iml
 .env
+
+# Terraform
+*.tfstate
+*.tfstate.*
+crash.log
+crash.*.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+.terraform/
+.terraform.lock.hcl
+
+# Local variable files (sensitive)
+terraform.tfvars
+terraform.tfvars.json
+*.auto.tfvars
+*.auto.tfvars.json
+
+# Ignore plan files
+*.plan
+*.tfplan

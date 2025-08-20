@@ -24,7 +24,7 @@ services:
       - DB_PASS=${DB_PASS}
       - ConnectionStrings__MeetlyOmniDb=Host=db;Port=5432;Database=${DB_NAME};Username=${DB_USER};Password=${DB_PASS}
     ports:
-      - "5000:80"
+      - "5001:80"
     volumes:
       - ./src/MeetlyOmni.Api:/app
     working_dir: /app
@@ -39,3 +39,4 @@ services:
     depends_on:
       - db
     mem_limit: 512m
+
