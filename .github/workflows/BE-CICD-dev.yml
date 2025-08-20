@@ -25,7 +25,6 @@ jobs:
     name: Build & Test
     runs-on: ubuntu-latest
     env:
-      # 从仓库 Secrets 读取 dev 环境连接串；PR（尤其来自 fork）通常拿不到 secrets -> 为空 -> 迁移步骤会跳过
       CONNECTION_STRING: ${{ secrets.DEV_DB_CONNSTR }}
 
     steps:
@@ -47,7 +46,6 @@ jobs:
       - name: Test
         run: dotnet test ${{ env.SOLUTION_PATH }} -c Release --no-build
 
-      # 仅在 push 且连接串存在时对“外部 dev DB”执行迁移，避免 PR 动到数据库
       - name: Apply EF migrations to external DB
         if: github.event_name == 'push' && env.CONNECTION_STRING && env.CONNECTION_STRING != ''
         env:

@@ -26,3 +26,41 @@ docker-compose.yml
 # Ignore Husky and GitHub workflows
 ../../.husky/
 ../../.github/ 
+
+# === Build artifacts ===
+**/bin
+**/obj
+
+# === Version control ===
+.git
+.gitignore
+.gitattributes
+
+# === IDE / editor files ===
+.vscode
+.idea
+
+# === Local environment ===
+.env
+*.user
+*.swp
+*.swo
+
+# === Docker & Compose ===
+Dockerfile
+docker-compose*.yml
+
+# === Docs / Misc ===
+README.md
+*.md
+*.log
+
+# === Test / Coverage files ===
+**/TestResults
+**/coverage
+**/*.trx
+**/*.coverage
+**/*.lcov
+
+# === Others ===
+terraform/
