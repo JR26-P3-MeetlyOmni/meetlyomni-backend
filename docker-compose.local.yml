@@ -29,19 +29,28 @@ services:
       - db
 
   api:
+    # 若本地已有 meetlyomni-api:local，将直接使用；如需重建，仍会基于下方 build 规则构建
+    image: meetlyomni-api:local
     build:
       context: .
-      dockerfile: ./src/MeetlyOmni.Api/Dockerfile
-    container_name: meetlyomni-api:latest
+      dockerfile: ./src/MeetlyOmni.Api/Dockerfile1
+    container_name: meetlyomni-api
     restart: unless-stopped
     ports:
-      - "8080:8080"
+      - "5000:80" # 本机 http://localhost:5000 -> 容器 80
     environment:
       ASPNETCORE_ENVIRONMENT: Development
-      ConnectionStrings__DefaultConnection: "Host=db;Port=5432;Database=meetlyomni;Username=postgres;Password=postgres"
+      # 与代码一致（ECS 也用了这个键）：ConnectionStrings__MeetlyOmniDb
+      ConnectionStrings__MeetlyOmniDb: "Host=db;Port=5432;Database=meetlyomni;Username=postgres;Password=postgres"
     depends_on:
       db:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
 
 volumes:
   db_data:
