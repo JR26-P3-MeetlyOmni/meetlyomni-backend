@@ -21,6 +21,7 @@ env:
 jobs:
   CI:
     runs-on: ubuntu-latest
+    environment: dev
 
     steps:
       - name: Check out code
@@ -41,21 +42,56 @@ jobs:
       - name: Test (unit)
         run: dotnet test src/MeetlyOmni.Unit.tests/MeetlyOmni.Unit.tests.csproj -c Release --no-build
 
+      # 确认 DB 连接串有没有注入（不打印内容，只检查是否为空）
+      - name: Sanity check DB conn string presence
+        run: |
+          if [ -z "${ConnectionStrings__MeetlyOmniDb}" ]; then
+            echo "ERROR: secrets.DEV_DB_CONNECTION_STRING is empty or not set"
+            exit 1
+          else
+            echo "OK: ConnectionStrings__MeetlyOmniDb is present (masked)"
+          fi
+        env:
+          ConnectionStrings__MeetlyOmniDb: ${{ secrets.DEV_DB_CONNECTION_STRING }}
+
+      # 启动 API 并将日志写入文件；失败时能看到日志
       - name: Start API on :7011
         env:
           ASPNETCORE_ENVIRONMENT: Development
+          ASPNETCORE_URLS: http://0.0.0.0:7011
           ConnectionStrings__MeetlyOmniDb: ${{ secrets.DEV_DB_CONNECTION_STRING }}
         run: |
-          dotnet run --project ${{ env.API_PROJECT }} --urls http://0.0.0.0:7011 &
+          nohup dotnet run --project "${{ env.API_PROJECT }}" -c Release --no-build > api.log 2>&1 &
+          echo $! > api.pid
+
+          # 等待 /health 就绪，期间若进程已退出则失败并打印日志
           for i in {1..60}; do
-            curl -fsS http://localhost:7011/health && echo "API is up" && break
+            if curl -fsS http://localhost:7011/health >/dev/null; then
+              echo "API is up"
+              break
+            fi
+            if ! kill -0 "$(cat api.pid)" 2>/dev/null; then
+              echo "API process exited early. Last 200 lines of api.log:"
+              tail -n 200 api.log || true
+              exit 1
+            fi
             sleep 1
           done
 
+      # 集成测试；无论成功失败，都把 API 日志打出来并清理
       - name: Test (integration)
         env:
           BASE_URL: http://localhost:7011
         run: dotnet test src/MeetlyOmni.IntegrationTests/MeetlyOmni.IntegrationTests.csproj -c Release --no-build
+
+      - name: Dump API logs & cleanup
+        if: ${{ always() }}
+        run: |
+          echo "===== api.log (tail) ====="
+          tail -n 200 api.log || true
+          if [ -f api.pid ]; then
+            kill -9 "$(cat api.pid)" || true
+          fi
 
   build_and_push_image:
     runs-on: ubuntu-latest
