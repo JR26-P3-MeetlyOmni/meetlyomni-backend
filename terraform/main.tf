@@ -144,15 +144,15 @@ resource "aws_security_group" "alb" {
     Name = "${var.name}-alb-sg"
   }
 }
-# Service SG：仅允许来自 ALB 的 8080
+# Service SG：仅允许来自 ALB 的 80
 resource "aws_security_group" "service" {
   name        = "${var.name}-svc-sg"
   description = "ECS service security group"
   vpc_id      = aws_vpc.this.id
 
   ingress {
-    from_port       = 8080
-    to_port         = 8080
+    from_port       = 80
+    to_port         = 80
     protocol        = "tcp"
     security_groups = [aws_security_group.alb.id]
     description     = "Allow from ALB"
@@ -209,7 +209,7 @@ resource "aws_db_subnet_group" "rds" {
 
 resource "random_password" "db" {
   length  = 24
-  special = true
+  special = false
 }
 
 resource "aws_db_instance" "postgres" {
@@ -244,20 +244,12 @@ resource "aws_db_instance" "postgres" {
 # Secrets Manager（存连接串 JSON）
 ############################
 resource "aws_secretsmanager_secret" "db" {
-  name = "${var.name}-rds-postgres-dev"
+  name = "${var.name}-postgres-dev"
 }
 
 resource "aws_secretsmanager_secret_version" "db" {
-  secret_id = aws_secretsmanager_secret.db.id
-  secret_string = jsonencode({
-    username = aws_db_instance.postgres.username
-    password = random_password.db.result
-    host     = aws_db_instance.postgres.address
-    port     = 5432
-    database = aws_db_instance.postgres.db_name
-    # .NET/Npgsql/HealthChecks 识别最稳的 KV 连接串
-    connection_string = "Host=${aws_db_instance.postgres.address};Port=5432;Database=${aws_db_instance.postgres.db_name};Username=${aws_db_instance.postgres.username};Password=${random_password.db.result};Ssl Mode=Require;"
-  })
+  secret_id     = aws_secretsmanager_secret.db.id
+  secret_string = "Host=${aws_db_instance.postgres.address};Port=5432;Database=${aws_db_instance.postgres.db_name};Username=${aws_db_instance.postgres.username};Password=${random_password.db.result};Ssl Mode=Require;"
 }
 
 ############################
@@ -321,7 +313,7 @@ resource "aws_lb" "this" {
 
 resource "aws_lb_target_group" "tg" {
   name        = "${var.name}-tg"
-  port        = 8080
+  port        = 80
   protocol    = "HTTP"
   target_type = "ip"
   vpc_id      = aws_vpc.this.id
@@ -367,15 +359,22 @@ resource "aws_ecs_task_definition" "api" {
       name         = "api"
       image        = var.ecr_image_uri
       essential    = true
-      portMappings = [{ containerPort = 8080, hostPort = 8080, protocol = "tcp" }]
+      portMappings = [{ containerPort = 80, hostPort = 80, protocol = "tcp" }]
       environment = [
-        { name = "ASPNETCORE_ENVIRONMENT", value = "Production" }
+        {
+          name  = "ASPNETCORE_ENVIRONMENT"
+          value = "Development"
+        },
+        {
+          name  = "ASPNETCORE_URLS"   # ← 这里必须显式设置
+          value = "http://0.0.0.0:80" # ← 绑定到容器内所有网卡并监听 80
+        }
       ]
       # 用 Secrets Manager JSON 键注入连接串
       secrets = [
         {
           name      = "ConnectionStrings__MeetlyOmniDb"
-          valueFrom = "${aws_secretsmanager_secret.db.arn}:connection_string::"
+          valueFrom = aws_secretsmanager_secret.db.arn
         }
       ]
       logConfiguration = {
@@ -407,10 +406,13 @@ resource "aws_ecs_service" "svc" {
   load_balancer {
     target_group_arn = aws_lb_target_group.tg.arn
     container_name   = "api"
-    container_port   = 8080
+    container_port   = 80
   }
 
-  depends_on = [aws_lb_listener.http]
+  depends_on = [
+    aws_lb_listener.http,
+    aws_secretsmanager_secret_version.db
+  ]
 }
 
 ############################

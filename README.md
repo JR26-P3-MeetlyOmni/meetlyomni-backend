@@ -40,21 +40,24 @@ dotnet run --project src/MeetlyOmni.Api
 ## 📋 Useful Commands
 
 ### Git Hooks
+
 - **Setup hooks**: `.\setup-git-hooks-final.ps1`
 - **Pre-commit**: Auto-formats code and runs build
 - **Pre-push**: Runs tests and coverage checks
- - macOS: `bash setup-git-hooks-mac.sh`
+- macOS: `bash setup-git-hooks-mac.sh`
 
 ### User Secrets
+
 - **Set secret**: `dotnet user-secrets set "Key" "Value"`
 - **List secrets**: `dotnet user-secrets list`
 - **Remove secret**: `dotnet user-secrets remove "Key"`
 - **Clear all**: `dotnet user-secrets clear`
 
 ### Database
+
 - **Update**: `dotnet ef database update --project src/MeetlyOmni.Api`
 - **Add migration**: `dotnet ef migrations add MigrationName --project src/MeetlyOmni.Api`
-- **Remove migration**: `dotnet ef migrations remove --project src/MeetlyOmni.Api`
+- **Remove migration**: `dotnet ef migrations remove --project src/MeetlyOmni.Api
 
 ## 🔗 API Documentation
 
@@ -89,3 +92,4 @@ src/MeetlyOmni.Api/
 - **PostgreSQL** - Database
 - **AutoMapper** - Object mapping
 - **StyleCop** - Code analysis
+

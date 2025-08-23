@@ -1,0 +1,50 @@
+# Build stage
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+
+# Set working directory to root
+WORKDIR /app
+
+# Copy solution and project files
+COPY ["MeetlyOmni.sln", "./"]
+COPY ["src/MeetlyOmni.Api/MeetlyOmni.Api.csproj", "src/MeetlyOmni.Api/"]
+
+# Debug: Verify solution and project files
+RUN echo "=== Checking root directory ===" && ls -la
+RUN echo "=== Checking src/MeetlyOmni.Api directory ===" && ls -la src/MeetlyOmni.Api/
+
+RUN dotnet restore "src/MeetlyOmni.Api/MeetlyOmni.Api.csproj"
+
+# Install EF tools
+RUN dotnet tool install --global dotnet-ef
+ENV PATH="$PATH:/root/.dotnet/tools"
+
+# Copy all source files
+COPY . .
+
+# Debug: Verify all files are copied
+RUN echo "=== After copying all files - root directory ===" && ls -la
+RUN echo "=== After copying all files - src/MeetlyOmni.Api directory ===" && ls -la src/MeetlyOmni.Api/
+
+# Set working directory to project location
+WORKDIR /app/src/MeetlyOmni.Api
+
+# Debug: Final verification
+RUN echo "=== Final working directory ===" && pwd
+RUN echo "=== Final directory listing ===" && ls -la
+
+# Build with detailed output
+RUN echo "=== Starting build ==="
+RUN dotnet build "MeetlyOmni.Api.csproj" -c Release -o /app/build --verbosity detailed
+
+# Publish - removed --no-build flag
+RUN echo "=== Starting publish ==="
+RUN dotnet publish "MeetlyOmni.Api.csproj" -c Release -o /app/publish
+
+# Runtime stage
+FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
+WORKDIR /app
+
+EXPOSE 5000
+
+COPY --from=build /app/publish .
+ENTRYPOINT ["dotnet", "MeetlyOmni.Api.dll"]
