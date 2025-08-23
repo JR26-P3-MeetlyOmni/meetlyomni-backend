@@ -30,10 +30,10 @@ jobs:
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
-          cache: true
+          #cache: true
 
       - name: Restore
-        run: dotnet restore ${{ env.SOLUTION_PATH }} --locked-mode
+        run: dotnet restore ${{ env.SOLUTION_PATH }}
 
       - name: Build
         run: dotnet build ${{ env.SOLUTION_PATH }} -c Release --no-restore
@@ -44,7 +44,7 @@ jobs:
 
   build_and_push_image:
     runs-on: ubuntu-latest
-    # 这个 job 需要访问 environment(dev) 的 secrets（比如 AWS_ROLE_ARN）
+
     environment: dev
     needs: CI
     permissions:
