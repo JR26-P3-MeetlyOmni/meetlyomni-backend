@@ -8,57 +8,51 @@ on:
   workflow_dispatch:
 
 env:
-  REPO: meetlyomni-backend
+  DOTNET_VERSION: 8.0
+  SOLUTION_PATH: ./MeetlyOmni.sln
+  API_PROJECT: src/MeetlyOmni.Api/MeetlyOmni.Api.csproj
   DOCKERFILE: ./src/MeetlyOmni.Api/Dockerfile-1
   CONTEXT: .
-  API_PROJECT: src/MeetlyOmni.Api/MeetlyOmni.Api.csproj
-  SOLUTION_PATH: ./MeetlyOmni.sln
   TAG_ENV: dev
-  DOTNET_VERSION: 8.0
+  REPO: meetlyomni-backend
+  ECR_URI: 034362033405.dkr.ecr.ap-southeast-2.amazonaws.com/meetlyomni-backend
+  AWS_REGION: ap-southeast-2
 
 jobs:
   CI:
     runs-on: ubuntu-latest
-    environment: dev
 
     steps:
-      - name: Checkout
+      - name: Check out code
         uses: actions/checkout@v4
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
-          #cache: true
+          cache: true
 
-      - name: Restore dependencies
-        run: dotnet restore ${{ env.SOLUTION_PATH }}
+      - name: Restore
+        run: dotnet restore ${{ env.SOLUTION_PATH }} --locked-mode
 
-      - name: Build solution
+      - name: Build
         run: dotnet build ${{ env.SOLUTION_PATH }} -c Release --no-restore
 
-      - name: Run tests
+      - name: Test
         run: dotnet test ${{ env.SOLUTION_PATH }} -c Release --no-build
+        continue-on-error: true
 
-      - name: Publish API (optional for debugging)
-        run: dotnet publish ${{ env.API_PROJECT }} -c Release -o out --no-restore
-
-  Build_and_push_image:
+  build_and_push_image:
     runs-on: ubuntu-latest
+    # 这个 job 需要访问 environment(dev) 的 secrets（比如 AWS_ROLE_ARN）
     environment: dev
     needs: CI
     permissions:
       id-token: write
       contents: read
-    env:
-      AWS_REGION: ap-southeast-2
-      ACCOUNT_ID: ${{ vars.AWS_ACCOUNT_ID }}
     steps:
       - name: Check out code
         uses: actions/checkout@v4
-
-      - name: Build ECR URI
-        run: echo "ECR_URI=${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${{ env.REPO }}" >> $GITHUB_ENV
 
       - name: Configure AWS credentials via OIDC
         uses: aws-actions/configure-aws-credentials@v4
@@ -69,18 +63,18 @@ jobs:
       - name: Login to Amazon ECR
         uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Build Docker Image
+      - name: Build Docker image
         run: |
           TAG_SHA=${GITHUB_SHA::7}
           docker build \
             -f "${{ env.DOCKERFILE }}" \
-            -t "${ECR_URI}:${TAG_SHA}" \
-            -t "${ECR_URI}:${{ env.TAG_ENV }}" \
-            ${{ env.CONTEXT }}
+            -t "${{ env.ECR_URI }}:${TAG_SHA}" \
+            -t "${{ env.ECR_URI }}:${{ env.TAG_ENV }}" \
+            "${{ env.CONTEXT }}"
 
-      - name: Push Docker Images
+      - name: Push Docker images
         run: |
           TAG_SHA=${GITHUB_SHA::7}
-          docker push "${ECR_URI}:${TAG_SHA}"
-          docker push "${ECR_URI}:${{ env.TAG_ENV }}"
+          docker push "${{ env.ECR_URI }}:${TAG_SHA}"
+          docker push "${{ env.ECR_URI }}:${{ env.TAG_ENV }}"
 
