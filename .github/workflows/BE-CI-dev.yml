@@ -58,18 +58,18 @@ jobs:
       - name: Start API on :7011
         env:
           ASPNETCORE_ENVIRONMENT: Development
-          ASPNETCORE_URLS: http://0.0.0.0:7011
+          ASPNETCORE_URLS: http://0.0.0.0:7011 # 保险1
           ConnectionStrings__MeetlyOmniDb: ${{ secrets.DEV_DB_CONNECTION_STRING }}
         run: |
           nohup dotnet run --project "${{ env.API_PROJECT }}" -c Release --no-build \
-      --urls http://0.0.0.0:7011 > api.log 2>&1 &
+            --urls http://0.0.0.0:7011 > api.log 2>&1 &   # 保险2（命令行优先级最高）
           echo $! > api.pid
           for i in {1..60}; do
             if curl -fsS http://localhost:7011/health >/dev/null; then
               echo "API is up"; break
             fi
             if ! kill -0 "$(cat api.pid)" 2>/dev/null; then
-              echo "API process exited early. Last 200 lines:"; tail -n 200 api.log || true
+              echo "API exited early. Last 200 lines:"; tail -n 200 api.log || true
               exit 1
             fi
             sleep 1
