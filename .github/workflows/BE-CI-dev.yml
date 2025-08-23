@@ -63,16 +63,12 @@ jobs:
         run: |
           nohup dotnet run --project "${{ env.API_PROJECT }}" -c Release --no-build > api.log 2>&1 &
           echo $! > api.pid
-
-          # 等待 /health 就绪，期间若进程已退出则失败并打印日志
           for i in {1..60}; do
             if curl -fsS http://localhost:7011/health >/dev/null; then
-              echo "API is up"
-              break
+              echo "API is up"; break
             fi
             if ! kill -0 "$(cat api.pid)" 2>/dev/null; then
-              echo "API process exited early. Last 200 lines of api.log:"
-              tail -n 200 api.log || true
+              echo "API process exited early. Last 200 lines:"; tail -n 200 api.log || true
               exit 1
             fi
             sleep 1
