@@ -38,9 +38,24 @@ jobs:
       - name: Build
         run: dotnet build ${{ env.SOLUTION_PATH }} -c Release --no-restore
 
-      - name: Test
-        run: dotnet test ${{ env.SOLUTION_PATH }} -c Release --no-build
-        continue-on-error: true
+      - name: Test (unit)
+        run: dotnet test src/MeetlyOmni.Unit.tests/MeetlyOmni.Unit.tests.csproj -c Release --no-build
+
+      - name: Start API on :7011
+        env:
+          ASPNETCORE_ENVIRONMENT: Development
+          ConnectionStrings__MeetlyOmniDb: ${{ secrets.DEV_DB_CONNECTION_STRING }}
+        run: |
+          dotnet run --project ${{ env.API_PROJECT }} --urls http://0.0.0.0:7011 &
+          for i in {1..60}; do
+            curl -fsS http://localhost:7011/health && echo "API is up" && break
+            sleep 1
+          done
+
+      - name: Test (integration)
+        env:
+          BASE_URL: http://localhost:7011
+        run: dotnet test src/MeetlyOmni.IntegrationTests/MeetlyOmni.IntegrationTests.csproj -c Release --no-build
 
   build_and_push_image:
     runs-on: ubuntu-latest
