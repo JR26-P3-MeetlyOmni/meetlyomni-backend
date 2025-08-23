@@ -55,30 +55,28 @@ jobs:
           ConnectionStrings__MeetlyOmniDb: ${{ secrets.DEV_DB_CONNECTION_STRING }}
 
       # 启动 API 并将日志写入文件；失败时能看到日志
-      - name: Start API on :7011
+      - name: Start API on :5232
         env:
           ASPNETCORE_ENVIRONMENT: Development
-          ASPNETCORE_URLS: http://0.0.0.0:7011 # 保险1
+          ASPNETCORE_URLS: http://0.0.0.0:5232
           ConnectionStrings__MeetlyOmniDb: ${{ secrets.DEV_DB_CONNECTION_STRING }}
         run: |
-          nohup dotnet run --project "${{ env.API_PROJECT }}" -c Release --no-build \
-            --urls http://0.0.0.0:7011 > api.log 2>&1 &   # 保险2（命令行优先级最高）
+          nohup dotnet run --project "${{ env.API_PROJECT }}" -c Release --no-build > api.log 2>&1 &
           echo $! > api.pid
           for i in {1..60}; do
-            if curl -fsS http://localhost:7011/health >/dev/null; then
+            if curl -fsS http://localhost:5232/health >/dev/null; then
               echo "API is up"; break
             fi
             if ! kill -0 "$(cat api.pid)" 2>/dev/null; then
-              echo "API exited early. Last 200 lines:"; tail -n 200 api.log || true
+              echo "API process exited early. Last 200 lines:"; tail -n 200 api.log || true
               exit 1
             fi
             sleep 1
           done
 
-      # 集成测试；无论成功失败，都把 API 日志打出来并清理
       - name: Test (integration)
         env:
-          BASE_URL: http://localhost:7011
+          BASE_URL: http://localhost:5232
         run: dotnet test src/MeetlyOmni.IntegrationTests/MeetlyOmni.IntegrationTests.csproj -c Release --no-build
 
       - name: Dump API logs & cleanup
