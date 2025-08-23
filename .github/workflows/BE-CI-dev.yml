@@ -1,0 +1,86 @@
+name: BE-CI
+
+on:
+  push:
+    branches: [dev]
+  pull_request:
+    branches: [dev]
+  workflow_dispatch:
+
+env:
+  REPO: meetlyomni-backend
+  DOCKERFILE: ./src/MeetlyOmni.Api/Dockerfile-1
+  CONTEXT: .
+  API_PROJECT: src/MeetlyOmni.Api/MeetlyOmni.Api.csproj
+  SOLUTION_PATH: ./MeetlyOmni.sln
+  TAG_ENV: dev
+  DOTNET_VERSION: 8.0
+
+jobs:
+  CI:
+    runs-on: ubuntu-latest
+    environment: dev
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+          cache: true
+
+      - name: Restore dependencies
+        run: dotnet restore ${{ env.SOLUTION_PATH }} --locked-mode
+
+      - name: Build solution
+        run: dotnet build ${{ env.SOLUTION_PATH }} -c Release --no-restore
+
+      - name: Run tests
+        run: dotnet test ${{ env.SOLUTION_PATH }} -c Release --no-build
+
+      - name: Publish API (optional for debugging)
+        run: dotnet publish ${{ env.API_PROJECT }} -c Release -o out --no-restore
+
+  Build_and_push_image:
+    runs-on: ubuntu-latest
+    environment: dev
+    needs: CI
+    permissions:
+      id-token: write
+      contents: read
+    env:
+      AWS_REGION: ap-southeast-2
+      ACCOUNT_ID: ${{ vars.AWS_ACCOUNT_ID }}
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Build ECR URI
+        run: echo "ECR_URI=${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${{ env.REPO }}" >> $GITHUB_ENV
+
+      - name: Configure AWS credentials via OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build Docker Image
+        run: |
+          TAG_SHA=${GITHUB_SHA::7}
+          docker build \
+            -f "${{ env.DOCKERFILE }}" \
+            -t "${ECR_URI}:${TAG_SHA}" \
+            -t "${ECR_URI}:${{ env.TAG_ENV }}" \
+            ${{ env.CONTEXT }}
+
+      - name: Push Docker Images
+        run: |
+          TAG_SHA=${GITHUB_SHA::7}
+          docker push "${ECR_URI}:${TAG_SHA}"
+          docker push "${ECR_URI}:${{ env.TAG_ENV }}"
+
