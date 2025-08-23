@@ -32,7 +32,7 @@ jobs:
           cache: true
 
       - name: Restore dependencies
-        run: dotnet restore ${{ env.SOLUTION_PATH }} --locked-mode
+        run: dotnet restore ${{ env.SOLUTION_PATH }}
 
       - name: Build solution
         run: dotnet build ${{ env.SOLUTION_PATH }} -c Release --no-restore
