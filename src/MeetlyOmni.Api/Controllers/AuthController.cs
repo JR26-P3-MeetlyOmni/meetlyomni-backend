@@ -25,7 +25,8 @@ public class AuthController : ControllerBase
     /// <summary>
     /// User login endpoint.
     /// </summary>
-    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous operation.</placeholder></returns>
+    /// <param name="request">The login request containing email and password.</param>
+    /// <returns>A <see cref="Task{IActionResult}"/> representing the asynchronous operation.</returns>
     [HttpPost("login")]
     [ProducesResponseType(typeof(LoginResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
