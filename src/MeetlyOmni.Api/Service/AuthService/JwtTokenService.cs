@@ -18,22 +18,22 @@ namespace MeetlyOmni.Api.Service.AuthService;
 
 public class JwtTokenService : IJwtTokenService
 {
-    private readonly UserManager<Member> userManager;
-    private readonly JwtOptions jwtOptions;
-    private readonly SigningCredentials creds;
+    private readonly UserManager<Member> _userManager;
+    private readonly JwtOptions _jwtOptions;
+    private readonly SigningCredentials _creds;
 
     public JwtTokenService(IOptions<JwtOptions> opt, UserManager<Member> userManager)
     {
-        this.userManager = userManager;
-        this.jwtOptions = opt.Value;
-        var key = new SymmetricSecurityKey(Convert.FromBase64String(this.jwtOptions.KeyB64));
-        this.creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+        this._userManager = userManager;
+        this._jwtOptions = opt.Value;
+        var key = new SymmetricSecurityKey(Convert.FromBase64String(this._jwtOptions.KeyB64));
+        this._creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
     }
 
     public async Task<TokenResult> GenerateTokenAsync(Member member)
     {
         var now = DateTimeOffset.UtcNow;
-        var expires = now.AddMinutes(this.jwtOptions.AccessTokenExpirationMinutes);
+        var expires = now.AddMinutes(this._jwtOptions.AccessTokenExpirationMinutes);
 
         var claims = new List<Claim>
         {
@@ -45,26 +45,26 @@ public class JwtTokenService : IJwtTokenService
         };
 
         // add full_name claim if available
-        var userClaims = await this.userManager.GetClaimsAsync(member);
+        var userClaims = await this._userManager.GetClaimsAsync(member);
         var fullName = userClaims.FirstOrDefault(c => c.Type == "full_name")?.Value;
         if (!string.IsNullOrWhiteSpace(fullName))
         {
             claims.Add(new Claim("full_name", fullName));
         }
 
-        var roles = await this.userManager.GetRolesAsync(member);
+        var roles = await this._userManager.GetRolesAsync(member);
         foreach (var role in roles)
         {
             claims.Add(new Claim("role", role));
         }
 
         var jwt = new JwtSecurityToken(
-            issuer: this.jwtOptions.Issuer,
-            audience: this.jwtOptions.Audience,
+            issuer: this._jwtOptions.Issuer,
+            audience: this._jwtOptions.Audience,
             claims: claims,
             notBefore: now.UtcDateTime,
             expires: expires.UtcDateTime,
-            signingCredentials: this.creds);
+            signingCredentials: this._creds);
 
         var tokenString = new JwtSecurityTokenHandler().WriteToken(jwt);
         return new TokenResult(tokenString, expires);
