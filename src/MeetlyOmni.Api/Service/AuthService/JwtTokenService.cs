@@ -35,27 +35,48 @@ public class JwtTokenService : IJwtTokenService
         var now = DateTimeOffset.UtcNow;
         var expires = now.AddMinutes(_jwtOptions.AccessTokenExpirationMinutes);
 
+        // use standard JWT Claims
         var claims = new List<Claim>
         {
-            new (JwtRegisteredClaimNames.Sub, member.Id.ToString()),
-            new (JwtRegisteredClaimNames.Email, member.Email ?? string.Empty),
-            new (JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString("N")),
-            new (JwtRegisteredClaimNames.Iat, now.ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer64),
-            new ("org_id", member.OrgId.ToString()),
+            // standard Claims
+            new(JwtRegisteredClaimNames.Sub, member.Id.ToString()),
+            new(JwtRegisteredClaimNames.Email, member.Email ?? string.Empty),
+            new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString("N")),
+            new(JwtRegisteredClaimNames.Iat, now.ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer64),
+            new(JwtRegisteredClaimNames.Nbf, now.ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer64),
+            new(JwtRegisteredClaimNames.Exp, expires.ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer64),
+
+            // custom Claims - use standard ClaimTypes
+            new(ClaimTypes.NameIdentifier, member.Id.ToString()),
+            new(ClaimTypes.Email, member.Email ?? string.Empty),
         };
 
-        // add full_name claim if available
-        var userClaims = await _userManager.GetClaimsAsync(member);
+        // add org id (if needed)
+        if (member.OrgId != Guid.Empty)
+        {
+            claims.Add(new Claim("org_id", member.OrgId.ToString()));
+        }
+
+        // batch get user Claims and Roles, reduce database calls
+        var userClaimsTask = _userManager.GetClaimsAsync(member);
+        var userRolesTask = _userManager.GetRolesAsync(member);
+
+        await Task.WhenAll(userClaimsTask, userRolesTask);
+
+        var userClaims = userClaimsTask.Result;
+        var userRoles = userRolesTask.Result;
+
+        // add user custom Claims
         var fullName = userClaims.FirstOrDefault(c => c.Type == "full_name")?.Value;
         if (!string.IsNullOrWhiteSpace(fullName))
         {
-            claims.Add(new Claim("full_name", fullName));
+            claims.Add(new Claim(ClaimTypes.GivenName, fullName));
         }
 
-        var roles = await _userManager.GetRolesAsync(member);
-        foreach (var role in roles)
+        // add role Claims
+        foreach (var role in userRoles)
         {
-            claims.Add(new Claim("role", role));
+            claims.Add(new Claim(ClaimTypes.Role, role));
         }
 
         var jwt = new JwtSecurityToken(

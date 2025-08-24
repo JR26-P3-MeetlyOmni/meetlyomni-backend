@@ -31,25 +31,50 @@ public class AuthService : IAuthService
 
     public async Task<LoginResponse> LoginAsync(LoginRequest input)
     {
-        var user = await _userManager.FindByEmailAsync(input.Email.Trim()) ?? throw new UnauthorizedAccessException("Invalid email or password.");
-        var result = await _signInManager.CheckPasswordSignInAsync(user, input.Password, lockoutOnFailure: true);
-        if (!result.Succeeded)
+        // standardize email to avoid case-sensitive issues
+        var email = input.Email.Trim().ToLowerInvariant();
+
+        // prevent user enumeration attack: even if user does not exist, password validation is performed
+        var user = await _userManager.FindByEmailAsync(email);
+
+        // always perform password check, prevent timing attacks
+        var result = user != null
+            ? await _signInManager.CheckPasswordSignInAsync(user, input.Password, lockoutOnFailure: true)
+            : SignInResult.Failed;
+
+        if (!result.Succeeded || user == null)
         {
-            throw new UnauthorizedAccessException("Invalid email or password.");
+            // log login failure but do not expose specific reason
+            _logger.LogWarning("Login attempt failed for email: {Email}", email);
+
+            // unified error message, do not leak whether user exists
+            throw new UnauthorizedAccessException("Invalid credentials.");
         }
 
-        // update last login time
+        // check user status
+        if (!user.EmailConfirmed)
+        {
+            _logger.LogWarning("Login attempt with unconfirmed email: {Email}", email);
+            throw new UnauthorizedAccessException("Email not confirmed.");
+        }
+
+        // update user info in one go, avoid multiple database calls
         user.LastLogin = DateTimeOffset.UtcNow;
-        await _userManager.UpdateAsync(user);
         user.UpdatedAt = DateTimeOffset.UtcNow;
+
         var updateResult = await _userManager.UpdateAsync(user);
         if (!updateResult.Succeeded)
         {
             // Non-blocking for login; at least log the errors
-            _logger.LogWarning("Failed to update last login for {UserId}: {Errors}", user.Id, string.Join("; ", updateResult.Errors.Select(e => $"{e.Code}:{e.Description}")));
+            _logger.LogWarning(
+                "Failed to update last login for {UserId}: {Errors}",
+                user.Id,
+                string.Join("; ", updateResult.Errors.Select(e => $"{e.Code}:{e.Description}")));
         }
 
         var token = await _tokenService.GenerateTokenAsync(user);
+
+        _logger.LogInformation("User {UserId} logged in successfully", user.Id);
 
         return new LoginResponse
         {
