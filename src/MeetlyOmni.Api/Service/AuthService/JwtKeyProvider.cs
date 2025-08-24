@@ -13,6 +13,7 @@ namespace MeetlyOmni.Api.Service.AuthService;
 
 public class JwtKeyProvider : IJwtKeyProvider
 {
+    private const int MinKeySizeBytes = 32; // 256-bit for HS256
     private readonly SecurityKey _signingKey;
 
     public JwtKeyProvider(IConfiguration config, IHostEnvironment env)
@@ -21,17 +22,24 @@ public class JwtKeyProvider : IJwtKeyProvider
         var base64 = config["Jwt:SigningKey"] ?? Environment.GetEnvironmentVariable("JWT__SIGNING_KEY");
         if (!string.IsNullOrWhiteSpace(base64))
         {
-            var keyBytes = Convert.FromBase64String(base64);
-            _signingKey = CreateSymmetricKey(keyBytes);
+            byte[] keyBytes;
+            try
+            {
+                keyBytes = Convert.FromBase64String(base64);
+            }
+            catch (FormatException ex)
+            {
+                throw new InvalidOperationException("Jwt:SigningKey must be Base64-encoded. Provide a Base64 string representing at least 32 random bytes.", ex);
+            }
+
+            if (keyBytes.Length < MinKeySizeBytes)
+            {
+                throw new InvalidOperationException($"Jwt:SigningKey is too short. Provide at least {MinKeySizeBytes} random bytes (Base64-encoded).");
+            }
+
+            _signingKey = GenerateSecureKey();
             return;
         }
-
-        if (!env.IsDevelopment())
-        {
-            throw new InvalidOperationException("JWT signing key must be configured in non-development environments.");
-        }
-
-        _signingKey = GenerateSecureKey();
     }
 
     public SecurityKey GetSigningKey() => _signingKey;

@@ -92,7 +92,15 @@ builder.Services.AddAuthentication(options =>
         OnAuthenticationFailed = context =>
         {
             var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>();
-            logger.LogWarning("JWT authentication failed: {Exception}", context.Exception.Message);
+            if (context.Exception is SecurityTokenExpiredException ste)
+            {
+                logger.LogWarning("JWT authentication failed: token expired at {Expires}.", ste.Expires);
+            }
+            else
+            {
+                logger.LogWarning("JWT authentication failed: {ErrorType}.", context.Exception.GetType().Name);
+            }
+
             return Task.CompletedTask;
         },
         OnTokenValidated = context =>
