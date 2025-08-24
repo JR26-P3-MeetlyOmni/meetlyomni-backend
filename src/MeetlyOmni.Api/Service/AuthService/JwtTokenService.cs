@@ -72,17 +72,6 @@ public class JwtTokenService : IJwtTokenService
         return new TokenResult(tokenString, expires);
     }
 
-    private async Task<(IList<Claim> claims, IList<string> roles)> GetUserClaimsAndRolesAsync(Member member)
-    {
-        // get user claims and roles
-        var userClaimsTask = _userManager.GetClaimsAsync(member);
-        var userRolesTask = _userManager.GetRolesAsync(member);
-
-        await Task.WhenAll(userClaimsTask, userRolesTask);
-
-        return (userClaimsTask.Result, userRolesTask.Result);
-    }
-
     private static void AddUserClaims(List<Claim> claims, IList<Claim> userClaims)
     {
         // map special claims to standard types
@@ -107,5 +96,16 @@ public class JwtTokenService : IJwtTokenService
         {
             claims.Add(new Claim(ClaimTypes.Role, role));
         }
+    }
+
+    private async Task<(IList<Claim> claims, IList<string> roles)> GetUserClaimsAndRolesAsync(Member member)
+    {
+        // get user claims and roles
+        var userClaimsTask = _userManager.GetClaimsAsync(member);
+        var userRolesTask = _userManager.GetRolesAsync(member);
+
+        await Task.WhenAll(userClaimsTask, userRolesTask);
+
+        return (userClaimsTask.Result, userRolesTask.Result);
     }
 }
