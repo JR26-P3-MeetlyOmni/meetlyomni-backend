@@ -1,22 +1,24 @@
+# ---------- Build ----------
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 
-# 1) 先拷 SLN、所有项目文件、以及依赖相关配置
+# 先只拷 SLN 和必须的 csproj（按你的项目实际列出）
 COPY ./MeetlyOmni.sln ./
-COPY ./.config/NuGet.config ./.config/NuGet.config
-COPY ./Directory.Packages.props ./Directory.Packages.props
 COPY ./src/MeetlyOmni.Api/*.csproj ./src/MeetlyOmni.Api/
-# 如果还有其他项目或共享项目，也要一并 COPY 它们的 csproj
+# 如果解决方案里还有其它项目被 API 引用，也要一并 COPY 它们的 *.csproj
 
-# 2) 先还原（此时信息齐全，能完整还原）
-RUN dotnet restore ./MeetlyOmni.sln
+# 先还原（针对单项目，减少无关文件的变动对缓存的影响）
+RUN dotnet restore ./src/MeetlyOmni.Api/MeetlyOmni.Api.csproj
 
-# 3) 再拷其余源码
+# 再拷其余源码
 COPY . .
 
-# 4) 发布（此时可安全地使用 --no-restore）
-RUN dotnet publish ./src/MeetlyOmni.Api/MeetlyOmni.Api.csproj -c Release --no-restore -o /app/publish /p:UseAppHost=false
+# 发布时让它自行再做一次 restore，避免“前面漏文件”的问题
+RUN dotnet publish ./src/MeetlyOmni.Api/MeetlyOmni.Api.csproj \
+    -c Release -o /app/publish /p:UseAppHost=false
+# 这里故意不加 --no-restore
 
+# ---------- Runtime ----------
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
 WORKDIR /app
 COPY --from=build /app/publish .
