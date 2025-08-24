@@ -2,6 +2,8 @@
 // Copyright (c) MeetlyOmni. All rights reserved.
 // </copyright>
 
+using System.Buffers.Text;
+
 using MeetlyOmni.Api.Common.Extensions;
 using MeetlyOmni.Api.Common.Options;
 using MeetlyOmni.Api.Data;
@@ -13,6 +15,7 @@ using MeetlyOmni.Api.Service.AuthService.Interfaces;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -34,23 +37,18 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(connectionString));
 
 // JWT Options Configuration
-builder.Services.Configure<JwtOptions>(
-    builder.Configuration.GetSection("Jwt"));
+builder.Services.AddOptions<JwtOptions>(JwtOptions.SectionName)
+        .BindConfiguration(JwtOptions.SectionName)
+        .ValidateDataAnnotations()
+        .ValidateOnStart();
 
 // Identity Services
 builder.Services.AddApplicationIdentity();
 
-// JWT Key Provider (create and register as singleton)
-var jwtKeyProvider = new JwtKeyProvider();
-builder.Services.AddSingleton<IJwtKeyProvider>(jwtKeyProvider);
+// JWT Key Provider - 统一的密钥管理
+builder.Services.AddSingleton<IJwtKeyProvider, JwtKeyProvider>();
 
 // JWT Authentication Configuration
-var jwtConfig = builder.Configuration.GetSection("Jwt").Get<JwtOptions>();
-if (jwtConfig == null)
-{
-    throw new InvalidOperationException("JWT configuration is missing or invalid.");
-}
-
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -58,6 +56,14 @@ builder.Services.AddAuthentication(options =>
 })
 .AddJwtBearer(options =>
 {
+    // Get configuration first
+    var jwtConfig = builder.Configuration.GetSection("Jwt").Get<JwtOptions>();
+    if (jwtConfig == null)
+    {
+        throw new InvalidOperationException("JWT configuration is missing or invalid.");
+    }
+
+    // Configure basic validation parameters
     options.TokenValidationParameters = new TokenValidationParameters
     {
         ValidateIssuer = true,
@@ -66,15 +72,23 @@ builder.Services.AddAuthentication(options =>
         ValidateIssuerSigningKey = true,
         ValidIssuer = jwtConfig.Issuer,
         ValidAudience = jwtConfig.Audience,
-        IssuerSigningKey = jwtKeyProvider.GetValidationKey(),
-        ClockSkew = TimeSpan.FromMinutes(1), // allow 1 minute clock skew
+        ClockSkew = TimeSpan.FromMinutes(1),
         RequireExpirationTime = true,
         RequireSignedTokens = true,
+
+        // IssuerSigningKey will be set in events below
     };
 
     // improved event handling
     options.Events = new JwtBearerEvents
     {
+        OnMessageReceived = context =>
+        {
+            // Set the signing key at runtime to avoid BuildServiceProvider
+            var keyProvider = context.HttpContext.RequestServices.GetRequiredService<IJwtKeyProvider>();
+            context.Options.TokenValidationParameters.IssuerSigningKey = keyProvider.GetValidationKey();
+            return Task.CompletedTask;
+        },
         OnAuthenticationFailed = context =>
         {
             var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>();

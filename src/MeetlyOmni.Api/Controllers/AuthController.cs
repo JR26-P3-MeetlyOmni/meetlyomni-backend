@@ -5,6 +5,7 @@
 using MeetlyOmni.Api.Models.Auth;
 using MeetlyOmni.Api.Service.AuthService.Interfaces;
 
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace MeetlyOmni.Api.Controllers;
@@ -28,6 +29,7 @@ public class AuthController : ControllerBase
     /// <param name="request">The login request containing email and password.</param>
     /// <returns>A <see cref="Task{IActionResult}"/> representing the asynchronous operation.</returns>
     [HttpPost("login")]
+    [AllowAnonymous]
     [ProducesResponseType(typeof(LoginResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]

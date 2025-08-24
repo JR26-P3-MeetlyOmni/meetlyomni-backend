@@ -15,6 +15,8 @@ using Microsoft.Extensions.Logging;
 
 using Moq;
 
+using Xunit;
+
 namespace MeetlyOmni.Unit.tests.Controllers;
 
 /// <summary>
@@ -73,19 +75,16 @@ public class AuthControllerTests
         // Assert
         result.Should().BeAssignableTo<IActionResult>();
 
-        // ValidationProblem may return different result types depending on implementation
+        // ValidationProblem returns different types depending on framework version
         if (result is ObjectResult objectResult)
         {
+            // Check if it has the right value type
             objectResult.Value.Should().BeOfType<ValidationProblemDetails>();
-        }
-        else if (result is BadRequestObjectResult badRequestResult)
-        {
-            badRequestResult.Value.Should().BeOfType<ValidationProblemDetails>();
         }
         else
         {
-            // Should be one of the above types
-            Assert.Fail($"Unexpected result type: {result.GetType()}");
+            // Could be BadRequestObjectResult
+            result.Should().BeOfType<BadRequestObjectResult>();
         }
     }
 
@@ -219,7 +218,7 @@ public class AuthControllerTests
     [Theory]
     [InlineData("")]
     [InlineData(null)]
-    public async Task Login_WithInvalidEmail_ShouldStillCallAuthService(string invalidEmail)
+    public async Task Login_WithInvalidEmail_ShouldReturnBadRequest_AndNotCallAuthService(string invalidEmail)
     {
         // Arrange
         var loginRequest = new LoginRequest
@@ -228,23 +227,33 @@ public class AuthControllerTests
             Password = "TestPassword123!",
         };
 
-        var expectedResponse = new LoginResponse
+        // Simulate model validation failure on Email
+        if (invalidEmail is null)
         {
-            AccessToken = "test-access-token",
-            ExpiresAt = DateTimeOffset.UtcNow.AddMinutes(15),
-            TokenType = "Bearer",
-        };
-
-        _mockAuthService
-            .Setup(x => x.LoginAsync(loginRequest))
-            .ReturnsAsync(expectedResponse);
+            _authController.ModelState.AddModelError(nameof(LoginRequest.Email), "Email is required.");
+        }
+        else
+        {
+            _authController.ModelState.AddModelError(nameof(LoginRequest.Email), "Email is invalid.");
+        }
 
         // Act
         var result = await _authController.Login(loginRequest);
 
         // Assert
-        // Should still call auth service - validation should be handled by auth service
-        _mockAuthService.Verify(x => x.LoginAsync(loginRequest), Times.Once);
+        _mockAuthService.Verify(x => x.LoginAsync(It.IsAny<LoginRequest>()), Times.Never);
+
+        result.Should().BeAssignableTo<IActionResult>();
+
+        // ValidationProblem returns different types depending on framework version
+        if (result is ObjectResult objectResult)
+        {
+            objectResult.Value.Should().BeOfType<ValidationProblemDetails>();
+        }
+        else
+        {
+            result.Should().BeOfType<BadRequestObjectResult>();
+        }
     }
 
     [Fact]

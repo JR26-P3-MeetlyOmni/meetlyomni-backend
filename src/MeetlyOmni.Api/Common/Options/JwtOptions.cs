@@ -8,12 +8,17 @@ namespace MeetlyOmni.Api.Common.Options;
 
 public class JwtOptions
 {
+    public const string SectionName = "Jwt";
+
     [Required]
+    [RegularExpression(@"\S+", ErrorMessage = "Issuer cannot be empty or whitespace.")]
     public string Issuer { get; set; } = string.Empty;
 
     [Required]
+    [RegularExpression(@"\S+", ErrorMessage = "Audience cannot be empty or whitespace.")]
     public string Audience { get; set; } = string.Empty;
 
     [Required]
-    public int AccessTokenExpirationMinutes { get; set; }
+    [Range(1, 1440, ErrorMessage = "AccessTokenExpirationMinutes must be between 1 and 1440.")]
+    public int AccessTokenExpirationMinutes { get; set; } = 15;
 }

@@ -3,7 +3,7 @@
 // </copyright>
 
 using MeetlyOmni.Api.Data.Entities;
-using MeetlyOmni.Api.Service.JwtService;
+using MeetlyOmni.Api.Models.Auth;
 
 namespace MeetlyOmni.Api.Service.AuthService.Interfaces;
 

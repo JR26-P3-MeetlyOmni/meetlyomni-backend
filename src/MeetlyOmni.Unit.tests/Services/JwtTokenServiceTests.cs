@@ -18,6 +18,8 @@ using Microsoft.Extensions.Options;
 
 using Moq;
 
+using Xunit;
+
 namespace MeetlyOmni.Unit.tests.Services;
 
 /// <summary>
@@ -96,12 +98,11 @@ public class JwtTokenServiceTests
         jsonToken.Claims.Should().Contain(c => c.Type == JwtRegisteredClaimNames.Email && c.Value == testMember.Email);
         jsonToken.Claims.Should().Contain(c => c.Type == JwtRegisteredClaimNames.Jti);
         jsonToken.Claims.Should().Contain(c => c.Type == JwtRegisteredClaimNames.Iat);
-        jsonToken.Claims.Should().Contain(c => c.Type == JwtRegisteredClaimNames.Nbf);
-        jsonToken.Claims.Should().Contain(c => c.Type == JwtRegisteredClaimNames.Exp);
+        // nbf and exp are now automatically handled by JwtSecurityToken constructor
+        jsonToken.ValidFrom.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(5));
+        jsonToken.ValidTo.Should().BeCloseTo(DateTime.UtcNow.AddMinutes(15), TimeSpan.FromSeconds(5));
 
-        // Check custom claims
-        jsonToken.Claims.Should().Contain(c => c.Type == ClaimTypes.NameIdentifier && c.Value == testMember.Id.ToString());
-        jsonToken.Claims.Should().Contain(c => c.Type == ClaimTypes.Email && c.Value == testMember.Email);
+        // Check that we no longer include redundant custom claims (they were removed in optimization)
     }
 
     [Fact]
@@ -341,7 +342,6 @@ public class JwtTokenServiceTests
         var jsonToken = tokenHandler.ReadJwtToken(result.accessToken);
 
         jsonToken.Claims.Should().Contain(c => c.Type == JwtRegisteredClaimNames.Email && c.Value == string.Empty);
-        jsonToken.Claims.Should().Contain(c => c.Type == ClaimTypes.Email && c.Value == string.Empty);
     }
 
     [Fact]

@@ -2,6 +2,6 @@
 // Copyright (c) MeetlyOmni. All rights reserved.
 // </copyright>
 
-namespace MeetlyOmni.Api.Service.JwtService;
+namespace MeetlyOmni.Api.Models.Auth;
 
 public record TokenResult(string accessToken, DateTimeOffset expiresAt);

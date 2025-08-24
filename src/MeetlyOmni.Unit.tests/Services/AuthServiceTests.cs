@@ -49,7 +49,7 @@ public class AuthServiceTests
         // Arrange
         var testMember = TestDataHelper.CreateTestMember();
         var loginRequest = TestDataHelper.CreateValidLoginRequest();
-        var expectedTokenResult = new MeetlyOmni.Api.Service.JwtService.TokenResult("test-token", DateTimeOffset.UtcNow.AddMinutes(15));
+        var expectedTokenResult = new TokenResult("test-token", DateTimeOffset.UtcNow.AddMinutes(15));
 
         MockHelper.SetupSuccessfulUserLookup(_mockUserManager, testMember);
         MockHelper.SetupSuccessfulSignIn(_mockSignInManager);
@@ -134,7 +134,7 @@ public class AuthServiceTests
         MockHelper.SetupSuccessfulUserLookup(_mockUserManager, testMember);
         MockHelper.SetupSuccessfulSignIn(_mockSignInManager);
 
-        var expectedTokenResult = new MeetlyOmni.Api.Service.JwtService.TokenResult("test-token", DateTimeOffset.UtcNow.AddMinutes(15));
+        var expectedTokenResult = new TokenResult("test-token", DateTimeOffset.UtcNow.AddMinutes(15));
         _mockJwtTokenService
             .Setup(x => x.GenerateTokenAsync(testMember))
             .ReturnsAsync(expectedTokenResult);
@@ -159,7 +159,7 @@ public class AuthServiceTests
         MockHelper.SetupSuccessfulUserLookup(_mockUserManager, testMember);
         MockHelper.SetupSuccessfulSignIn(_mockSignInManager);
 
-        var expectedTokenResult = new MeetlyOmni.Api.Service.JwtService.TokenResult("test-token", DateTimeOffset.UtcNow.AddMinutes(15));
+        var expectedTokenResult = new TokenResult("test-token", DateTimeOffset.UtcNow.AddMinutes(15));
         _mockJwtTokenService
             .Setup(x => x.GenerateTokenAsync(testMember))
             .ReturnsAsync(expectedTokenResult);
@@ -190,7 +190,7 @@ public class AuthServiceTests
             .Setup(x => x.UpdateAsync(testMember))
             .ReturnsAsync(IdentityResult.Failed(new IdentityError { Code = "UpdateError", Description = "Update failed" }));
 
-        var expectedTokenResult = new MeetlyOmni.Api.Service.JwtService.TokenResult("test-token", DateTimeOffset.UtcNow.AddMinutes(15));
+        var expectedTokenResult = new TokenResult("test-token", DateTimeOffset.UtcNow.AddMinutes(15));
         _mockJwtTokenService
             .Setup(x => x.GenerateTokenAsync(testMember))
             .ReturnsAsync(expectedTokenResult);
@@ -223,7 +223,7 @@ public class AuthServiceTests
         MockHelper.SetupSuccessfulUserLookup(_mockUserManager, testMember);
         MockHelper.SetupSuccessfulSignIn(_mockSignInManager);
 
-        var expectedTokenResult = new MeetlyOmni.Api.Service.JwtService.TokenResult("test-token", DateTimeOffset.UtcNow.AddMinutes(15));
+        var expectedTokenResult = new TokenResult("test-token", DateTimeOffset.UtcNow.AddMinutes(15));
         _mockJwtTokenService
             .Setup(x => x.GenerateTokenAsync(testMember))
             .ReturnsAsync(expectedTokenResult);
@@ -283,7 +283,7 @@ public class AuthServiceTests
         MockHelper.SetupSuccessfulUserLookup(_mockUserManager, testMember);
         MockHelper.SetupSuccessfulSignIn(_mockSignInManager);
 
-        var expectedTokenResult = new MeetlyOmni.Api.Service.JwtService.TokenResult("test-token", DateTimeOffset.UtcNow.AddMinutes(15));
+        var expectedTokenResult = new TokenResult("test-token", DateTimeOffset.UtcNow.AddMinutes(15));
         _mockJwtTokenService
             .Setup(x => x.GenerateTokenAsync(testMember))
             .ReturnsAsync(expectedTokenResult);
