@@ -11,7 +11,7 @@ permissions:
 
 env:
   # ---- Azure / ACR ----
-  AZURE_CONTAINER_REGISTRY: meetlyapiacr # ACR 名称（不含域，如 myregistry.azurecr.io 的 myregistry）
+  AZURE_CONTAINER_REGISTRY: meetlyapiacr
   ACR_REPO: meetlyomni-backend
   # ---- Web App ----
   WEBAPP_NAME: meetly-api-dev
