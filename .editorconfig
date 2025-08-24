@@ -99,3 +99,5 @@ dotnet_diagnostic.SA1616.severity = none  # Return value must be documented
 dotnet_diagnostic.SA1618.severity = none  # Generic type parameters must be documented
 dotnet_diagnostic.SA1000.severity = none  # 'new' must be followed by a space (disable to allow 'new()')
 dotnet_diagnostic.SA1009.severity = none
+dotnet_diagnostic.SA1309.severity = none
+dotnet_diagnostic.SA1306.severity = none
