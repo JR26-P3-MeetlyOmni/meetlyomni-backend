@@ -31,6 +31,32 @@ public class JwtTokenService : IJwtTokenService
         _creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
     }
 
+    private static void AddUserClaims(List<Claim> claims, IList<Claim> userClaims)
+    {
+        // map special claims to standard types
+        var fullName = userClaims.FirstOrDefault(c => c.Type == "full_name")?.Value;
+        if (!string.IsNullOrWhiteSpace(fullName))
+        {
+            claims.Add(new Claim(ClaimTypes.GivenName, fullName));
+        }
+
+        // add other user claims (excluding processed ones)
+        var excludedClaimTypes = new HashSet<string> { "full_name" };
+
+        foreach (var claim in userClaims.Where(c => !excludedClaimTypes.Contains(c.Type)))
+        {
+            claims.Add(claim);
+        }
+    }
+
+    private static void AddRoleClaims(List<Claim> claims, IList<string> userRoles)
+    {
+        foreach (var role in userRoles)
+        {
+            claims.Add(new Claim(ClaimTypes.Role, role));
+        }
+    }
+
     public async Task<TokenResult> GenerateTokenAsync(Member member)
     {
         var now = DateTimeOffset.UtcNow;
@@ -81,31 +107,5 @@ public class JwtTokenService : IJwtTokenService
         await Task.WhenAll(userClaimsTask, userRolesTask);
 
         return (userClaimsTask.Result, userRolesTask.Result);
-    }
-
-    private static void AddUserClaims(List<Claim> claims, IList<Claim> userClaims)
-    {
-        // map special claims to standard types
-        var fullName = userClaims.FirstOrDefault(c => c.Type == "full_name")?.Value;
-        if (!string.IsNullOrWhiteSpace(fullName))
-        {
-            claims.Add(new Claim(ClaimTypes.GivenName, fullName));
-        }
-
-        // add other user claims (excluding processed ones)
-        var excludedClaimTypes = new HashSet<string> { "full_name" };
-
-        foreach (var claim in userClaims.Where(c => !excludedClaimTypes.Contains(c.Type)))
-        {
-            claims.Add(claim);
-        }
-    }
-
-    private static void AddRoleClaims(List<Claim> claims, IList<string> userRoles)
-    {
-        foreach (var role in userRoles)
-        {
-            claims.Add(new Claim(ClaimTypes.Role, role));
-        }
     }
 }

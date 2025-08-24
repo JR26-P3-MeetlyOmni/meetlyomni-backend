@@ -45,7 +45,7 @@ builder.Services.AddOptions<JwtOptions>(JwtOptions.SectionName)
 // Identity Services
 builder.Services.AddApplicationIdentity();
 
-// JWT Key Provider - 统一的密钥管理
+// JWT Key Provider
 builder.Services.AddSingleton<IJwtKeyProvider, JwtKeyProvider>();
 
 // JWT Authentication Configuration
