@@ -15,8 +15,5 @@ public class JwtOptions
     public string Audience { get; set; } = string.Empty;
 
     [Required]
-    public string KeyB64 { get; set; } = string.Empty;
-
-    [Required]
     public int AccessTokenExpirationMinutes { get; set; }
 }

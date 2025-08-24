@@ -22,11 +22,11 @@ public class JwtTokenService : IJwtTokenService
     private readonly JwtOptions _jwtOptions;
     private readonly SigningCredentials _creds;
 
-    public JwtTokenService(IOptions<JwtOptions> opt, UserManager<Member> userManager)
+    public JwtTokenService(IOptions<JwtOptions> opt, UserManager<Member> userManager, IJwtKeyProvider keyProvider)
     {
         _userManager = userManager;
         _jwtOptions = opt.Value;
-        var key = new SymmetricSecurityKey(Convert.FromBase64String(_jwtOptions.KeyB64));
+        var key = keyProvider.GetSigningKey();
         _creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
     }
 
