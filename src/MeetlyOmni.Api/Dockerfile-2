@@ -1,50 +1,24 @@
-# Build stage
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+WORKDIR /src
 
-# Set working directory to root
-WORKDIR /app
+# 1) 先拷 SLN、所有项目文件、以及依赖相关配置
+COPY ./MeetlyOmni.sln ./
+COPY ./.config/NuGet.config ./.config/NuGet.config
+COPY ./Directory.Packages.props ./Directory.Packages.props
+COPY ./src/MeetlyOmni.Api/*.csproj ./src/MeetlyOmni.Api/
+# 如果还有其他项目或共享项目，也要一并 COPY 它们的 csproj
 
-# Copy solution and project files
-COPY ["MeetlyOmni.sln", "./"]
-COPY ["src/MeetlyOmni.Api/MeetlyOmni.Api.csproj", "src/MeetlyOmni.Api/"]
+# 2) 先还原（此时信息齐全，能完整还原）
+RUN dotnet restore ./MeetlyOmni.sln
 
-# Debug: Verify solution and project files
-RUN echo "=== Checking root directory ===" && ls -la
-RUN echo "=== Checking src/MeetlyOmni.Api directory ===" && ls -la src/MeetlyOmni.Api/
-
-RUN dotnet restore "src/MeetlyOmni.Api/MeetlyOmni.Api.csproj"
-
-# Install EF tools
-RUN dotnet tool install --global dotnet-ef
-ENV PATH="$PATH:/root/.dotnet/tools"
-
-# Copy all source files
+# 3) 再拷其余源码
 COPY . .
 
-# Debug: Verify all files are copied
-RUN echo "=== After copying all files - root directory ===" && ls -la
-RUN echo "=== After copying all files - src/MeetlyOmni.Api directory ===" && ls -la src/MeetlyOmni.Api/
+# 4) 发布（此时可安全地使用 --no-restore）
+RUN dotnet publish ./src/MeetlyOmni.Api/MeetlyOmni.Api.csproj -c Release --no-restore -o /app/publish /p:UseAppHost=false
 
-# Set working directory to project location
-WORKDIR /app/src/MeetlyOmni.Api
-
-# Debug: Final verification
-RUN echo "=== Final working directory ===" && pwd
-RUN echo "=== Final directory listing ===" && ls -la
-
-# Build with detailed output
-RUN echo "=== Starting build ==="
-RUN dotnet build "MeetlyOmni.Api.csproj" -c Release -o /app/build --verbosity detailed
-
-# Publish - removed --no-build flag
-RUN echo "=== Starting publish ==="
-RUN dotnet publish "MeetlyOmni.Api.csproj" -c Release -o /app/publish
-
-# Runtime stage
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
 WORKDIR /app
-
-EXPOSE 5000
-
 COPY --from=build /app/publish .
+EXPOSE 80
 ENTRYPOINT ["dotnet", "MeetlyOmni.Api.dll"]

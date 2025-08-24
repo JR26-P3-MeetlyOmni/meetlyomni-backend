@@ -20,7 +20,7 @@ env:
   DOTNET_VERSION: 8.0
   SOLUTION_PATH: ./MeetlyOmni.sln
   API_PROJECT: src/MeetlyOmni.Api/MeetlyOmni.Api.csproj
-  DOCKERFILE: ./src/MeetlyOmni.Api/Dockerfile-1
+  DOCKERFILE: ./src/MeetlyOmni.Api/Dockerfile-2
   CONTEXT: .
   TAG_ENV: dev
 
