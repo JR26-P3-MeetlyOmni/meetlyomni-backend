@@ -1,0 +1,72 @@
+﻿// <copyright file="JwtTokenService.cs" company="MeetlyOmni">
+// Copyright (c) MeetlyOmni. All rights reserved.
+// </copyright>
+
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+
+using MeetlyOmni.Api.Common.Options;
+using MeetlyOmni.Api.Data.Entities;
+using MeetlyOmni.Api.Service.AuthService.Interfaces;
+using MeetlyOmni.Api.Service.JwtService;
+
+using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Tokens;
+
+namespace MeetlyOmni.Api.Service.AuthService;
+
+public class JwtTokenService : IJwtTokenService
+{
+    public readonly UserManager<Member> UserManager;
+    public readonly JwtOptions JwtOptions;
+    public readonly SigningCredentials Creds;
+
+    public JwtTokenService(IOptions<JwtOptions> opt, UserManager<Member> userManager)
+    {
+        this.UserManager = userManager;
+        this.JwtOptions = opt.Value;
+        var key = new SymmetricSecurityKey(Convert.FromBase64String(this.JwtOptions.KeyB64));
+        this.Creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+    }
+
+    public async Task<TokenResult> GenerateTokenAsync(Member member)
+    {
+        var now = DateTimeOffset.UtcNow;
+        var expires = now.AddMinutes(this.JwtOptions.AccessTokenExpirationMinutes);
+
+        var claims = new List<Claim>
+        {
+            new (JwtRegisteredClaimNames.Sub, member.Id.ToString()),
+            new (JwtRegisteredClaimNames.Email, member.Email ?? string.Empty),
+            new (JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString("N")),
+            new (JwtRegisteredClaimNames.Iat, now.ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer64),
+            new ("org_id", member.OrgId.ToString()),
+        };
+
+        // add full_name claim if available
+        var userClaims = await this.UserManager.GetClaimsAsync(member);
+        var fullName = userClaims.FirstOrDefault(c => c.Type == "full_name")?.Value;
+        if (!string.IsNullOrWhiteSpace(fullName))
+        {
+            claims.Add(new Claim("full_name", fullName));
+        }
+
+        var roles = await this.UserManager.GetRolesAsync(member);
+        foreach (var role in roles)
+        {
+            claims.Add(new Claim("role", role));
+        }
+
+        var jwt = new JwtSecurityToken(
+            issuer: this.JwtOptions.Issuer,
+            audience: this.JwtOptions.Audience,
+            claims: claims,
+            notBefore: now.UtcDateTime,
+            expires: expires.UtcDateTime,
+            signingCredentials: this.Creds);
+
+        var tokenString = new JwtSecurityTokenHandler().WriteToken(jwt);
+        return new TokenResult(tokenString, expires);
+    }
+}
