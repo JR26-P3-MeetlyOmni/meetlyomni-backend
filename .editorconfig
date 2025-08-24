@@ -101,3 +101,5 @@ dotnet_diagnostic.SA1000.severity = none  # 'new' must be followed by a space (d
 dotnet_diagnostic.SA1009.severity = none
 dotnet_diagnostic.SA1309.severity = none
 dotnet_diagnostic.SA1306.severity = none
+dotnet_diagnostic.SA1101.severity = none   # Prefix local calls with 'this'
+dotnet_diagnostic.IDE0003.severity = none  # Remove 'this' qualification

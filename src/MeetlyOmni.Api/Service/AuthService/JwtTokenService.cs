@@ -24,16 +24,16 @@ public class JwtTokenService : IJwtTokenService
 
     public JwtTokenService(IOptions<JwtOptions> opt, UserManager<Member> userManager)
     {
-        this._userManager = userManager;
-        this._jwtOptions = opt.Value;
-        var key = new SymmetricSecurityKey(Convert.FromBase64String(this._jwtOptions.KeyB64));
-        this._creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+        _userManager = userManager;
+        _jwtOptions = opt.Value;
+        var key = new SymmetricSecurityKey(Convert.FromBase64String(_jwtOptions.KeyB64));
+        _creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
     }
 
     public async Task<TokenResult> GenerateTokenAsync(Member member)
     {
         var now = DateTimeOffset.UtcNow;
-        var expires = now.AddMinutes(this._jwtOptions.AccessTokenExpirationMinutes);
+        var expires = now.AddMinutes(_jwtOptions.AccessTokenExpirationMinutes);
 
         var claims = new List<Claim>
         {
@@ -45,26 +45,26 @@ public class JwtTokenService : IJwtTokenService
         };
 
         // add full_name claim if available
-        var userClaims = await this._userManager.GetClaimsAsync(member);
+        var userClaims = await _userManager.GetClaimsAsync(member);
         var fullName = userClaims.FirstOrDefault(c => c.Type == "full_name")?.Value;
         if (!string.IsNullOrWhiteSpace(fullName))
         {
             claims.Add(new Claim("full_name", fullName));
         }
 
-        var roles = await this._userManager.GetRolesAsync(member);
+        var roles = await _userManager.GetRolesAsync(member);
         foreach (var role in roles)
         {
             claims.Add(new Claim("role", role));
         }
 
         var jwt = new JwtSecurityToken(
-            issuer: this._jwtOptions.Issuer,
-            audience: this._jwtOptions.Audience,
+            issuer: _jwtOptions.Issuer,
+            audience: _jwtOptions.Audience,
             claims: claims,
             notBefore: now.UtcDateTime,
             expires: expires.UtcDateTime,
-            signingCredentials: this._creds);
+            signingCredentials: _creds);
 
         var tokenString = new JwtSecurityTokenHandler().WriteToken(jwt);
         return new TokenResult(tokenString, expires);
