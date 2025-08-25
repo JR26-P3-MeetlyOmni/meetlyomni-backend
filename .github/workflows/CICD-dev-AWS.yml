@@ -108,13 +108,13 @@ jobs:
           aws-region: ${{ env.AWS_REGION }}
 
       # 方式A：用上游产物
-      - name: Pick image uri from previous job
-        id: img
-        run: echo "uri=${{ needs.build_and_push_image.outputs.image_uri }}" >> "$GITHUB_OUTPUT"
-
-      # 方式B（可选）：自己拼（ECR_URI 设成环境变量即可）
-      # - run: echo "uri=${ECR_URI}:${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+      # - name: Pick image uri from previous job
       #   id: img
+      #   run: echo "uri=${{ needs.build_and_push_image.outputs.image_uri }}" >> "$GITHUB_OUTPUT"
+
+      - name: Generate Image URI
+        id: img
+        run: echo "uri=${ECR_URI}:${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
 
       - name: Render task definition with new image
         id: render
