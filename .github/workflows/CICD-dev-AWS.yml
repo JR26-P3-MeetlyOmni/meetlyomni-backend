@@ -87,18 +87,17 @@ jobs:
           TAG_SHA=${GITHUB_SHA::7}
           docker push "${{ env.ECR_URI }}:${TAG_SHA}"
           docker push "${{ env.ECR_URI }}:${{ env.TAG_ENV }}"
-
-  update_ecs_image:
+  deploy_ecs:
     runs-on: ubuntu-latest
     needs: build_and_push_image
-    environment: dev
+    env:
+      CONTAINER_NAME: app # 对应 taskdef.json 里的 name
     permissions:
       id-token: write
       contents: read
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Configure AWS credentials (OIDC)
         uses: aws-actions/configure-aws-credentials@v4
@@ -106,60 +105,27 @@ jobs:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Compute tag/meta
-        id: meta
-        run: |
-          echo "tag_sha=${GITHUB_SHA::7}" >> $GITHUB_OUTPUT
-          echo "image_uri=${{ env.ECR_URI }}:${GITHUB_SHA::7}" >> $GITHUB_OUTPUT
+      # 方式A：用上游产物
+      - name: Pick image uri from previous job
+        id: img
+        run: echo "uri=${{ needs.build_and_push_image.outputs.image_uri }}" >> "$GITHUB_OUTPUT"
 
-      # 可选：等待镜像出现在 ECR 中（如果你想加上）
-      # - name: Wait for image in ECR (optional)
-      #   run: |
-      #     for i in {1..12}; do
-      #       if aws ecr describe-images \
-      #            --repository-name "${{ env.ECR_REPO }}" \
-      #            --image-ids imageTag="${{ steps.meta.outputs.tag_sha }}" >/dev/null 2>&1; then
-      #         echo "Image found: ${{ env.ECR_REPO }}:${{ steps.meta.outputs.tag_sha }}"
-      #         exit 0
-      #       fi
-      #       echo "Waiting for image ... ($i/12)"; sleep 5
-      #     done
-      #     echo "Image not found in time"; exit 1
+      # 方式B（可选）：自己拼（ECR_URI 设成环境变量即可）
+      # - run: echo "uri=${ECR_URI}:${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+      #   id: img
 
-      - name: Export current task definition
-        run: |
-          aws ecs describe-task-definition \
-            --task-definition "${{ env.ECS_TASK_FAMILY }}" \
-            --query taskDefinition > td.json
+      - name: Render task definition with new image
+        id: render
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: taskdef.json
+          container-name: ${{ env.CONTAINER_NAME }}
+          image: ${{ steps.img.outputs.uri }}
 
-      - name: Register new task definition revision
-        run: |
-          jq --arg IMAGE "${{ steps.meta.outputs.image_uri }}" '
-            .containerDefinitions[0].image = $IMAGE
-            | .containerDefinitions[0].environment += [
-                {"name":"APP_VERSION","value":"'${{ steps.meta.outputs.tag_sha }}'"},
-                {"name":"BUILD_TIME","value":"'"$(date -u +%FT%TZ)"'"}
-              ]
-            | del(.taskDefinitionArn,.revision,.requiresAttributes,.registeredAt,.registeredBy,.compatibilities,.status)
-          ' td.json > td-new.json
-
-          TD_ARN=$(aws ecs register-task-definition \
-            --cli-input-json file://td-new.json \
-            --query 'taskDefinition.taskDefinitionArn' \
-            --output text)   
-          echo "TD_ARN=$TD_ARN" >> $GITHUB_ENV
-          echo "New Task Definition: $TD_ARN"
-
-      - name: Update ECS service
-        run: |
-          aws ecs update-service \
-            --cluster "${{ env.ECS_CLUSTER }}" \
-            --service "${{ env.ECS_SERVICE }}" \
-            --task-definition "$TD_ARN"
-
-      - name: Wait service stable (optional)
-        run: |
-          aws ecs wait services-stable \
-            --cluster "${{ env.ECS_CLUSTER }}" \
-            --services "${{ env.ECS_SERVICE }}"
-          echo "ECS service is stable"
+      - name: Deploy to ECS service (rolling update)
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+        with:
+          task-definition: ${{ steps.render.outputs.task-definition }}
+          service: ${{ env.ECS_SERVICE }}
+          cluster: ${{ env.ECS_CLUSTER }}
+          wait-for-service-stability: true
