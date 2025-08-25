@@ -47,7 +47,9 @@ public class JwtKeyProvider : IJwtKeyProvider
             try
             {
                 var keyBytes = Convert.FromBase64String(base64Key);
-                if (keyBytes.Length < 32) // 256 bits minimum for security
+
+                // 256 bits minimum for security
+                if (keyBytes.Length < 32)
                 {
                     throw new InvalidOperationException($"JWT signing key must be at least 256 bits (32 bytes). Current key is {keyBytes.Length * 8} bits.");
                 }
