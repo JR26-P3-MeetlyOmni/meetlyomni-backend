@@ -8,7 +8,7 @@
   "memory": "512",
   "containerDefinitions": [
     {
-      "name": "app",
+      "name": "api",
       "image": "public.ecr/image",
       "essential": true,
       "portMappings": [{ "containerPort": 80, "protocol": "tcp" }]
