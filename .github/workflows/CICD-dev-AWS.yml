@@ -1,0 +1,164 @@
+name: CICD-Dev-AWS
+
+on:
+  push:
+    branches: [dev, devops/leonard]
+  pull_request:
+    branches: [dev]
+  workflow_dispatch:
+
+env:
+  DOTNET_VERSION: 8.0
+  SOLUTION_PATH: ./MeetlyOmni.sln
+  API_PROJECT: src/MeetlyOmni.Api/MeetlyOmni.Api.csproj
+  DOCKERFILE: ./src/MeetlyOmni.Api/Dockerfile-2
+  CONTEXT: .
+  TAG_ENV: dev
+  REPO: meetlyomni-backend
+  ECR_URI: 034362033405.dkr.ecr.ap-southeast-2.amazonaws.com/meetlyomni-backend
+  ECR_REPO: meetlyomni-backend
+  AWS_REGION: ap-southeast-2
+  ECS_TASK_FAMILY: meetlyomniapi-task
+  ECS_CLUSTER: meetlyomniapi-cluster
+  ECS_SERVICE: meetlyomniapi-cluster
+
+jobs:
+  CI:
+    runs-on: ubuntu-latest
+    environment: dev
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+          # cache: true
+
+      - name: Restore
+        run: dotnet restore ${{ env.SOLUTION_PATH }}
+
+      - name: Build
+        run: dotnet build ${{ env.SOLUTION_PATH }} -c Release --no-restore
+
+      - name: Test (unit)
+        run: dotnet test src/MeetlyOmni.Unit.tests/MeetlyOmni.Unit.tests.csproj -c Release --no-build
+
+      - name: Test (integration)
+        env:
+          BASE_URL: http://localhost:7011
+        run: dotnet test src/MeetlyOmni.IntegrationTests/MeetlyOmni.IntegrationTests.csproj -c Release --no-build
+        continue-on-error: true
+
+  build_and_push_image:
+    runs-on: ubuntu-latest
+
+    environment: dev
+    needs: CI
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials via OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build Docker image
+        run: |
+          TAG_SHA=${GITHUB_SHA::7}
+          docker build \
+            -f "${{ env.DOCKERFILE }}" \
+            -t "${{ env.ECR_URI }}:${TAG_SHA}" \
+            -t "${{ env.ECR_URI }}:${{ env.TAG_ENV }}" \
+            "${{ env.CONTEXT }}"
+
+      - name: Push Docker images
+        run: |
+          TAG_SHA=${GITHUB_SHA::7}
+          docker push "${{ env.ECR_URI }}:${TAG_SHA}"
+          docker push "${{ env.ECR_URI }}:${{ env.TAG_ENV }}"
+
+  update_ecs_image:
+    runs-on: ubuntu-latest
+    needs: build_and_push_image
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Compute tag/meta
+        id: meta
+        run: |
+          echo "tag_sha=${GITHUB_SHA::7}" >> $GITHUB_OUTPUT
+          echo "image_uri=${{ env.ECR_URI }}:${GITHUB_SHA::7}" >> $GITHUB_OUTPUT
+
+      - name: Wait for image in ECR
+        run: |
+          for i in {1..12}; do
+            if aws ecr describe-images \
+              --repository-name "${{ env.ECR_REPO }}" \
+              --image-ids imageTag="${{ steps.meta.outputs.tag_sha }}" >/dev/null 2>&1; then
+              echo "Image found: ${{ env.ECR_REPO }}:${{ steps.meta.outputs.tag_sha }}"
+              exit 0
+            fi
+            echo "Waiting for image ${{ env.ECR_REPO }}:${{ steps.meta.outputs.tag_sha }}... ($i/12)"
+            sleep 5
+          done
+          echo "Image not found in time"; exit 1
+
+      - name: Export current task definition
+        run: |
+          aws ecs describe-task-definition \
+            --task-definition "${{ env.ECS_TASK_FAMILY }}" \
+            --query taskDefinition > td.json
+
+      - name: Register new task definition revision
+        run: |
+          jq --arg IMAGE "${{ steps.meta.outputs.image_uri }}" '
+            .containerDefinitions[0].image = $IMAGE
+            | .containerDefinitions[0].environment += [
+                {"name":"APP_VERSION","value":"'${{ steps.meta.outputs.tag_sha }}'"},
+                {"name":"BUILD_TIME","value":"'"$(date -u +%FT%TZ)"'"}
+              ]
+            | del(.taskDefinitionArn,.revision,.requiresAttributes,.registeredAt,.registeredBy,.compatibilities,.status)
+          ' td.json > td-new.json
+
+          TD_ARN=$(aws ecs register-task-definition \
+            --cli-input-json file://td-new.json \
+            --query taskDefinition.taskDefinitionArn -o text)
+          echo "TD_ARN=$TD_ARN" >> $GITHUB_ENV
+          echo "New Task Definition: $TD_ARN"
+
+      - name: Update ECS service
+        run: |
+          aws ecs update-service \
+            --cluster "${{ env.ECS_CLUSTER }}" \
+            --service "${{ env.ECS_SERVICE }}" \
+            --task-definition "$TD_ARN"
+
+      - name: Wait service stable (optional)
+        run: |
+          aws ecs wait services-stable \
+            --cluster "${{ env.ECS_CLUSTER }}" \
+            --services "${{ env.ECS_SERVICE }}"
+          echo " ECS service is stable"
+
