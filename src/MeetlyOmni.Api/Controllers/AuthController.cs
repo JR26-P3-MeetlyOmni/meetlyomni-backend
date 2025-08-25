@@ -44,7 +44,29 @@ public class AuthController : ControllerBase
         try
         {
             var response = await _authService.LoginAsync(request);
-            return Ok(response);
+
+            // Set JWT token in HttpOnly cookie
+            var cookieOptions = new CookieOptions
+            {
+                HttpOnly = true, // Prevent XSS attacks
+                Secure = !HttpContext.RequestServices.GetRequiredService<IWebHostEnvironment>().IsDevelopment(), // Only HTTPS in production
+                SameSite = SameSiteMode.Strict, // CSRF protection
+                Expires = response.ExpiresAt,
+                Path = "/",
+            };
+
+            Response.Cookies.Append("access_token", response.AccessToken, cookieOptions);
+
+            // Return response without the token (since it's now in cookie)
+            var cookieResponse = new LoginResponse
+            {
+                ExpiresAt = response.ExpiresAt,
+                TokenType = response.TokenType,
+
+                // AccessToken is intentionally omitted for cookie-based auth
+            };
+
+            return Ok(cookieResponse);
         }
         catch (UnauthorizedAccessException ex)
         {
@@ -64,5 +86,28 @@ public class AuthController : ControllerBase
                 detail: "An unexpected error occurred",
                 statusCode: StatusCodes.Status500InternalServerError);
         }
+    }
+
+    /// <summary>
+    /// Test endpoint to verify authentication via cookie is working.
+    /// </summary>
+    /// <returns>Current user information.</returns>
+    [HttpGet("me")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public IActionResult GetCurrentUser()
+    {
+        var userId = User.FindFirst("sub")?.Value;
+        var email = User.FindFirst("email")?.Value;
+        var orgId = User.FindFirst("org_id")?.Value;
+
+        return Ok(new
+        {
+            userId,
+            email,
+            orgId,
+            message = "Authentication via cookie is working!",
+        });
     }
 }

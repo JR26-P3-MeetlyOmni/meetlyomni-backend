@@ -12,11 +12,8 @@ using MeetlyOmni.Api.Mapping;
 using MeetlyOmni.Api.Service.AuthService;
 using MeetlyOmni.Api.Service.AuthService.Interfaces;
 
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Metadata.Internal;
-using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -49,70 +46,7 @@ builder.Services.AddApplicationIdentity();
 builder.Services.AddSingleton<IJwtKeyProvider, JwtKeyProvider>();
 
 // JWT Authentication Configuration
-builder.Services.AddAuthentication(options =>
-{
-    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-})
-.AddJwtBearer(options =>
-{
-    // Get configuration first
-    var jwtConfig = builder.Configuration.GetSection("Jwt").Get<JwtOptions>();
-    if (jwtConfig == null)
-    {
-        throw new InvalidOperationException("JWT configuration is missing or invalid.");
-    }
-
-    // Configure basic validation parameters
-    options.TokenValidationParameters = new TokenValidationParameters
-    {
-        ValidateIssuer = true,
-        ValidateAudience = true,
-        ValidateLifetime = true,
-        ValidateIssuerSigningKey = true,
-        ValidIssuer = jwtConfig.Issuer,
-        ValidAudience = jwtConfig.Audience,
-        ClockSkew = TimeSpan.FromMinutes(1),
-        RequireExpirationTime = true,
-        RequireSignedTokens = true,
-
-        // IssuerSigningKey will be set in events below
-    };
-
-    // improved event handling
-    options.Events = new JwtBearerEvents
-    {
-        OnMessageReceived = context =>
-        {
-            // Set the signing key at runtime to avoid BuildServiceProvider
-            var keyProvider = context.HttpContext.RequestServices.GetRequiredService<IJwtKeyProvider>();
-            context.Options.TokenValidationParameters.IssuerSigningKey = keyProvider.GetValidationKey();
-            return Task.CompletedTask;
-        },
-        OnAuthenticationFailed = context =>
-        {
-            var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>();
-            if (context.Exception is SecurityTokenExpiredException ste)
-            {
-                logger.LogWarning("JWT authentication failed: token expired at {Expires}.", ste.Expires);
-            }
-            else
-            {
-                logger.LogWarning("JWT authentication failed: {ErrorType}.", context.Exception.GetType().Name);
-            }
-
-            return Task.CompletedTask;
-        },
-        OnTokenValidated = context =>
-        {
-            var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>();
-            logger.LogDebug(
-                "JWT token validated for user: {UserId}",
-                context.Principal?.FindFirst("sub")?.Value);
-            return Task.CompletedTask;
-        },
-    };
-});
+builder.Services.AddJwtAuthentication(builder.Configuration);
 
 // ---- Repositories ----
 
@@ -124,39 +58,13 @@ builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
 builder.Services.AddHealthChecks()
     .AddNpgSql(connectionString);
 
+// CORS Configuration for cookie support
+builder.Services.AddCorsWithCookieSupport();
+
 builder.Services.AddControllers();
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen(c =>
-{
-    c.SwaggerDoc("v1", new() { Title = "MeetlyOmni API", Version = "v1" });
 
-    // jwt auth config
-    var bearerSecurityScheme = new Microsoft.OpenApi.Models.OpenApiSecurityScheme
-    {
-        Description = "JWT Authorization header using the Bearer scheme. Example: \"Authorization: Bearer {token}\"",
-        Name = "Authorization",
-        In = Microsoft.OpenApi.Models.ParameterLocation.Header,
-        Type = Microsoft.OpenApi.Models.SecuritySchemeType.Http,
-        Scheme = "bearer",
-        BearerFormat = "JWT",
-    };
-    c.AddSecurityDefinition("Bearer", bearerSecurityScheme);
-
-    c.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement
-    {
-        {
-            new Microsoft.OpenApi.Models.OpenApiSecurityScheme
-            {
-                Reference = new Microsoft.OpenApi.Models.OpenApiReference
-                {
-                    Type = Microsoft.OpenApi.Models.ReferenceType.SecurityScheme,
-                    Id = "Bearer",
-                },
-            },
-            Array.Empty<string>()
-        },
-    });
-});
+// Swagger Configuration
+builder.Services.AddSwaggerWithJwtAuth();
 
 // Register AutoMapper and scan for profiles starting from MappingProfile's assembly
 builder.Services.AddAutoMapper(typeof(MappingProfile));
@@ -174,6 +82,9 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+// Enable CORS
+app.UseCors();
 
 // security headers
 app.Use(async (context, next) =>
