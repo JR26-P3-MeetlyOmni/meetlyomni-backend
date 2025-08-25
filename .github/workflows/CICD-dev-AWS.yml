@@ -87,9 +87,11 @@ jobs:
           TAG_SHA=${GITHUB_SHA::7}
           docker push "${{ env.ECR_URI }}:${TAG_SHA}"
           docker push "${{ env.ECR_URI }}:${{ env.TAG_ENV }}"
+
   deploy_ecs:
     runs-on: ubuntu-latest
     needs: build_and_push_image
+    environment: dev
     env:
       CONTAINER_NAME: app # 对应 taskdef.json 里的 name
     permissions:
@@ -129,3 +131,4 @@ jobs:
           service: ${{ env.ECS_SERVICE }}
           cluster: ${{ env.ECS_CLUSTER }}
           wait-for-service-stability: true
+
