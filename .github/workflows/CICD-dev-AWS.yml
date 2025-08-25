@@ -112,17 +112,17 @@ jobs:
           echo "tag_sha=${GITHUB_SHA::7}" >> $GITHUB_OUTPUT
           echo "image_uri=${{ env.ECR_URI }}:${GITHUB_SHA::7}" >> $GITHUB_OUTPUT
 
-      # - name: Wait for image in ECR
+      # 可选：等待镜像出现在 ECR 中（如果你想加上）
+      # - name: Wait for image in ECR (optional)
       #   run: |
       #     for i in {1..12}; do
       #       if aws ecr describe-images \
-      #         --repository-name "${{ env.ECR_REPO }}" \
-      #         --image-ids imageTag="${{ steps.meta.outputs.tag_sha }}" >/dev/null 2>&1; then
+      #            --repository-name "${{ env.ECR_REPO }}" \
+      #            --image-ids imageTag="${{ steps.meta.outputs.tag_sha }}" >/dev/null 2>&1; then
       #         echo "Image found: ${{ env.ECR_REPO }}:${{ steps.meta.outputs.tag_sha }}"
       #         exit 0
       #       fi
-      #       echo "Waiting for image ${{ env.ECR_REPO }}:${{ steps.meta.outputs.tag_sha }}... ($i/12)"
-      #       sleep 5
+      #       echo "Waiting for image ... ($i/12)"; sleep 5
       #     done
       #     echo "Image not found in time"; exit 1
 
@@ -145,7 +145,8 @@ jobs:
 
           TD_ARN=$(aws ecs register-task-definition \
             --cli-input-json file://td-new.json \
-            --query taskDefinition.taskDefinitionArn -o text)
+            --query 'taskDefinition.taskDefinitionArn' \
+            --output text)   
           echo "TD_ARN=$TD_ARN" >> $GITHUB_ENV
           echo "New Task Definition: $TD_ARN"
 
@@ -161,5 +162,4 @@ jobs:
           aws ecs wait services-stable \
             --cluster "${{ env.ECS_CLUSTER }}" \
             --services "${{ env.ECS_SERVICE }}"
-          echo " ECS service is stable"
-
+          echo "ECS service is stable"
