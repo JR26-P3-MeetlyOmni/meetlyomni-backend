@@ -32,8 +32,8 @@ public class TokenService : ITokenService
     private readonly ILogger<TokenService> _logger;
 
     // Token settings
-    private const int RefreshTokenExpirationDays = 30;
-    private const int RefreshTokenLength = 32;
+    private const int _refreshTokenExpirationDays = 30;
+    private const int _refreshTokenLength = 32;
 
     public TokenService(
         UserManager<Member> userManager,
@@ -64,7 +64,7 @@ public class TokenService : ITokenService
         var tokenFamilyId = familyId ?? Guid.NewGuid();
         var refreshTokenValue = GenerateRandomToken();
         var refreshTokenHash = ComputeHash(refreshTokenValue);
-        var refreshTokenExpires = DateTimeOffset.UtcNow.AddDays(RefreshTokenExpirationDays);
+        var refreshTokenExpires = DateTimeOffset.UtcNow.AddDays(_refreshTokenExpirationDays);
 
         // Store refresh token
         var refreshToken = new RefreshToken
@@ -244,7 +244,7 @@ public class TokenService : ITokenService
     private static string GenerateRandomToken()
     {
         using var rng = RandomNumberGenerator.Create();
-        var bytes = new byte[RefreshTokenLength];
+        var bytes = new byte[_refreshTokenLength];
         rng.GetBytes(bytes);
         return Convert.ToBase64String(bytes);
     }
