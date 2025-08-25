@@ -1,8 +1,8 @@
 name: CI-Dev-Azure
 
 on:
-  push:
-    branches: [dev, devops/leonard]
+  # push:
+  #   branches: [dev, devops/leonard]
   workflow_dispatch:
 
 permissions:
