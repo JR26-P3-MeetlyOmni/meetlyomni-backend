@@ -24,16 +24,16 @@ namespace MeetlyOmni.Api.Service.AuthService;
 /// </summary>
 public class TokenService : ITokenService
 {
+    // Token settings
+    private const int _refreshTokenExpirationDays = 30;
+    private const int _refreshTokenLength = 32;
+
     private readonly UserManager<Member> _userManager;
     private readonly IUnitOfWork _unitOfWork;
     private readonly JwtOptions _jwtOptions;
     private readonly SigningCredentials _signingCredentials;
     private readonly JwtSecurityTokenHandler _tokenHandler = new();
     private readonly ILogger<TokenService> _logger;
-
-    // Token settings
-    private const int _refreshTokenExpirationDays = 30;
-    private const int _refreshTokenLength = 32;
 
     public TokenService(
         UserManager<Member> userManager,
