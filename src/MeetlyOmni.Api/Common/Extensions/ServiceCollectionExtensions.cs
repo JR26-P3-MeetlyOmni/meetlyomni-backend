@@ -2,6 +2,9 @@
 // Copyright (c) MeetlyOmni. All rights reserved.
 // </copyright>
 
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+
 using MeetlyOmni.Api.Common.Options;
 using MeetlyOmni.Api.Service.AuthService.Interfaces;
 
@@ -32,13 +35,6 @@ public static class ServiceCollectionExtensions
         })
         .AddJwtBearer(options =>
         {
-            // Get configuration first
-            var jwtConfig = configuration.GetSection("Jwt").Get<JwtOptions>();
-            if (jwtConfig == null)
-            {
-                throw new InvalidOperationException("JWT configuration is missing or invalid.");
-            }
-
             // Configure basic validation parameters
             options.TokenValidationParameters = new TokenValidationParameters
             {
@@ -46,13 +42,16 @@ public static class ServiceCollectionExtensions
                 ValidateAudience = true,
                 ValidateLifetime = true,
                 ValidateIssuerSigningKey = true,
-                ValidIssuer = jwtConfig.Issuer,
-                ValidAudience = jwtConfig.Audience,
                 ClockSkew = TimeSpan.FromMinutes(1),
                 RequireExpirationTime = true,
                 RequireSignedTokens = true,
 
+                // Map standard JWT claims to expected claim types
+                NameClaimType = JwtRegisteredClaimNames.Sub,
+                RoleClaimType = ClaimTypes.Role,
+
                 // IssuerSigningKey will be set in events below
+                // ValidIssuer and ValidAudience will be set in events to use injected options
             };
 
             // Improved event handling with cookie support
@@ -63,6 +62,11 @@ public static class ServiceCollectionExtensions
                     // Set the signing key at runtime to avoid BuildServiceProvider
                     var keyProvider = context.HttpContext.RequestServices.GetRequiredService<IJwtKeyProvider>();
                     context.Options.TokenValidationParameters.IssuerSigningKey = keyProvider.GetValidationKey();
+
+                    // Set issuer and audience from injected options to ensure consistency
+                    var jwtOptions = context.HttpContext.RequestServices.GetRequiredService<Microsoft.Extensions.Options.IOptions<JwtOptions>>();
+                    context.Options.TokenValidationParameters.ValidIssuer = jwtOptions.Value.Issuer;
+                    context.Options.TokenValidationParameters.ValidAudience = jwtOptions.Value.Audience;
 
                     // Check for JWT token in Authorization header first (standard bearer token)
                     if (string.IsNullOrEmpty(context.Token))
@@ -82,6 +86,10 @@ public static class ServiceCollectionExtensions
                     if (context.Exception is SecurityTokenExpiredException ste)
                     {
                         logger.LogWarning("JWT authentication failed: token expired at {Expires}.", ste.Expires);
+                    }
+                    else if (context.Exception is Microsoft.IdentityModel.Tokens.SecurityTokenInvalidAudienceException)
+                    {
+                        logger.LogError("JWT authentication failed: Invalid audience");
                     }
                     else
                     {

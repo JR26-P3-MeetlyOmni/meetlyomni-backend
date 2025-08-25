@@ -3,6 +3,7 @@
 // </copyright>
 
 using System.Buffers.Text;
+using System.IdentityModel.Tokens.Jwt;
 
 using MeetlyOmni.Api.Common.Extensions;
 using MeetlyOmni.Api.Common.Options;
@@ -11,11 +12,18 @@ using MeetlyOmni.Api.Data.Entities;
 using MeetlyOmni.Api.Mapping;
 using MeetlyOmni.Api.Service.AuthService;
 using MeetlyOmni.Api.Service.AuthService.Interfaces;
+using MeetlyOmni.Api.Service.Common;
+using MeetlyOmni.Api.Service.Common.Interfaces;
 
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
+using Npgsql;
+
 var builder = WebApplication.CreateBuilder(args);
+
+// Clear default JWT claim mappings to use standard claim names
+JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear();
 
 // Logging config (optional, but recommended)
 builder.Logging.ClearProviders();
@@ -29,12 +37,20 @@ if (string.IsNullOrEmpty(connectionString))
     throw new InvalidOperationException("Database connection string 'MeetlyOmniDb' is not configured.");
 }
 
-// PostgreSQL DbContext
+// setup DataSource and start using Dynamic JSONS
+var dsBuilder = new NpgsqlDataSourceBuilder(connectionString);
+
+// key point, start Dynamic  JSON
+dsBuilder.EnableDynamicJson();
+
+var dataSource = dsBuilder.Build();
+
+// ---- DbContext ----
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseNpgsql(connectionString));
+    options.UseNpgsql(dataSource));
 
 // JWT Options Configuration
-builder.Services.AddOptions<JwtOptions>(JwtOptions.SectionName)
+builder.Services.AddOptions<JwtOptions>()
         .BindConfiguration(JwtOptions.SectionName)
         .ValidateDataAnnotations()
         .ValidateOnStart();
@@ -51,8 +67,11 @@ builder.Services.AddJwtAuthentication(builder.Configuration);
 // ---- Repositories ----
 
 // ---- Application Services ----
-builder.Services.AddScoped<IAuthService, AuthService>();
-builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
+builder.Services.AddScoped<ILoginService, LoginService>();
+builder.Services.AddScoped<ITokenService, TokenService>();
+
+// ---- Common Services ----
+builder.Services.AddScoped<IClientInfoService, ClientInfoService>();
 
 // Health Check
 builder.Services.AddHealthChecks()

@@ -21,6 +21,8 @@ public class ApplicationDbContext : IdentityDbContext<Member, ApplicationRole, G
 
     public DbSet<MemberActivityLog> MemberActivityLogs { get; set; }
 
+    public DbSet<RefreshToken> RefreshTokens { get; set; }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         // Apply the base configurations first

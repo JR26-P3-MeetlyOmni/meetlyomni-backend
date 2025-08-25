@@ -1,25 +1,34 @@
-﻿// <copyright file="AuthController.cs" company="MeetlyOmni">
+// <copyright file="LoginController.cs" company="MeetlyOmni">
 // Copyright (c) MeetlyOmni. All rights reserved.
 // </copyright>
 
 using MeetlyOmni.Api.Models.Auth;
 using MeetlyOmni.Api.Service.AuthService.Interfaces;
+using MeetlyOmni.Api.Service.Common.Interfaces;
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace MeetlyOmni.Api.Controllers;
 
+/// <summary>
+/// Controller responsible for user login operations.
+/// </summary>
 [Route("api/[controller]")]
 [ApiController]
-public class AuthController : ControllerBase
+public class LoginController : ControllerBase
 {
-    private readonly IAuthService _authService;
-    private readonly ILogger<AuthController> _logger;
+    private readonly ILoginService _loginService;
+    private readonly IClientInfoService _clientInfoService;
+    private readonly ILogger<LoginController> _logger;
 
-    public AuthController(IAuthService authService, ILogger<AuthController> logger)
+    public LoginController(
+        ILoginService loginService,
+        IClientInfoService clientInfoService,
+        ILogger<LoginController> logger)
     {
-        _authService = authService;
+        _loginService = loginService;
+        _clientInfoService = clientInfoService;
         _logger = logger;
     }
 
@@ -28,7 +37,7 @@ public class AuthController : ControllerBase
     /// </summary>
     /// <param name="request">The login request containing email and password.</param>
     /// <returns>A <see cref="Task{IActionResult}"/> representing the asynchronous operation.</returns>
-    [HttpPost("login")]
+    [HttpPost]
     [AllowAnonymous]
     [ProducesResponseType(typeof(LoginResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
@@ -43,27 +52,42 @@ public class AuthController : ControllerBase
 
         try
         {
-            var response = await _authService.LoginAsync(request);
+            // Get client information for security tracking
+            var (userAgent, ipAddress) = _clientInfoService.GetClientInfo(HttpContext);
 
-            // Set JWT token in HttpOnly cookie
-            var cookieOptions = new CookieOptions
+            var response = await _loginService.LoginAsync(request, userAgent, ipAddress);
+
+            var isDevelopment = HttpContext.RequestServices
+                .GetRequiredService<IWebHostEnvironment>().IsDevelopment();
+
+            // Set Access Token in HttpOnly cookie
+            var atCookieOptions = new CookieOptions
             {
                 HttpOnly = true, // Prevent XSS attacks
-                Secure = !HttpContext.RequestServices.GetRequiredService<IWebHostEnvironment>().IsDevelopment(), // Only HTTPS in production
+                Secure = !isDevelopment, // Only HTTPS in production
                 SameSite = SameSiteMode.Strict, // CSRF protection
                 Expires = response.ExpiresAt,
                 Path = "/",
             };
 
-            Response.Cookies.Append("access_token", response.AccessToken, cookieOptions);
+            // Set Refresh Token in HttpOnly cookie with restricted path
+            var rtCookieOptions = new CookieOptions
+            {
+                HttpOnly = true, // Prevent XSS attacks
+                Secure = !isDevelopment, // Only HTTPS in production
+                SameSite = SameSiteMode.Strict, // CSRF protection
+                Expires = response.RefreshTokenExpiresAt,
+                Path = "/api/Token", // Minimize exposure to token endpoints only
+            };
 
-            // Return response without the token (since it's now in cookie)
+            Response.Cookies.Append("access_token", response.AccessToken, atCookieOptions);
+            Response.Cookies.Append("refresh_token", response.RefreshToken, rtCookieOptions);
+
+            // Return response without any token information (tokens are in cookies)
             var cookieResponse = new LoginResponse
             {
                 ExpiresAt = response.ExpiresAt,
                 TokenType = response.TokenType,
-
-                // AccessToken is intentionally omitted for cookie-based auth
             };
 
             return Ok(cookieResponse);
@@ -86,28 +110,5 @@ public class AuthController : ControllerBase
                 detail: "An unexpected error occurred",
                 statusCode: StatusCodes.Status500InternalServerError);
         }
-    }
-
-    /// <summary>
-    /// Test endpoint to verify authentication via cookie is working.
-    /// </summary>
-    /// <returns>Current user information.</returns>
-    [HttpGet("me")]
-    [Authorize]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public IActionResult GetCurrentUser()
-    {
-        var userId = User.FindFirst("sub")?.Value;
-        var email = User.FindFirst("email")?.Value;
-        var orgId = User.FindFirst("org_id")?.Value;
-
-        return Ok(new
-        {
-            userId,
-            email,
-            orgId,
-            message = "Authentication via cookie is working!",
-        });
     }
 }

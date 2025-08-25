@@ -4,4 +4,8 @@
 
 namespace MeetlyOmni.Api.Models.Auth;
 
-public record TokenResult(string accessToken, DateTimeOffset expiresAt);
+public record TokenResult(
+    string accessToken,
+    DateTimeOffset accessTokenExpiresAt,
+    string refreshToken,
+    DateTimeOffset refreshTokenExpiresAt);
