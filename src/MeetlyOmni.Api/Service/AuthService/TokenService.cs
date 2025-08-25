@@ -8,13 +8,12 @@ using System.Security.Cryptography;
 using System.Text;
 
 using MeetlyOmni.Api.Common.Options;
-using MeetlyOmni.Api.Data;
 using MeetlyOmni.Api.Data.Entities;
+using MeetlyOmni.Api.Data.Repository.Interfaces;
 using MeetlyOmni.Api.Models.Auth;
 using MeetlyOmni.Api.Service.AuthService.Interfaces;
 
 using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 
@@ -26,7 +25,7 @@ namespace MeetlyOmni.Api.Service.AuthService;
 public class TokenService : ITokenService
 {
     private readonly UserManager<Member> _userManager;
-    private readonly ApplicationDbContext _context;
+    private readonly IUnitOfWork _unitOfWork;
     private readonly JwtOptions _jwtOptions;
     private readonly SigningCredentials _signingCredentials;
     private readonly JwtSecurityTokenHandler _tokenHandler = new();
@@ -38,13 +37,13 @@ public class TokenService : ITokenService
 
     public TokenService(
         UserManager<Member> userManager,
-        ApplicationDbContext context,
+        IUnitOfWork unitOfWork,
         IOptions<JwtOptions> jwtOptions,
         IJwtKeyProvider keyProvider,
         ILogger<TokenService> logger)
     {
         _userManager = userManager;
-        _context = context;
+        _unitOfWork = unitOfWork;
         _jwtOptions = jwtOptions.Value;
         _logger = logger;
 
@@ -80,8 +79,9 @@ public class TokenService : ITokenService
             IpAddress = ipAddress,
         };
 
-        _context.RefreshTokens.Add(refreshToken);
-        await _context.SaveChangesAsync();
+        // Add to repository and save atomically
+        _unitOfWork.RefreshTokens.Add(refreshToken);
+        await _unitOfWork.SaveChangesAsync();
 
         return new TokenResult(
             accessToken,
@@ -136,10 +136,7 @@ public class TokenService : ITokenService
         string ipAddress)
     {
         var tokenHash = ComputeHash(refreshToken);
-
-        var storedToken = await _context.RefreshTokens
-            .Include(rt => rt.User)
-            .FirstOrDefaultAsync(rt => rt.TokenHash == tokenHash);
+        var storedToken = await _unitOfWork.RefreshTokens.FindByHashAsync(tokenHash);
 
         if (storedToken == null)
         {
@@ -155,8 +152,14 @@ public class TokenService : ITokenService
                 storedToken.UserId,
                 storedToken.FamilyId);
 
-            // Revoke all tokens in this family
-            await RevokeTokenFamilyAsync(storedToken.FamilyId);
+            // Revoke all tokens in this family and save
+            var revokedCount = await _unitOfWork.RefreshTokens.MarkTokenFamilyAsRevokedAsync(storedToken.FamilyId);
+            await _unitOfWork.SaveChangesAsync();
+
+            _logger.LogWarning(
+                "Revoked {Count} tokens in family {FamilyId} due to reuse detection",
+                revokedCount,
+                storedToken.FamilyId);
             throw new UnauthorizedAccessException("Token reuse detected. Please login again.");
         }
 
@@ -169,44 +172,38 @@ public class TokenService : ITokenService
             throw new UnauthorizedAccessException("Refresh token is expired or revoked.");
         }
 
-        // Generate new tokens
-        var newTokens = await GenerateTokenPairAsync(
-            storedToken.User,
-            userAgent,
-            ipAddress,
-            storedToken.FamilyId);
+        // Use transaction to ensure atomicity
+        await _unitOfWork.BeginTransactionAsync();
 
-        // Mark old token as replaced
-        var newTokenHash = ComputeHash(newTokens.RefreshToken);
-        storedToken.RevokedAt = DateTimeOffset.UtcNow;
-        storedToken.ReplacedByHash = newTokenHash;
-
-        await _context.SaveChangesAsync();
-
-        _logger.LogInformation(
-            "Successfully refreshed tokens for user {UserId}",
-            storedToken.UserId);
-
-        return newTokens;
-    }
-
-    private async Task RevokeTokenFamilyAsync(Guid familyId)
-    {
-        var familyTokens = await _context.RefreshTokens
-            .Where(rt => rt.FamilyId == familyId && rt.RevokedAt == null)
-            .ToListAsync();
-
-        foreach (var token in familyTokens)
+        try
         {
-            token.RevokedAt = DateTimeOffset.UtcNow;
+            // Generate new tokens (this will add new token to context)
+            var newTokens = await GenerateTokenPairAsync(
+                storedToken.User,
+                userAgent,
+                ipAddress,
+                storedToken.FamilyId);
+
+            // Mark old token as replaced
+            var newTokenHash = ComputeHash(newTokens.RefreshToken);
+            storedToken.RevokedAt = DateTimeOffset.UtcNow;
+            storedToken.ReplacedByHash = newTokenHash;
+            _unitOfWork.RefreshTokens.Update(storedToken);
+
+            // Commit all changes atomically
+            await _unitOfWork.CommitTransactionAsync();
+
+            _logger.LogInformation(
+                "Successfully refreshed tokens for user {UserId}",
+                storedToken.UserId);
+
+            return newTokens;
         }
-
-        await _context.SaveChangesAsync();
-
-        _logger.LogWarning(
-            "Revoked {Count} tokens in family {FamilyId} due to reuse detection",
-            familyTokens.Count,
-            familyId);
+        catch
+        {
+            await _unitOfWork.RollbackTransactionAsync();
+            throw;
+        }
     }
 
     private async Task<(IList<Claim> claims, IList<string> roles)> GetUserClaimsAndRolesAsync(Member member)

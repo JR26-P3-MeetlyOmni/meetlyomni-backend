@@ -1,0 +1,99 @@
+// <copyright file="UnitOfWork.cs" company="MeetlyOmni">
+// Copyright (c) MeetlyOmni. All rights reserved.
+// </copyright>
+
+using MeetlyOmni.Api.Data.Repository.Interfaces;
+
+using Microsoft.EntityFrameworkCore.Storage;
+
+namespace MeetlyOmni.Api.Data.Repository;
+
+/// <summary>
+/// Unit of Work implementation for managing database transactions.
+/// </summary>
+public class UnitOfWork : IUnitOfWork
+{
+    private readonly ApplicationDbContext _context;
+    private IDbContextTransaction? _transaction;
+    private bool _disposed = false;
+
+    public UnitOfWork(ApplicationDbContext context, IRefreshTokenRepository refreshTokenRepository)
+    {
+        _context = context ?? throw new ArgumentNullException(nameof(context));
+        RefreshTokens = refreshTokenRepository ?? throw new ArgumentNullException(nameof(refreshTokenRepository));
+    }
+
+    public IRefreshTokenRepository RefreshTokens { get; }
+
+    public async Task<int> SaveChangesAsync()
+    {
+        return await _context.SaveChangesAsync();
+    }
+
+    public async Task BeginTransactionAsync()
+    {
+        if (_transaction != null)
+        {
+            throw new InvalidOperationException("A transaction is already in progress.");
+        }
+
+        _transaction = await _context.Database.BeginTransactionAsync();
+    }
+
+    public async Task CommitTransactionAsync()
+    {
+        if (_transaction == null)
+        {
+            throw new InvalidOperationException("No transaction in progress.");
+        }
+
+        try
+        {
+            await _context.SaveChangesAsync();
+            await _transaction.CommitAsync();
+        }
+        catch
+        {
+            await _transaction.RollbackAsync();
+            throw;
+        }
+        finally
+        {
+            await _transaction.DisposeAsync();
+            _transaction = null;
+        }
+    }
+
+    public async Task RollbackTransactionAsync()
+    {
+        if (_transaction == null)
+        {
+            throw new InvalidOperationException("No transaction in progress.");
+        }
+
+        try
+        {
+            await _transaction.RollbackAsync();
+        }
+        finally
+        {
+            await _transaction.DisposeAsync();
+            _transaction = null;
+        }
+    }
+
+    public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
+
+    protected virtual void Dispose(bool disposing)
+    {
+        if (!_disposed && disposing)
+        {
+            _transaction?.Dispose();
+            _disposed = true;
+        }
+    }
+}

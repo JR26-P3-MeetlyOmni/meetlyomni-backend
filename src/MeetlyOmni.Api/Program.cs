@@ -9,6 +9,8 @@ using MeetlyOmni.Api.Common.Extensions;
 using MeetlyOmni.Api.Common.Options;
 using MeetlyOmni.Api.Data;
 using MeetlyOmni.Api.Data.Entities;
+using MeetlyOmni.Api.Data.Repository;
+using MeetlyOmni.Api.Data.Repository.Interfaces;
 using MeetlyOmni.Api.Mapping;
 using MeetlyOmni.Api.Service.AuthService;
 using MeetlyOmni.Api.Service.AuthService.Interfaces;
@@ -65,6 +67,8 @@ builder.Services.AddSingleton<IJwtKeyProvider, JwtKeyProvider>();
 builder.Services.AddJwtAuthentication(builder.Configuration);
 
 // ---- Repositories ----
+builder.Services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
+builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 
 // ---- Application Services ----
 builder.Services.AddScoped<ILoginService, LoginService>();
