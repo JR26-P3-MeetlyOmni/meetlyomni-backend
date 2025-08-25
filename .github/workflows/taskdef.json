@@ -8,8 +8,8 @@
   "memory": "512",
   "containerDefinitions": [
     {
-      "name": "app", // <— 容器名，下面要用到
-      "image": "public.ecr/image", // 占位即可，稍后用 action 覆盖
+      "name": "app",
+      "image": "public.ecr/image",
       "essential": true,
       "portMappings": [{ "containerPort": 80, "protocol": "tcp" }]
     }
