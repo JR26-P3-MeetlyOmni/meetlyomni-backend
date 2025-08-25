@@ -20,7 +20,7 @@ env:
   AWS_REGION: ap-southeast-2
   ECS_TASK_FAMILY: meetlyomniapi-task
   ECS_CLUSTER: meetlyomniapi-cluster
-  ECS_SERVICE: meetlyomniapi-cluster
+  ECS_SERVICE: meetlyomniapi-svc
 
 jobs:
   CI:
