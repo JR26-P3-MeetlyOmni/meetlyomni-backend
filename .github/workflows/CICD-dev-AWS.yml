@@ -121,7 +121,7 @@ jobs:
         uses: aws-actions/amazon-ecs-render-task-definition@v1
         with:
           task-definition: .github/workflows/taskdef.json
-          container-name: ${{ env.CONTAINER_NAME }}
+          container-name: app
           image: ${{ steps.img.outputs.uri }}
 
       - name: Deploy to ECS service (rolling update)
