@@ -73,7 +73,7 @@ public class TokenController : ControllerBase
                 HttpOnly = true,
                 Secure = !isDevelopment,
                 SameSite = SameSiteMode.Strict,
-                Expires = newTokens.AccessTokenExpiresAt,
+                Expires = newTokens.accessTokenExpiresAt,
                 Path = "/",
             };
 
@@ -83,17 +83,17 @@ public class TokenController : ControllerBase
                 HttpOnly = true,
                 Secure = !isDevelopment,
                 SameSite = SameSiteMode.Strict,
-                Expires = newTokens.RefreshTokenExpiresAt,
+                Expires = newTokens.refreshTokenExpiresAt,
                 Path = "/api/Token",
             };
 
-            Response.Cookies.Append("access_token", newTokens.AccessToken, atCookieOptions);
-            Response.Cookies.Append("refresh_token", newTokens.RefreshToken, rtCookieOptions);
+            Response.Cookies.Append("access_token", newTokens.accessToken, atCookieOptions);
+            Response.Cookies.Append("refresh_token", newTokens.refreshToken, rtCookieOptions);
 
             // Return response without any token information (tokens are in cookies)
             var response = new LoginResponse
             {
-                ExpiresAt = newTokens.AccessTokenExpiresAt,
+                ExpiresAt = newTokens.accessTokenExpiresAt,
                 TokenType = "Bearer",
             };
 

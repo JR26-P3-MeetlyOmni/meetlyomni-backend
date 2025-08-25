@@ -73,10 +73,10 @@ public class LoginServiceTests
 
         // Assert
         result.Should().NotBeNull();
-        result.ExpiresAt.Should().Be(tokenResult.AccessTokenExpiresAt);
+        result.ExpiresAt.Should().Be(tokenResult.accessTokenExpiresAt);
         result.TokenType.Should().Be("Bearer");
-        result.AccessToken.Should().Be(tokenResult.AccessToken);
-        result.RefreshToken.Should().Be(tokenResult.RefreshToken);
+        result.AccessToken.Should().Be(tokenResult.accessToken);
+        result.RefreshToken.Should().Be(tokenResult.refreshToken);
     }
 
     [Fact]

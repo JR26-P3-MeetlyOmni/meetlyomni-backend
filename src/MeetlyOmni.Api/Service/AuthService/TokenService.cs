@@ -185,7 +185,7 @@ public class TokenService : ITokenService
                 storedToken.FamilyId);
 
             // Mark old token as replaced
-            var newTokenHash = ComputeHash(newTokens.RefreshToken);
+            var newTokenHash = ComputeHash(newTokens.refreshToken);
             storedToken.RevokedAt = DateTimeOffset.UtcNow;
             storedToken.ReplacedByHash = newTokenHash;
             _unitOfWork.RefreshTokens.Update(storedToken);

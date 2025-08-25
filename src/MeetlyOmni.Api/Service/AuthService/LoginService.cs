@@ -77,11 +77,11 @@ public class LoginService : ILoginService
 
         return new InternalLoginResponse
         {
-            AccessToken = tokens.AccessToken,
-            ExpiresAt = tokens.AccessTokenExpiresAt,
+            AccessToken = tokens.accessToken,
+            ExpiresAt = tokens.accessTokenExpiresAt,
             TokenType = "Bearer",
-            RefreshToken = tokens.RefreshToken,
-            RefreshTokenExpiresAt = tokens.RefreshTokenExpiresAt,
+            RefreshToken = tokens.refreshToken,
+            RefreshTokenExpiresAt = tokens.refreshTokenExpiresAt,
         };
     }
 }
