@@ -55,46 +55,6 @@ public class SignUpService : ISignUpService
     }
 
     /// <summary>
-    /// Exception thrown when a signup email already exists.
-    /// </summary>
-    public class EmailAlreadyExistsException : Exception
-    {
-        /// <summary>
-        /// Initializes a new instance of the <see cref="EmailAlreadyExistsException"/> class.
-        /// </summary>
-        /// <param name="message">The exception message.</param>
-        public EmailAlreadyExistsException(string message)
-            : base(message)
-        {
-        }
-    }
-
-    /// <summary>
-    /// Generates a unique organization code based on the name.
-    /// </summary>
-    /// <param name="name">Organization name.</param>
-    /// <returns>Unique organization code.</returns>
-    private async Task<string> GenerateUniqueOrgCodeAsync(string name)
-    {
-        string BaseSlug(string s) =>
-            new string(s.Trim().ToLowerInvariant().Where(ch => char.IsLetterOrDigit(ch) || ch == ' ').ToArray())
-            .Replace(' ', '-');
-
-        var baseSlug = BaseSlug(name);
-        for (int i = 0; i < 5; i++)
-        {
-            var suffix = Convert.ToHexString(RandomNumberGenerator.GetBytes(3)).ToLowerInvariant();
-            var code = $"{baseSlug}-{suffix}";
-            if (!await this._organizationRepository.OrganizationCodeExistsAsync(code))
-            {
-                return code;
-            }
-        }
-
-        return $"{baseSlug}-{Guid.NewGuid():N}";
-    }
-
-    /// <summary>
     /// Signs up a new admin member and organization, using a transaction for all-or-nothing commit.
     /// </summary>
     /// <param name="input">Signup binding model.</param>
@@ -164,6 +124,46 @@ public class SignUpService : ISignUpService
         {
             await transaction.RollbackAsync();
             throw;
+        }
+    }
+
+    /// <summary>
+    /// Generates a unique organization code based on the name.
+    /// </summary>
+    /// <param name="name">Organization name.</param>
+    /// <returns>Unique organization code.</returns>
+    public async Task<string> GenerateUniqueOrgCodeAsync(string name)
+    {
+        string BaseSlug(string s) =>
+            new string(s.Trim().ToLowerInvariant().Where(ch => char.IsLetterOrDigit(ch) || ch == ' ').ToArray())
+            .Replace(' ', '-');
+
+        var baseSlug = BaseSlug(name);
+        for (int i = 0; i < 5; i++)
+        {
+            var suffix = Convert.ToHexString(RandomNumberGenerator.GetBytes(3)).ToLowerInvariant();
+            var code = $"{baseSlug}-{suffix}";
+            if (!await this._organizationRepository.OrganizationCodeExistsAsync(code))
+            {
+                return code;
+            }
+        }
+
+        return $"{baseSlug}-{Guid.NewGuid():N}";
+    }
+
+    /// <summary>
+    /// Exception thrown when a signup email already exists.
+    /// </summary>
+    public class EmailAlreadyExistsException : Exception
+    {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="EmailAlreadyExistsException"/> class.
+        /// </summary>
+        /// <param name="message">The exception message.</param>
+        public EmailAlreadyExistsException(string message)
+            : base(message)
+        {
         }
     }
 }
