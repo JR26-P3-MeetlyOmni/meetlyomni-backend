@@ -127,7 +127,7 @@ public class TokenController : ControllerBase
     /// <summary>
     /// Logout the current user by clearing cookies and invalidating refresh tokens.
     /// </summary>
-    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous operation.</placeholder></returns>
+    /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
     [HttpPost("logout")]
     [Authorize]
     [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]

@@ -2,6 +2,8 @@
 // Copyright (c) MeetlyOmni. All rights reserved.
 // </copyright>
 
+using System.Security.Claims;
+
 using FluentAssertions;
 
 using MeetlyOmni.Api.Controllers;
@@ -150,4 +152,91 @@ public class TokenControllerTests
                 It.IsAny<string>()), // IP address
             Times.Once);
     }
+
+    // ---------------------------
+    // Logout Tests
+    // ---------------------------
+
+    [Fact]
+    public async Task Logout_WithValidUser_ShouldCallTokenServiceAndClearCookies()
+    {
+        // Arrange
+        var refreshToken = "refresh-token-to-logout";
+
+        var mockCookies = new Mock<IRequestCookieCollection>();
+        mockCookies.Setup(c => c["refresh_token"]).Returns(refreshToken);
+
+        _tokenController.HttpContext.Request.Cookies = mockCookies.Object;
+
+        var claims = new List<Claim>
+    {
+        new Claim(ClaimTypes.NameIdentifier, Guid.NewGuid().ToString())
+    };
+        _tokenController.HttpContext.User = new ClaimsPrincipal(new ClaimsIdentity(claims));
+
+        // Act
+        var result = await _tokenController.Logout();
+
+        // Assert
+        _mockTokenService.Verify(x => x.LogoutAsync(refreshToken), Times.Once);
+
+        result.Should().BeOfType<OkObjectResult>();
+        var okResult = result as OkObjectResult;
+        okResult!.Value.Should().BeEquivalentTo(new { message = "Logged out successfully" });
+
+        _tokenController.HttpContext.Response.Cookies.Should().NotBeNull();
+    }
+
+    [Fact]
+    public async Task Logout_WithNoUserId_ShouldSkipTokenServiceAndStillClearCookies()
+    {
+        // Arrange - No claims in user principal
+        _tokenController.HttpContext.User = new ClaimsPrincipal(new ClaimsIdentity());
+
+        // Act
+        var result = await _tokenController.Logout();
+
+        // Assert
+        _mockTokenService.Verify(x => x.LogoutAsync(It.IsAny<string>()), Times.Never);
+
+        result.Should().BeOfType<OkObjectResult>();
+        var okResult = result as OkObjectResult;
+        okResult!.Value.Should().BeEquivalentTo(new { message = "Logged out successfully" });
+    }
+
+    [Fact]
+    public async Task Logout_WhenServiceThrows_ShouldReturnProblemResult()
+    {
+        // Arrange
+        var refreshToken = "refresh-token-to-logout";
+
+        var mockCookies = new Mock<IRequestCookieCollection>();
+        mockCookies.Setup(c => c["refresh_token"]).Returns(refreshToken);
+        _tokenController.HttpContext.Request.Cookies = mockCookies.Object;
+
+        var claims = new List<Claim>
+    {
+        new Claim(ClaimTypes.NameIdentifier, Guid.NewGuid().ToString())
+    };
+        _tokenController.HttpContext.User = new ClaimsPrincipal(new ClaimsIdentity(claims, "mock"));
+
+
+        _mockTokenService
+            .Setup(x => x.LogoutAsync(refreshToken))
+            .ThrowsAsync(new Exception("Unexpected error"));
+
+
+        // Act
+        var result = await _tokenController.Logout();
+
+        // Assert
+        result.Should().BeOfType<ObjectResult>();
+        var objectResult = result as ObjectResult;
+        objectResult!.StatusCode.Should().Be(StatusCodes.Status500InternalServerError);
+
+        var problemDetails = objectResult.Value as ProblemDetails;
+        problemDetails!.Title.Should().Be("Internal Server Error");
+        problemDetails.Detail.Should().Be("An unexpected error occurred during logout");
+    }
+
 }
