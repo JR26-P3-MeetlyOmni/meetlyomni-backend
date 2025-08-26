@@ -13,6 +13,14 @@
       "essential": true,
       "portMappings": [{ "containerPort": 80, "protocol": "tcp" }]
     }
+  ],
+  "environment": [
+    { "name": "ASPNETCORE_URLS", "value": "http://0.0.0.0:80" },
+    { "name": "WEBSITES_PORT", "value": "80" },
+    {
+      "name": "ConnectionStrings__MeetlyOmniDb",
+      "value": "Host=aws-1-ap-southeast-2.pooler.supabase.com;Port=6543;Database=postgres;Username=postgres.yqnhjjliceujuoujvcrz;Password=t88ahHappC7FddcV;SSL Mode=Require;Trust Server Certificate=true"
+    }
   ]
 }
 
