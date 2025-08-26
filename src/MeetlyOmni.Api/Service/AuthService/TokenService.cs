@@ -206,6 +206,34 @@ public class TokenService : ITokenService
         }
     }
 
+    public async Task<bool> LogoutAsync(string refreshToken)
+    {
+        var tokenHash = ComputeHash(refreshToken);
+        var storedToken = await _unitOfWork.RefreshTokens.FindByHashAsync(tokenHash);
+
+        if (storedToken == null)
+        {
+            // Token not found in database
+            _logger.LogWarning("Logout failed: refresh token not found");
+            return false;
+        }
+
+        // Check if the token was already revoked (idempotency check)
+        if (storedToken.RevokedAt != null)
+        {
+            _logger.LogInformation("Refresh token {TokenId} already revoked", storedToken.Id);
+            return true;
+        }
+
+        // Mark the refresh token as revoked
+        storedToken.RevokedAt = DateTimeOffset.UtcNow;
+        _unitOfWork.RefreshTokens.Update(storedToken);
+        await _unitOfWork.SaveChangesAsync();
+
+        _logger.LogInformation("User {UserId} logged out, token {TokenId} revoked", storedToken.UserId, storedToken.Id);
+        return true;
+    }
+
     private async Task<(IList<Claim> claims, IList<string> roles)> GetUserClaimsAndRolesAsync(Member member)
     {
         // Get user claims and roles sequentially to avoid DbContext concurrency issues

@@ -24,4 +24,6 @@ public interface ITokenService
         string refreshToken,
         string userAgent,
         string ipAddress);
+
+    Task<bool> LogoutAsync(string refreshToken);
 }

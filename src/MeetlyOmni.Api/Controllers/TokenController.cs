@@ -2,6 +2,7 @@
 // Copyright (c) MeetlyOmni. All rights reserved.
 // </copyright>
 
+using MeetlyOmni.Api.Data.Entities;
 using MeetlyOmni.Api.Models.Auth;
 using MeetlyOmni.Api.Service.AuthService.Interfaces;
 using MeetlyOmni.Api.Service.Common.Interfaces;
@@ -119,6 +120,47 @@ public class TokenController : ControllerBase
             return Problem(
                 title: "Internal Server Error",
                 detail: "An unexpected error occurred",
+                statusCode: StatusCodes.Status500InternalServerError);
+        }
+    }
+
+    /// <summary>
+    /// Logout the current user by clearing cookies and invalidating refresh tokens.
+    /// </summary>
+    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous operation.</placeholder></returns>
+    [HttpPost("logout")]
+    [Authorize]
+    [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status500InternalServerError)]
+    public async Task<IActionResult> Logout()
+    {
+        try
+        {
+            var refreshToken = Request.Cookies["refresh_token"];
+
+            if (!string.IsNullOrEmpty(refreshToken))
+            {
+                var result = await _tokenService.LogoutAsync(refreshToken);
+
+                if (!result)
+                {
+                    _logger.LogWarning("Refresh token not found during logout");
+                }
+            }
+
+            // Delete cookies
+            Response.Cookies.Delete("access_token", new CookieOptions { Path = "/" });
+            Response.Cookies.Delete("refresh_token", new CookieOptions { Path = "/api/Token" });
+
+            return Ok(new { message = "Logged out successfully" });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error during logout");
+
+            return Problem(
+                title: "Internal Server Error",
+                detail: "An unexpected error occurred during logout",
                 statusCode: StatusCodes.Status500InternalServerError);
         }
     }
