@@ -107,11 +107,6 @@ jobs:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
 
-      # 方式A：用上游产物
-      # - name: Pick image uri from previous job
-      #   id: img
-      #   run: echo "uri=${{ needs.build_and_push_image.outputs.image_uri }}" >> "$GITHUB_OUTPUT"
-
       - name: Generate Image URI
         id: img
         run: echo "uri=${ECR_URI}:${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
@@ -121,7 +116,7 @@ jobs:
         uses: aws-actions/amazon-ecs-render-task-definition@v1
         with:
           task-definition: .github/workflows/taskdef.json
-          container-name: api
+          container-name: ${{env.CONTAINER_NAME}}
           image: ${{ steps.img.outputs.uri }}
 
       - name: Deploy to ECS service (rolling update)
