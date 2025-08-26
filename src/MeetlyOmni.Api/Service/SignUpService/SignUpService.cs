@@ -18,22 +18,22 @@ public class SignUpService : ISignUpService
     /// <summary>
     /// The user manager.
     /// </summary>
-    private readonly UserManager<Member> userManager;
+    private readonly UserManager<Member> _userManager;
 
     /// <summary>
     /// The role manager.
     /// </summary>
-    private readonly RoleManager<ApplicationRole> roleManager;
+    private readonly RoleManager<ApplicationRole> _roleManager;
 
     /// <summary>
     /// The organization repository.
     /// </summary>
-    private readonly IOrganizationRepository organizationRepository;
+    private readonly IOrganizationRepository _organizationRepository;
 
     /// <summary>
     /// The database context.
     /// </summary>
-    private readonly ApplicationDbContext dbContext;
+    private readonly ApplicationDbContext _dbContext;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="SignUpService"/> class.
@@ -48,10 +48,10 @@ public class SignUpService : ISignUpService
         IOrganizationRepository organizationRepository,
         ApplicationDbContext dbContext)
     {
-        this.userManager = userManager;
-        this.roleManager = roleManager;
-        this.organizationRepository = organizationRepository;
-        this.dbContext = dbContext;
+        this._userManager = userManager;
+        this._roleManager = roleManager;
+        this._organizationRepository = organizationRepository;
+        this._dbContext = dbContext;
     }
 
     /// <summary>
@@ -85,7 +85,7 @@ public class SignUpService : ISignUpService
         {
             var suffix = Convert.ToHexString(RandomNumberGenerator.GetBytes(3)).ToLowerInvariant();
             var code = $"{baseSlug}-{suffix}";
-            if (!await this.organizationRepository.OrganizationCodeExistsAsync(code))
+            if (!await this._organizationRepository.OrganizationCodeExistsAsync(code))
             {
                 return code;
             }
@@ -102,11 +102,11 @@ public class SignUpService : ISignUpService
     public async Task<MemberDto> SignUpAdminAsync(SignUpBindingModel input)
     {
         // Use transaction to ensure all-or-nothing
-        using var transaction = await this.dbContext.Database.BeginTransactionAsync();
+        using var transaction = await this._dbContext.Database.BeginTransactionAsync();
         try
         {
             // Check if email already exists
-            var existingMember = await this.userManager.FindByEmailAsync(input.Email);
+            var existingMember = await this._userManager.FindByEmailAsync(input.Email);
             if (existingMember != null)
             {
                 throw new EmailAlreadyExistsException($"Email '{input.Email}' already exists.");
@@ -123,7 +123,7 @@ public class SignUpService : ISignUpService
                 UpdatedAt = DateTimeOffset.UtcNow,
             };
 
-            await this.organizationRepository.AddOrganizationAsync(new Organization
+            await this._organizationRepository.AddOrganizationAsync(new Organization
             {
                 OrgId = memberEntity.OrgId,
                 OrganizationCode = await this.GenerateUniqueOrgCodeAsync(input.OrganizationName),
@@ -132,7 +132,7 @@ public class SignUpService : ISignUpService
                 UpdatedAt = DateTimeOffset.UtcNow,
             });
 
-            var createResult = await this.userManager.CreateAsync(memberEntity, input.Password);
+            var createResult = await this._userManager.CreateAsync(memberEntity, input.Password);
 
             if (!createResult.Succeeded)
             {
@@ -142,12 +142,12 @@ public class SignUpService : ISignUpService
             {
                 var roleName = "Admin";
 
-                if (!await this.roleManager.RoleExistsAsync(roleName))
+                if (!await this._roleManager.RoleExistsAsync(roleName))
                 {
-                    await this.roleManager.CreateAsync(new ApplicationRole(roleName));
+                    await this._roleManager.CreateAsync(new ApplicationRole(roleName));
                 }
 
-                var addToRoleResult = await this.userManager.AddToRoleAsync(memberEntity, roleName);
+                var addToRoleResult = await this._userManager.AddToRoleAsync(memberEntity, roleName);
             }
 
             await transaction.CommitAsync();

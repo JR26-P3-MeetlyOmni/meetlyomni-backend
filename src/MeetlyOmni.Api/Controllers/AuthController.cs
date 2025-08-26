@@ -17,7 +17,7 @@ public class AuthController : Controller
     /// <summary>
     /// The signup service.
     /// </summary>
-    private readonly ISignUpService signUpService;
+    private readonly ISignUpService _signUpService;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="AuthController"/> class.
@@ -25,7 +25,7 @@ public class AuthController : Controller
     /// <param name="signUpService">The signup service.</param>
     public AuthController(ISignUpService signUpService)
     {
-        this.signUpService = signUpService;
+        this._signUpService = signUpService;
     }
 
     /// <summary>
@@ -49,7 +49,7 @@ public class AuthController : Controller
 
         try
         {
-            var memberDto = await this.signUpService.SignUpAdminAsync(new Models.Members.SignUpBindingModel
+            var memberDto = await this._signUpService.SignUpAdminAsync(new Models.Members.SignUpBindingModel
             {
                 UserName = request.UserName,
                 Email = request.Email,
