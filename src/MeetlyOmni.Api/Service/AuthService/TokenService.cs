@@ -207,15 +207,6 @@ public class TokenService : ITokenService
         }
     }
 
-    private async Task<(IList<Claim> claims, IList<string> roles)> GetUserClaimsAndRolesAsync(Member member)
-    {
-        // Get user claims and roles sequentially to avoid DbContext concurrency issues
-        var userClaims = await _userManager.GetClaimsAsync(member);
-        var userRoles = await _userManager.GetRolesAsync(member);
-
-        return (userClaims, userRoles);
-    }
-
     private static void AddUserClaims(List<Claim> claims, IList<Claim> userClaims)
     {
         // Add all user custom claims directly
@@ -246,5 +237,14 @@ public class TokenService : ITokenService
         using var sha256 = SHA256.Create();
         var hashedBytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(input));
         return Convert.ToHexString(hashedBytes).ToLowerInvariant();
+    }
+
+    private async Task<(IList<Claim> claims, IList<string> roles)> GetUserClaimsAndRolesAsync(Member member)
+    {
+        // Get user claims and roles sequentially to avoid DbContext concurrency issues
+        var userClaims = await _userManager.GetClaimsAsync(member);
+        var userRoles = await _userManager.GetRolesAsync(member);
+
+        return (userClaims, userRoles);
     }
 }
