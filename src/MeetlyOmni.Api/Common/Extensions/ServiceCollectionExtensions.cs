@@ -116,7 +116,7 @@ public static class ServiceCollectionExtensions
     /// <param name="services">The service collection.</param>
     /// <param name="allowedOrigins">Array of allowed origins. If null, uses default development origins.</param>
     /// <returns>The service collection for chaining.</returns>
-    public static IServiceCollection AddCorsWithCookieSupport(this IServiceCollection services, string[] ? allowedOrigins = null)
+    public static IServiceCollection AddCorsWithCookieSupport(this IServiceCollection services, string[]? allowedOrigins = null)
     {
         var origins = allowedOrigins ?? new[]
         {
