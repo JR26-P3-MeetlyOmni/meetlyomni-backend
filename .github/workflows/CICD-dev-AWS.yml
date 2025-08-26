@@ -93,7 +93,7 @@ jobs:
     needs: build_and_push_image
     environment: dev
     env:
-      CONTAINER_NAME: app # 对应 taskdef.json 里的 name
+      CONTAINER_NAME: api # 对应 taskdef.json 里的 name
     permissions:
       id-token: write
       contents: read
