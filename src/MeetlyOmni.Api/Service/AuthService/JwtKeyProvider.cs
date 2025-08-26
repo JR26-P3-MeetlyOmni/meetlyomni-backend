@@ -85,12 +85,9 @@ public class JwtKeyProvider : IJwtKeyProvider
     private static SecurityKey CreateSymmetricKey(byte[] keyBytes)
     {
         var key = new SymmetricSecurityKey(keyBytes);
-
-        // set KeyId to support key rotation
-        using var sha = SHA256.Create();
-        var hash = sha.ComputeHash(keyBytes);
-        key.KeyId = Convert.ToBase64String(hash)[..8]; // take the first 8 characters as KeyId
-
+        var hash = SHA256.HashData(keyBytes);
+        var id = Base64UrlEncoder.Encode(hash);
+        key.KeyId = id[..24];
         return key;
     }
 }

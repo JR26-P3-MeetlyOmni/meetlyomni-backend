@@ -229,4 +229,291 @@ public class TokenServiceTests
 
         jti1.Should().NotBe(jti2);
     }
+
+    [Fact]
+    public async Task GenerateAccessTokenAsync_WithCustomUserClaims_ShouldIncludeCustomClaims()
+    {
+        // Arrange
+        var testMember = TestDataHelper.CreateTestMember();
+        var customClaims = new List<Claim>
+        {
+            new("department", "Engineering"),
+            new("location", "Seattle"),
+            new("employee_id", "EMP123")
+        };
+
+        var tokenService = new TokenService(
+            _mockUserManager.Object,
+            _mockUnitOfWork.Object,
+            _mockJwtOptions.Object,
+            _mockKeyProvider.Object,
+            _mockLogger.Object);
+
+        _mockUserManager
+            .Setup(x => x.GetClaimsAsync(testMember))
+            .ReturnsAsync(customClaims);
+
+        _mockUserManager
+            .Setup(x => x.GetRolesAsync(testMember))
+            .ReturnsAsync(new List<string>());
+
+        // Act
+        var result = await tokenService.GenerateAccessTokenAsync(testMember);
+
+        // Assert
+        var tokenHandler = new JwtSecurityTokenHandler();
+        var jsonToken = tokenHandler.ReadJwtToken(result);
+
+        jsonToken.Claims.Should().Contain(c => c.Type == "department" && c.Value == "Engineering");
+        jsonToken.Claims.Should().Contain(c => c.Type == "location" && c.Value == "Seattle");
+        jsonToken.Claims.Should().Contain(c => c.Type == "employee_id" && c.Value == "EMP123");
+    }
+
+    [Fact]
+    public async Task GenerateAccessTokenAsync_WithEmptyOrgId_ShouldNotIncludeOrgIdClaim()
+    {
+        // Arrange
+        var testMember = TestDataHelper.CreateTestMember();
+        testMember.OrgId = Guid.Empty; // Set empty org id
+
+        var tokenService = new TokenService(
+            _mockUserManager.Object,
+            _mockUnitOfWork.Object,
+            _mockJwtOptions.Object,
+            _mockKeyProvider.Object,
+            _mockLogger.Object);
+
+        _mockUserManager
+            .Setup(x => x.GetClaimsAsync(testMember))
+            .ReturnsAsync(new List<Claim>());
+
+        _mockUserManager
+            .Setup(x => x.GetRolesAsync(testMember))
+            .ReturnsAsync(new List<string>());
+
+        // Act
+        var result = await tokenService.GenerateAccessTokenAsync(testMember);
+
+        // Assert
+        var tokenHandler = new JwtSecurityTokenHandler();
+        var jsonToken = tokenHandler.ReadJwtToken(result);
+
+        jsonToken.Claims.Should().NotContain(c => c.Type == "org_id");
+    }
+
+    [Fact]
+    public async Task GenerateAccessTokenAsync_WithNullUserName_ShouldIncludeEmptyNameClaim()
+    {
+        // Arrange
+        var testMember = TestDataHelper.CreateTestMember();
+        testMember.UserName = null;
+
+        var tokenService = new TokenService(
+            _mockUserManager.Object,
+            _mockUnitOfWork.Object,
+            _mockJwtOptions.Object,
+            _mockKeyProvider.Object,
+            _mockLogger.Object);
+
+        _mockUserManager
+            .Setup(x => x.GetClaimsAsync(testMember))
+            .ReturnsAsync(new List<Claim>());
+
+        _mockUserManager
+            .Setup(x => x.GetRolesAsync(testMember))
+            .ReturnsAsync(new List<string>());
+
+        // Act
+        var result = await tokenService.GenerateAccessTokenAsync(testMember);
+
+        // Assert
+        var tokenHandler = new JwtSecurityTokenHandler();
+        var jsonToken = tokenHandler.ReadJwtToken(result);
+
+        jsonToken.Claims.Should().Contain(c => c.Type == "name" && c.Value == string.Empty);
+    }
+
+    [Fact]
+    public async Task GenerateAccessTokenAsync_WithNullEmail_ShouldIncludeEmptyEmailClaim()
+    {
+        // Arrange
+        var testMember = TestDataHelper.CreateTestMember();
+        testMember.Email = null;
+
+        var tokenService = new TokenService(
+            _mockUserManager.Object,
+            _mockUnitOfWork.Object,
+            _mockJwtOptions.Object,
+            _mockKeyProvider.Object,
+            _mockLogger.Object);
+
+        _mockUserManager
+            .Setup(x => x.GetClaimsAsync(testMember))
+            .ReturnsAsync(new List<Claim>());
+
+        _mockUserManager
+            .Setup(x => x.GetRolesAsync(testMember))
+            .ReturnsAsync(new List<string>());
+
+        // Act
+        var result = await tokenService.GenerateAccessTokenAsync(testMember);
+
+        // Assert
+        var tokenHandler = new JwtSecurityTokenHandler();
+        var jsonToken = tokenHandler.ReadJwtToken(result);
+
+        jsonToken.Claims.Should().Contain(c => c.Type == JwtRegisteredClaimNames.Email && c.Value == string.Empty);
+    }
+
+    [Fact]
+    public async Task GenerateAccessTokenAsync_ShouldSetCorrectTokenExpiration()
+    {
+        // Arrange
+        var testMember = TestDataHelper.CreateTestMember();
+        var expectedExpirationMinutes = 15; // From mock JWT options
+
+        var tokenService = new TokenService(
+            _mockUserManager.Object,
+            _mockUnitOfWork.Object,
+            _mockJwtOptions.Object,
+            _mockKeyProvider.Object,
+            _mockLogger.Object);
+
+        _mockUserManager
+            .Setup(x => x.GetClaimsAsync(testMember))
+            .ReturnsAsync(new List<Claim>());
+
+        _mockUserManager
+            .Setup(x => x.GetRolesAsync(testMember))
+            .ReturnsAsync(new List<string>());
+
+        var beforeGeneration = DateTimeOffset.UtcNow;
+
+        // Act
+        var result = await tokenService.GenerateAccessTokenAsync(testMember);
+
+        // Assert
+        var afterGeneration = DateTimeOffset.UtcNow;
+        var tokenHandler = new JwtSecurityTokenHandler();
+        var jsonToken = tokenHandler.ReadJwtToken(result);
+
+        // Allow some tolerance for test execution time (1 minute buffer)
+        var expectedMinExpiry = beforeGeneration.AddMinutes(expectedExpirationMinutes - 1);
+        var expectedMaxExpiry = afterGeneration.AddMinutes(expectedExpirationMinutes + 1);
+
+        jsonToken.ValidTo.Should().BeAfter(expectedMinExpiry.UtcDateTime);
+        jsonToken.ValidTo.Should().BeBefore(expectedMaxExpiry.UtcDateTime);
+    }
+
+    [Fact]
+    public async Task GenerateAccessTokenAsync_WithNoRoles_ShouldNotIncludeRoleClaims()
+    {
+        // Arrange
+        var testMember = TestDataHelper.CreateTestMember();
+
+        var tokenService = new TokenService(
+            _mockUserManager.Object,
+            _mockUnitOfWork.Object,
+            _mockJwtOptions.Object,
+            _mockKeyProvider.Object,
+            _mockLogger.Object);
+
+        _mockUserManager
+            .Setup(x => x.GetClaimsAsync(testMember))
+            .ReturnsAsync(new List<Claim>());
+
+        _mockUserManager
+            .Setup(x => x.GetRolesAsync(testMember))
+            .ReturnsAsync(new List<string>()); // Empty roles
+
+        // Act
+        var result = await tokenService.GenerateAccessTokenAsync(testMember);
+
+        // Assert
+        var tokenHandler = new JwtSecurityTokenHandler();
+        var jsonToken = tokenHandler.ReadJwtToken(result);
+
+        jsonToken.Claims.Should().NotContain(c => c.Type == "role");
+    }
+
+    [Fact]
+    public async Task GenerateAccessTokenAsync_ShouldSetCorrectIssuerAndAudience()
+    {
+        // Arrange
+        var testMember = TestDataHelper.CreateTestMember();
+
+        var tokenService = new TokenService(
+            _mockUserManager.Object,
+            _mockUnitOfWork.Object,
+            _mockJwtOptions.Object,
+            _mockKeyProvider.Object,
+            _mockLogger.Object);
+
+        _mockUserManager
+            .Setup(x => x.GetClaimsAsync(testMember))
+            .ReturnsAsync(new List<Claim>());
+
+        _mockUserManager
+            .Setup(x => x.GetRolesAsync(testMember))
+            .ReturnsAsync(new List<string>());
+
+        // Act
+        var result = await tokenService.GenerateAccessTokenAsync(testMember);
+
+        // Assert
+        var tokenHandler = new JwtSecurityTokenHandler();
+        var jsonToken = tokenHandler.ReadJwtToken(result);
+
+        jsonToken.Issuer.Should().Be("TestIssuer"); // From mock
+        jsonToken.Audiences.Should().Contain("TestAudience"); // From mock
+    }
+
+    [Theory]
+    [InlineData("test-input")] // Will compute actual hash dynamically
+    [InlineData("")] // Empty string
+    [InlineData("Hello World")]
+    public void ComputeHash_WithKnownInputs_ShouldReturnConsistentHash(string input)
+    {
+        // Act - Using reflection to test private static method twice to ensure consistency
+        var method = typeof(TokenService).GetMethod("ComputeHash",
+            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+        var result1 = method?.Invoke(null, new object[] { input }) as string;
+        var result2 = method?.Invoke(null, new object[] { input }) as string;
+
+        // Assert - Should be consistent hash and valid hex string
+        result1.Should().NotBeNullOrEmpty();
+        result1.Should().Be(result2); // Consistent hashing
+        result1.Should().HaveLength(64); // SHA256 produces 64 character hex string
+        result1.Should().MatchRegex(@"^[a-f0-9]+$"); // Valid lowercase hex
+    }
+
+    [Fact]
+    public void GenerateRandomToken_ShouldReturnBase64String()
+    {
+        // Act - Using reflection to test private static method
+        var method = typeof(TokenService).GetMethod("GenerateRandomToken",
+            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+        var result = method?.Invoke(null, null) as string;
+
+        // Assert
+        result.Should().NotBeNullOrEmpty();
+        result.Should().MatchRegex(@"^[A-Za-z0-9+/]+={0,2}$"); // Valid base64 pattern
+
+        // Should be 32 bytes encoded in base64 (32 * 4/3 = ~43 chars with padding)
+        result!.Length.Should().Be(44);
+    }
+
+    [Fact]
+    public void GenerateRandomToken_ShouldReturnUniqueValues()
+    {
+        // Act - Using reflection to test private static method
+        var method = typeof(TokenService).GetMethod("GenerateRandomToken",
+            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+
+        var result1 = method?.Invoke(null, null) as string;
+        var result2 = method?.Invoke(null, null) as string;
+
+        // Assert
+        result1.Should().NotBe(result2);
+    }
 }
