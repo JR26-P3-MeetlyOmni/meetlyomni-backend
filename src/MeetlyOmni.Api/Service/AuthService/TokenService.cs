@@ -99,6 +99,7 @@ public class TokenService : ITokenService
         {
             new(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
             new(JwtRegisteredClaimNames.Email, user.Email ?? string.Empty),
+            new("name", user.UserName ?? string.Empty), // Short claim name
             new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString("N")),
             new(JwtRegisteredClaimNames.Iat, now.ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer64),
         };
@@ -217,17 +218,8 @@ public class TokenService : ITokenService
 
     private static void AddUserClaims(List<Claim> claims, IList<Claim> userClaims)
     {
-        // Map special claims to standard types
-        var fullName = userClaims.FirstOrDefault(c => c.Type == "full_name")?.Value;
-        if (!string.IsNullOrWhiteSpace(fullName))
-        {
-            claims.Add(new Claim(ClaimTypes.GivenName, fullName));
-        }
-
-        // Add other user claims (excluding processed ones)
-        var excludedClaimTypes = new HashSet<string> { "full_name" };
-
-        foreach (var claim in userClaims.Where(c => !excludedClaimTypes.Contains(c.Type)))
+        // Add all user custom claims directly
+        foreach (var claim in userClaims)
         {
             claims.Add(claim);
         }
@@ -237,7 +229,7 @@ public class TokenService : ITokenService
     {
         foreach (var role in userRoles)
         {
-            claims.Add(new Claim(ClaimTypes.Role, role));
+            claims.Add(new Claim("role", role)); // Short claim name
         }
     }
 

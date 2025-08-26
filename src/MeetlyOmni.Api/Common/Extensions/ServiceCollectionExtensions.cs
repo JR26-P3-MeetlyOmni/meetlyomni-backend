@@ -45,10 +45,8 @@ public static class ServiceCollectionExtensions
                 ClockSkew = TimeSpan.FromMinutes(1),
                 RequireExpirationTime = true,
                 RequireSignedTokens = true,
-
-                // Map standard JWT claims to expected claim types
-                NameClaimType = JwtRegisteredClaimNames.Sub,
-                RoleClaimType = ClaimTypes.Role,
+                NameClaimType = "name", // Short claim name
+                RoleClaimType = "role", // Short claim name
 
                 // IssuerSigningKey will be set in events below
                 // ValidIssuer and ValidAudience will be set in events to use injected options

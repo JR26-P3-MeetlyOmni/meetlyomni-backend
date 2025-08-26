@@ -66,10 +66,7 @@ public class TokenServiceTests
 
         _mockUserManager
             .Setup(x => x.GetClaimsAsync(testMember))
-            .ReturnsAsync(new List<Claim>
-            {
-                new("full_name", "Test User"),
-            });
+            .ReturnsAsync(new List<Claim>());
 
         _mockUserManager
             .Setup(x => x.GetRolesAsync(testMember))
@@ -88,8 +85,41 @@ public class TokenServiceTests
         // Check standard JWT claims
         jsonToken.Claims.Should().Contain(c => c.Type == JwtRegisteredClaimNames.Sub && c.Value == testMember.Id.ToString());
         jsonToken.Claims.Should().Contain(c => c.Type == JwtRegisteredClaimNames.Email && c.Value == testMember.Email);
+        jsonToken.Claims.Should().Contain(c => c.Type == "name" && c.Value == testMember.UserName);
         jsonToken.Claims.Should().Contain(c => c.Type == JwtRegisteredClaimNames.Jti);
         jsonToken.Claims.Should().Contain(c => c.Type == JwtRegisteredClaimNames.Iat);
+    }
+
+    [Fact]
+    public async Task GenerateAccessTokenAsync_ShouldIncludeUserName()
+    {
+        // Arrange
+        var testMember = TestDataHelper.CreateTestMember();
+        testMember.UserName = "testuser123";
+
+        var tokenService = new TokenService(
+            _mockUserManager.Object,
+            _mockUnitOfWork.Object,
+            _mockJwtOptions.Object,
+            _mockKeyProvider.Object,
+            _mockLogger.Object);
+
+        _mockUserManager
+            .Setup(x => x.GetClaimsAsync(testMember))
+            .ReturnsAsync(new List<Claim>());
+
+        _mockUserManager
+            .Setup(x => x.GetRolesAsync(testMember))
+            .ReturnsAsync(new List<string>());
+
+        // Act
+        var result = await tokenService.GenerateAccessTokenAsync(testMember);
+
+        // Assert
+        var tokenHandler = new JwtSecurityTokenHandler();
+        var jsonToken = tokenHandler.ReadJwtToken(result);
+
+        jsonToken.Claims.Should().Contain(c => c.Type == "name" && c.Value == testMember.UserName);
     }
 
     [Fact]
@@ -154,7 +184,7 @@ public class TokenServiceTests
         var tokenHandler = new JwtSecurityTokenHandler();
         var jsonToken = tokenHandler.ReadJwtToken(result);
 
-        var roleClaims = jsonToken.Claims.Where(c => c.Type == ClaimTypes.Role).ToList();
+        var roleClaims = jsonToken.Claims.Where(c => c.Type == "role").ToList();
         roleClaims.Should().HaveCount(expectedRoles.Count);
 
         foreach (var expectedRole in expectedRoles)

@@ -47,8 +47,8 @@ public class UserControllerTests
 
         var claims = new List<Claim>
         {
-            new(ClaimTypes.NameIdentifier, userId),
-            new(ClaimTypes.Email, email),
+            new("sub", userId),
+            new("email", email),
             new("org_id", orgId)
         };
 
@@ -89,7 +89,7 @@ public class UserControllerTests
 
         var claims = new List<Claim>
         {
-            new(ClaimTypes.Email, email),
+            new("email", email),
             new("org_id", orgId)
         };
 
@@ -125,7 +125,7 @@ public class UserControllerTests
 
         var claims = new List<Claim>
         {
-            new(ClaimTypes.NameIdentifier, userId),
+            new("sub", userId),
             new("org_id", orgId)
         };
 
@@ -161,8 +161,8 @@ public class UserControllerTests
 
         var claims = new List<Claim>
         {
-            new(ClaimTypes.NameIdentifier, userId),
-            new(ClaimTypes.Email, email)
+            new("sub", userId),
+            new("email", email)
         };
 
         var identity = new ClaimsIdentity(claims, "test");
@@ -221,8 +221,8 @@ public class UserControllerTests
         // Arrange
         var claims = new List<Claim>
         {
-            new(ClaimTypes.NameIdentifier, string.Empty),
-            new(ClaimTypes.Email, string.Empty),
+            new("sub", string.Empty),
+            new("email", string.Empty),
             new("org_id", string.Empty)
         };
 
