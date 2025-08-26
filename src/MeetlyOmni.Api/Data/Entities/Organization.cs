@@ -29,7 +29,7 @@ public class Organization
 
     public bool IsVerified { get; set; } = false;
 
-    public PlanType PlanType { get; set; }
+    public PlanType PlanType { get; set; } = PlanType.Free;
 
     public DateTimeOffset CreatedAt { get; set; }
 
