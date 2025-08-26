@@ -15,11 +15,33 @@ namespace MeetlyOmni.Api.Service.SignUpService;
 
 public class SignUpService : ISignUpService
 {
+    /// <summary>
+    /// The user manager.
+    /// </summary>
     private readonly UserManager<Member> userManager;
+
+    /// <summary>
+    /// The role manager.
+    /// </summary>
     private readonly RoleManager<ApplicationRole> roleManager;
+
+    /// <summary>
+    /// The organization repository.
+    /// </summary>
     private readonly IOrganizationRepository organizationRepository;
+
+    /// <summary>
+    /// The database context.
+    /// </summary>
     private readonly ApplicationDbContext dbContext;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="SignUpService"/> class.
+    /// </summary>
+    /// <param name="userManager">The user manager.</param>
+    /// <param name="roleManager">The role manager.</param>
+    /// <param name="organizationRepository">The organization repository.</param>
+    /// <param name="dbContext">The database context.</param>
     public SignUpService(
         UserManager<Member> userManager,
         RoleManager<ApplicationRole> roleManager,
@@ -32,14 +54,26 @@ public class SignUpService : ISignUpService
         this.dbContext = dbContext;
     }
 
+    /// <summary>
+    /// Exception thrown when a signup email already exists.
+    /// </summary>
     public class EmailAlreadyExistsException : Exception
     {
+        /// <summary>
+        /// Initializes a new instance of the <see cref="EmailAlreadyExistsException"/> class.
+        /// </summary>
+        /// <param name="message">The exception message.</param>
         public EmailAlreadyExistsException(string message)
             : base(message)
         {
         }
     }
 
+    /// <summary>
+    /// Generates a unique organization code based on the name.
+    /// </summary>
+    /// <param name="name">Organization name.</param>
+    /// <returns>Unique organization code.</returns>
     private async Task<string> GenerateUniqueOrgCodeAsync(string name)
     {
         string BaseSlug(string s) =>
@@ -60,6 +94,11 @@ public class SignUpService : ISignUpService
         return $"{baseSlug}-{Guid.NewGuid():N}";
     }
 
+    /// <summary>
+    /// Signs up a new admin member and organization, using a transaction for all-or-nothing commit.
+    /// </summary>
+    /// <param name="input">Signup binding model.</param>
+    /// <returns>Member DTO for the created admin.</returns>
     public async Task<MemberDto> SignUpAdminAsync(SignUpBindingModel input)
     {
         // Use transaction to ensure all-or-nothing
