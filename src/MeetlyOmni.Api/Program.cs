@@ -88,7 +88,6 @@ builder.Services.AddCorsWithCookieSupport();
 builder.Services.AddAntiforgery(options =>
 {
     options.HeaderName = "X-XSRF-TOKEN";
-    options.Cookie.Name = AuthCookieExtensions.CookieNames.CsrfToken;
     options.Cookie.SameSite = SameSiteMode.None;
     options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
     options.Cookie.Path = AuthCookieExtensions.CookiePaths.TokenApi;
