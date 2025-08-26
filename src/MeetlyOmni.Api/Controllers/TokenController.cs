@@ -130,7 +130,7 @@ public class TokenController : ControllerBase
     /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
     [HttpPost("logout")]
     [Authorize]
-    [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(OkObjectResult), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> Logout()
     {

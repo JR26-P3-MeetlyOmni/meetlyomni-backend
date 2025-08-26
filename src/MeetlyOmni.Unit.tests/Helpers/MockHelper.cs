@@ -8,6 +8,7 @@ using MeetlyOmni.Api.Common.Options;
 using MeetlyOmni.Api.Data.Entities;
 using MeetlyOmni.Api.Service.AuthService.Interfaces;
 
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -152,5 +153,18 @@ public static class MockHelper
     {
         mockSignInManager.Setup(x => x.CheckPasswordSignInAsync(It.IsAny<Member>(), It.IsAny<string>(), It.IsAny<bool>()))
             .ReturnsAsync(SignInResult.Failed);
+    }
+
+    /// <summary>
+    /// Sets up IRequestCookieCollection mock.
+    /// </summary>
+    public static Mock<IRequestCookieCollection> CreateMockRequestCookies(string? refreshToken = null)
+    {
+        var mock = new Mock<IRequestCookieCollection>();
+        if (refreshToken != null)
+        {
+            mock.Setup(c => c["refreshToken"]).Returns(refreshToken);
+        }
+        return mock;
     }
 }

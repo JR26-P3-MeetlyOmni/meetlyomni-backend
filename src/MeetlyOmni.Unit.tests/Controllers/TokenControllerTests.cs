@@ -163,16 +163,13 @@ public class TokenControllerTests
         // Arrange
         var refreshToken = "refresh-token-to-logout";
 
-        var mockCookies = new Mock<IRequestCookieCollection>();
-        mockCookies.Setup(c => c["refresh_token"]).Returns(refreshToken);
+        var httpContext = new DefaultHttpContext();
+        httpContext.Request.Headers["Cookie"] = $"refresh_token={refreshToken}";
 
-        _tokenController.HttpContext.Request.Cookies = mockCookies.Object;
-
-        var claims = new List<Claim>
-    {
-        new Claim(ClaimTypes.NameIdentifier, Guid.NewGuid().ToString())
-    };
-        _tokenController.HttpContext.User = new ClaimsPrincipal(new ClaimsIdentity(claims));
+        _tokenController.ControllerContext = new ControllerContext
+        {
+            HttpContext = httpContext
+        };
 
         // Act
         var result = await _tokenController.Logout();
@@ -210,21 +207,17 @@ public class TokenControllerTests
         // Arrange
         var refreshToken = "refresh-token-to-logout";
 
-        var mockCookies = new Mock<IRequestCookieCollection>();
-        mockCookies.Setup(c => c["refresh_token"]).Returns(refreshToken);
-        _tokenController.HttpContext.Request.Cookies = mockCookies.Object;
-
-        var claims = new List<Claim>
-    {
-        new Claim(ClaimTypes.NameIdentifier, Guid.NewGuid().ToString())
-    };
-        _tokenController.HttpContext.User = new ClaimsPrincipal(new ClaimsIdentity(claims, "mock"));
-
-
         _mockTokenService
             .Setup(x => x.LogoutAsync(refreshToken))
             .ThrowsAsync(new Exception("Unexpected error"));
 
+        var httpContext = new DefaultHttpContext();
+        httpContext.Request.Headers["Cookie"] = $"refresh_token={refreshToken}";
+
+        _tokenController.ControllerContext = new ControllerContext
+        {
+            HttpContext = httpContext
+        };
 
         // Act
         var result = await _tokenController.Logout();
@@ -238,5 +231,4 @@ public class TokenControllerTests
         problemDetails!.Title.Should().Be("Internal Server Error");
         problemDetails.Detail.Should().Be("An unexpected error occurred during logout");
     }
-
 }
