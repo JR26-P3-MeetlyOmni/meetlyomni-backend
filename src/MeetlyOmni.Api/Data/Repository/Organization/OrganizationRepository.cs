@@ -8,19 +8,19 @@ namespace MeetlyOmni.Api.Data.Repository.Organization;
 
 public class OrganizationRepository : IOrganizationRepository
 {
-    private readonly ApplicationDbContext context;
+    private readonly ApplicationDbContext _context;
 
     public OrganizationRepository(ApplicationDbContext context)
     {
-        this.context = context;
+        this._context = context;
     }
 
     public async Task<Entities.Organization> AddOrganizationAsync(Entities.Organization organization)
     {
         try
         {
-            this.context.Organizations.Add(organization);
-            await this.context.SaveChangesAsync();
+            this._context.Organizations.Add(organization);
+            await this._context.SaveChangesAsync();
             return organization;
         }
         catch (DbUpdateException ex)
@@ -35,7 +35,7 @@ public class OrganizationRepository : IOrganizationRepository
 
     public async Task<bool> OrganizationCodeExistsAsync(string organizationCode)
     {
-        return await this.context.Organizations
+        return await this._context.Organizations
             .AnyAsync(o => o.OrganizationCode == organizationCode);
     }
 }
