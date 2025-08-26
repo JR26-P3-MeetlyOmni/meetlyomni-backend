@@ -60,37 +60,33 @@ public class LoginController : ControllerBase
             var isDevelopment = HttpContext.RequestServices
                 .GetRequiredService<IWebHostEnvironment>().IsDevelopment();
 
-            // Set Access Token in HttpOnly cookie
-            var atCookieOptions = new CookieOptions
-            {
-                HttpOnly = true, // Prevent XSS attacks
-                Secure = !isDevelopment, // Only HTTPS in production
-                SameSite = SameSiteMode.Strict, // CSRF protection
-                Expires = response.ExpiresAt,
-                Path = "/",
-            };
-
             // Set Refresh Token in HttpOnly cookie with restricted path
+            var origin = Request.Headers.Origin.ToString();
+            var isCrossSite = !string.IsNullOrEmpty(origin) &&
+                              !origin.Contains(Request.Host.Value, StringComparison.OrdinalIgnoreCase);
+
             var rtCookieOptions = new CookieOptions
             {
                 HttpOnly = true, // Prevent XSS attacks
-                Secure = !isDevelopment, // Only HTTPS in production
-                SameSite = SameSiteMode.Strict, // CSRF protection
+                Secure = true, // SameSite=None Secure is required
+                SameSite = isCrossSite ? SameSiteMode.None : SameSiteMode.Lax,
+                Path = "/api/Token",
                 Expires = response.RefreshTokenExpiresAt,
-                Path = "/api/Token", // Minimize exposure to token endpoints only
+
+                // Domain = ".your-domain.com" // Enable when cross-subdomain in production
             };
 
-            Response.Cookies.Append("access_token", response.AccessToken, atCookieOptions);
             Response.Cookies.Append("refresh_token", response.RefreshToken, rtCookieOptions);
 
-            // Return response without any token information (tokens are in cookies)
-            var cookieResponse = new LoginResponse
+            // Return access token in response body for frontend to store in memory
+            var loginResponse = new LoginResponse
             {
+                AccessToken = response.AccessToken, // Include access token in response
                 ExpiresAt = response.ExpiresAt,
                 TokenType = response.TokenType,
             };
 
-            return Ok(cookieResponse);
+            return Ok(loginResponse);
         }
         catch (UnauthorizedAccessException ex)
         {

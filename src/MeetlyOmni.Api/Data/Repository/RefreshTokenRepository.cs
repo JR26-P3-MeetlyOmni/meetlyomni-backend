@@ -70,4 +70,17 @@ public class RefreshTokenRepository : IRefreshTokenRepository
 
         return expiredTokens.Count;
     }
+
+    public async Task<int> MarkSingleTokenAsReplacedAsync(Guid tokenId, string newTokenHash)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(newTokenHash);
+
+        // Use ExecuteUpdateAsync for atomic conditional update
+        // Only update if token is still active (RevokedAt == null) and not already replaced
+        return await _context.RefreshTokens
+            .Where(rt => rt.Id == tokenId && rt.RevokedAt == null && rt.ReplacedByHash == null)
+            .ExecuteUpdateAsync(setters => setters
+                .SetProperty(rt => rt.RevokedAt, _ => DateTimeOffset.UtcNow)
+                .SetProperty(rt => rt.ReplacedByHash, _ => newTokenHash));
+    }
 }

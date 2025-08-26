@@ -45,6 +45,18 @@ public class TokenController : ControllerBase
     {
         try
         {
+            // CSRF protection: require anti-CSRF header for refresh operations
+            var hasAntiCsrfHeader = Request.Headers.ContainsKey("X-Requested-With") ||
+                                   Request.Headers.ContainsKey("X-CSRF-Token");
+
+            if (!hasAntiCsrfHeader)
+            {
+                return Problem(
+                    title: "CSRF Protection Required",
+                    detail: "Anti-CSRF header (X-Requested-With or X-CSRF-Token) is required for token refresh",
+                    statusCode: StatusCodes.Status403Forbidden);
+            }
+
             // Get refresh token from cookie
             if (!Request.Cookies.TryGetValue("refresh_token", out var refreshToken) ||
                 string.IsNullOrWhiteSpace(refreshToken))
@@ -67,32 +79,28 @@ public class TokenController : ControllerBase
             var isDevelopment = HttpContext.RequestServices
                 .GetRequiredService<IWebHostEnvironment>().IsDevelopment();
 
-            // Set new Access Token cookie
-            var atCookieOptions = new CookieOptions
-            {
-                HttpOnly = true,
-                Secure = !isDevelopment,
-                SameSite = SameSiteMode.Strict,
-                Expires = newTokens.accessTokenExpiresAt,
-                Path = "/",
-            };
-
             // Set new Refresh Token cookie
+            var origin = Request.Headers.Origin.ToString();
+            var isCrossSite = !string.IsNullOrEmpty(origin) &&
+                              !origin.Contains(Request.Host.Value, StringComparison.OrdinalIgnoreCase);
+
             var rtCookieOptions = new CookieOptions
             {
                 HttpOnly = true,
-                Secure = !isDevelopment,
-                SameSite = SameSiteMode.Strict,
+                Secure = true, // SameSite=None Secure is required
+                SameSite = isCrossSite ? SameSiteMode.None : SameSiteMode.Lax,
+                Path = "/api/Token", // 与API路由保持一致
                 Expires = newTokens.refreshTokenExpiresAt,
-                Path = "/api/Token",
+
+                // Domain = ".your-domain.com" // Enable when cross-subdomain in production
             };
 
-            Response.Cookies.Append("access_token", newTokens.accessToken, atCookieOptions);
             Response.Cookies.Append("refresh_token", newTokens.refreshToken, rtCookieOptions);
 
-            // Return response without any token information (tokens are in cookies)
+            // Return new access token in response body for frontend to store in memory
             var response = new LoginResponse
             {
+                AccessToken = newTokens.accessToken, // Include access token in response
                 ExpiresAt = newTokens.accessTokenExpiresAt,
                 TokenType = "Bearer",
             };
@@ -105,7 +113,6 @@ public class TokenController : ControllerBase
 
             // Clear invalid refresh token cookie
             Response.Cookies.Delete("refresh_token", new CookieOptions { Path = "/api/Token" });
-            Response.Cookies.Delete("access_token");
 
             return Problem(
                 title: "Token Refresh Failed",

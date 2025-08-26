@@ -33,9 +33,9 @@ public class UserController : ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public IActionResult GetCurrentUser()
     {
-        var userId = User.FindFirst("sub")?.Value; // JWT standard subject claim
-        var email = User.FindFirst("email")?.Value; // JWT standard email claim
-        var orgId = User.FindFirst("org_id")?.Value;
+        var userId = User.FindFirstValue("sub");    // JWT standard subject claim
+        var email = User.FindFirstValue("email");  // JWT standard email claim
+        var orgId = User.FindFirstValue("org_id");
 
         return Ok(new
         {

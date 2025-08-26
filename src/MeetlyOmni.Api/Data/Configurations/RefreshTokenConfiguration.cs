@@ -40,7 +40,10 @@ public class RefreshTokenConfiguration : IEntityTypeConfiguration<RefreshToken>
 
         builder.HasIndex(rt => rt.ExpiresAt);
 
-        builder.HasIndex(rt => new { rt.UserId, rt.IsActive });
+        // Efficient lookup for active tokens per user (RevokedAt is NULL and ExpiresAt > NOW())
+        builder.HasIndex(rt => new { rt.UserId, rt.ExpiresAt })
+               .HasDatabaseName("IX_RefreshToken_User_Active")
+               .HasFilter("\"RevokedAt\" IS NULL AND \"ExpiresAt\" > NOW()");
 
         // Foreign key relationship
         builder.HasOne(rt => rt.User)

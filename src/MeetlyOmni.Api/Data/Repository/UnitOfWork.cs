@@ -68,18 +68,13 @@ public class UnitOfWork : IUnitOfWork
     {
         if (_transaction == null)
         {
-            throw new InvalidOperationException("No transaction in progress.");
+            // No-op if nothing to rollback
+            return;
         }
 
-        try
-        {
-            await _transaction.RollbackAsync();
-        }
-        finally
-        {
-            await _transaction.DisposeAsync();
-            _transaction = null;
-        }
+        await _transaction.RollbackAsync();
+        await _transaction.DisposeAsync();
+        _transaction = null;
     }
 
     public void Dispose()

@@ -10,8 +10,11 @@ using MeetlyOmni.Api.Service.AuthService.Interfaces;
 using MeetlyOmni.Api.Service.Common.Interfaces;
 using MeetlyOmni.Unit.tests.Helpers;
 
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
 using Moq;
@@ -38,6 +41,9 @@ public class LoginControllerTests
         _mockLogger = MockHelper.CreateMockLogger<LoginController>();
 
         _loginController = new LoginController(_mockLoginService.Object, _mockClientInfoService.Object, _mockLogger.Object);
+
+        // Configure HttpContext with required services
+        SetupHttpContext();
     }
 
     [Fact]
@@ -135,5 +141,34 @@ public class LoginControllerTests
                 It.IsAny<string>(),
                 It.IsAny<string>()),
             Times.Once);
+    }
+
+    private void SetupHttpContext()
+    {
+        // Create a service collection and add required services
+        var services = new ServiceCollection();
+
+        // Add MVC services (required for ProblemDetailsFactory and other controller dependencies)
+        services.AddMvc();
+
+        // Add IWebHostEnvironment as a mock or real implementation
+        var mockEnvironment = new Mock<IWebHostEnvironment>();
+        mockEnvironment.Setup(x => x.EnvironmentName).Returns("Production"); // Default to production for tests
+        services.AddSingleton(mockEnvironment.Object);
+
+        // Build the service provider
+        var serviceProvider = services.BuildServiceProvider();
+
+        // Create HttpContext with the configured service provider
+        var httpContext = new DefaultHttpContext
+        {
+            RequestServices = serviceProvider
+        };
+
+        // Set the HttpContext on the controller
+        _loginController.ControllerContext = new ControllerContext
+        {
+            HttpContext = httpContext
+        };
     }
 }

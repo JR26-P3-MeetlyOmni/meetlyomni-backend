@@ -20,4 +20,6 @@ public interface IRefreshTokenRepository
     Task<int> MarkTokenFamilyAsRevokedAsync(Guid familyId);
 
     Task<int> MarkExpiredTokensForRemovalAsync(DateTimeOffset beforeDate);
+
+    Task<int> MarkSingleTokenAsReplacedAsync(Guid tokenId, string newTokenHash);
 }

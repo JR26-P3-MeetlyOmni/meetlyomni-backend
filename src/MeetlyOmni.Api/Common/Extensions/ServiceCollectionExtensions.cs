@@ -35,6 +35,9 @@ public static class ServiceCollectionExtensions
         })
         .AddJwtBearer(options =>
         {
+            // Disable claim mapping to preserve raw JWT claim types
+            options.MapInboundClaims = false;
+
             // Configure basic validation parameters
             options.TokenValidationParameters = new TokenValidationParameters
             {
@@ -57,6 +60,10 @@ public static class ServiceCollectionExtensions
             {
                 OnMessageReceived = context =>
                 {
+                    // Clone to avoid cross-request races when mutating validation parameters
+                    context.Options.TokenValidationParameters =
+                        context.Options.TokenValidationParameters.Clone();
+
                     // Set the signing key at runtime to avoid BuildServiceProvider
                     var keyProvider = context.HttpContext.RequestServices.GetRequiredService<IJwtKeyProvider>();
                     context.Options.TokenValidationParameters.IssuerSigningKey = keyProvider.GetValidationKey();
@@ -66,16 +73,9 @@ public static class ServiceCollectionExtensions
                     context.Options.TokenValidationParameters.ValidIssuer = jwtOptions.Value.Issuer;
                     context.Options.TokenValidationParameters.ValidAudience = jwtOptions.Value.Audience;
 
-                    // Check for JWT token in Authorization header first (standard bearer token)
-                    if (string.IsNullOrEmpty(context.Token))
-                    {
-                        // If no bearer token, try to get token from cookie
-                        if (context.Request.Cookies.TryGetValue("access_token", out var cookieToken))
-                        {
-                            context.Token = cookieToken;
-                        }
-                    }
-
+                    // Standard JWT Bearer token authentication
+                    // Token should be provided in Authorization header as "Bearer <token>"
+                    // No cookie fallback needed for access tokens
                     return Task.CompletedTask;
                 },
                 OnAuthenticationFailed = context =>
@@ -101,7 +101,7 @@ public static class ServiceCollectionExtensions
                     var logger = context.HttpContext.RequestServices.GetRequiredService<ILogger<Program>>();
                     logger.LogDebug(
                         "JWT token validated for user: {UserId}",
-                        context.Principal?.FindFirst("sub")?.Value);
+                        context.Principal?.FindFirstValue("sub"));
                     return Task.CompletedTask;
                 },
             };

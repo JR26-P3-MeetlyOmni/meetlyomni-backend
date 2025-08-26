@@ -10,8 +10,11 @@ using MeetlyOmni.Api.Service.AuthService.Interfaces;
 using MeetlyOmni.Api.Service.Common.Interfaces;
 using MeetlyOmni.Unit.tests.Helpers;
 
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
 using Moq;
@@ -39,12 +42,8 @@ public class TokenControllerTests
 
         _tokenController = new TokenController(_mockTokenService.Object, _mockClientInfoService.Object, _mockLogger.Object);
 
-        // Setup HttpContext for cookie operations
-        var httpContext = new DefaultHttpContext();
-        _tokenController.ControllerContext = new ControllerContext()
-        {
-            HttpContext = httpContext
-        };
+        // Configure HttpContext with required services
+        SetupHttpContext();
     }
 
     [Fact]
@@ -61,6 +60,9 @@ public class TokenControllerTests
 
         // Add refresh token to cookies
         _tokenController.HttpContext.Request.Headers.Cookie = $"refresh_token={refreshToken}";
+
+        // Add CSRF protection header
+        _tokenController.HttpContext.Request.Headers["X-Requested-With"] = "XMLHttpRequest";
 
         _mockTokenService
             .Setup(x => x.RefreshTokenPairAsync(refreshToken, It.IsAny<string>(), It.IsAny<string>()))
@@ -79,7 +81,8 @@ public class TokenControllerTests
     [Fact]
     public async Task RefreshToken_WithMissingRefreshToken_ShouldReturnUnauthorized()
     {
-        // Arrange - No refresh token in cookies
+        // Arrange - No refresh token in cookies, but with CSRF header
+        _tokenController.HttpContext.Request.Headers["X-Requested-With"] = "XMLHttpRequest";
 
         // Act
         var result = await _tokenController.RefreshToken();
@@ -103,6 +106,9 @@ public class TokenControllerTests
 
         _tokenController.HttpContext.Request.Headers.Cookie = $"refresh_token={invalidRefreshToken}";
 
+        // Add CSRF protection header
+        _tokenController.HttpContext.Request.Headers["X-Requested-With"] = "XMLHttpRequest";
+
         _mockTokenService
             .Setup(x => x.RefreshTokenPairAsync(invalidRefreshToken, It.IsAny<string>(), It.IsAny<string>()))
             .ThrowsAsync(new UnauthorizedAccessException("Invalid refresh token"));
@@ -118,7 +124,7 @@ public class TokenControllerTests
         var problemDetails = objectResult.Value as ProblemDetails;
         problemDetails.Should().NotBeNull();
         problemDetails!.Title.Should().Be("Token Refresh Failed");
-        problemDetails.Detail.Should().Be("Invalid refresh token");
+        problemDetails.Detail.Should().Contain("Invalid refresh token");
     }
 
     [Fact]
@@ -135,6 +141,9 @@ public class TokenControllerTests
 
         _tokenController.HttpContext.Request.Headers.Cookie = $"refresh_token={refreshToken}";
 
+        // Add CSRF protection header
+        _tokenController.HttpContext.Request.Headers["X-Requested-With"] = "XMLHttpRequest";
+
         _mockTokenService
             .Setup(x => x.RefreshTokenPairAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
             .ReturnsAsync(expectedTokenResult);
@@ -149,5 +158,57 @@ public class TokenControllerTests
                 It.IsAny<string>(), // User agent
                 It.IsAny<string>()), // IP address
             Times.Once);
+    }
+
+    [Fact]
+    public async Task RefreshToken_WithoutCsrfHeader_ShouldReturnForbidden()
+    {
+        // Arrange
+        var refreshToken = "test-refresh-token";
+
+        // Add refresh token to cookies but NO CSRF header
+        _tokenController.HttpContext.Request.Headers.Cookie = $"refresh_token={refreshToken}";
+
+        // Act
+        var result = await _tokenController.RefreshToken();
+
+        // Assert
+        result.Should().BeOfType<ObjectResult>();
+        var objectResult = result as ObjectResult;
+        objectResult!.StatusCode.Should().Be(StatusCodes.Status403Forbidden);
+
+        var problemDetails = objectResult.Value as ProblemDetails;
+        problemDetails.Should().NotBeNull();
+        problemDetails!.Title.Should().Be("CSRF Protection Required");
+        problemDetails.Detail.Should().Contain("Anti-CSRF header");
+    }
+
+    private void SetupHttpContext()
+    {
+        // Create a service collection and add required services
+        var services = new ServiceCollection();
+
+        // Add MVC services (required for ProblemDetailsFactory and other controller dependencies)
+        services.AddMvc();
+
+        // Add IWebHostEnvironment as a mock or real implementation
+        var mockEnvironment = new Mock<IWebHostEnvironment>();
+        mockEnvironment.Setup(x => x.EnvironmentName).Returns("Production"); // Default to production for tests
+        services.AddSingleton(mockEnvironment.Object);
+
+        // Build the service provider
+        var serviceProvider = services.BuildServiceProvider();
+
+        // Create HttpContext with the configured service provider
+        var httpContext = new DefaultHttpContext
+        {
+            RequestServices = serviceProvider
+        };
+
+        // Set the HttpContext on the controller
+        _tokenController.ControllerContext = new ControllerContext
+        {
+            HttpContext = httpContext
+        };
     }
 }

@@ -99,30 +99,6 @@ public static class TestDataHelper
     }
 
     /// <summary>
-    /// Creates a valid refresh request.
-    /// </summary>
-    /// <returns>A RefreshRequest with valid test data.</returns>
-    public static RefreshRequest CreateValidRefreshRequest()
-    {
-        return new RefreshRequest
-        {
-            RefreshToken = "valid-refresh-token-test-value"
-        };
-    }
-
-    /// <summary>
-    /// Creates an invalid refresh request with empty token.
-    /// </summary>
-    /// <returns>A RefreshRequest with invalid data.</returns>
-    public static RefreshRequest CreateInvalidRefreshRequest()
-    {
-        return new RefreshRequest
-        {
-            RefreshToken = string.Empty
-        };
-    }
-
-    /// <summary>
     /// Creates a test refresh token entity.
     /// </summary>
     /// <returns>A RefreshToken entity with test data.</returns>

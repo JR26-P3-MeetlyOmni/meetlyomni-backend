@@ -25,7 +25,6 @@ namespace MeetlyOmni.Api.Service.AuthService;
 public class TokenService : ITokenService
 {
     // Token settings
-    private const int _refreshTokenExpirationDays = 30;
     private const int _refreshTokenLength = 32;
 
     private readonly UserManager<Member> _userManager;
@@ -64,7 +63,20 @@ public class TokenService : ITokenService
         var tokenFamilyId = familyId ?? Guid.NewGuid();
         var refreshTokenValue = GenerateRandomToken();
         var refreshTokenHash = ComputeHash(refreshTokenValue);
-        var refreshTokenExpires = DateTimeOffset.UtcNow.AddDays(_refreshTokenExpirationDays);
+        var refreshTokenExpires = DateTimeOffset.UtcNow.AddMinutes(_jwtOptions.RefreshTokenExpirationMinutes);
+
+        // Sanitize inputs to respect database constraints
+        var ua = (userAgent ?? string.Empty).Trim();
+        var ip = (ipAddress ?? string.Empty).Trim();
+        if (ua.Length > 500)
+        {
+            ua = ua[..500];
+        }
+
+        if (ip.Length > 45)
+        {
+            ip = ip[..45];
+        }
 
         // Store refresh token
         var refreshToken = new RefreshToken
@@ -75,8 +87,8 @@ public class TokenService : ITokenService
             FamilyId = tokenFamilyId,
             ExpiresAt = refreshTokenExpires,
             CreatedAt = DateTimeOffset.UtcNow,
-            UserAgent = userAgent,
-            IpAddress = ipAddress,
+            UserAgent = ua,
+            IpAddress = ip,
         };
 
         // Add to repository and save atomically
@@ -185,11 +197,15 @@ public class TokenService : ITokenService
                 ipAddress,
                 storedToken.FamilyId);
 
-            // Mark old token as replaced
+            // Atomically mark old token as replaced only if still active and not replaced
             var newTokenHash = ComputeHash(newTokens.refreshToken);
-            storedToken.RevokedAt = DateTimeOffset.UtcNow;
-            storedToken.ReplacedByHash = newTokenHash;
-            _unitOfWork.RefreshTokens.Update(storedToken);
+            var affected = await _unitOfWork.RefreshTokens
+                .MarkSingleTokenAsReplacedAsync(storedToken.Id, newTokenHash);
+            if (affected == 0)
+            {
+                await _unitOfWork.RollbackTransactionAsync();
+                throw new UnauthorizedAccessException("Refresh token already used.");
+            }
 
             // Commit all changes atomically
             await _unitOfWork.CommitTransactionAsync();
