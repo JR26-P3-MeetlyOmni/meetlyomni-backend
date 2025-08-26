@@ -11,17 +11,6 @@ namespace MeetlyOmni.Api.Common.Extensions;
 /// </summary>
 public static class AuthCookieExtensions
 {
-    public static class CookieNames
-    {
-        public const string RefreshToken = "refresh_token";
-        public const string CsrfToken = "XSRF-TOKEN";
-    }
-
-    public static class CookiePaths
-    {
-        public const string TokenApi = "/api/token";
-    }
-
     public static CookieOptions CreateRefreshTokenCookieOptions(DateTimeOffset expiresAt)
         => new()
         {
@@ -51,4 +40,15 @@ public static class AuthCookieExtensions
 
     public static void DeleteRefreshTokenCookie(this HttpResponse resp)
         => resp.Cookies.Delete(CookieNames.RefreshToken, new CookieOptions { Path = CookiePaths.TokenApi });
+
+    public static class CookieNames
+    {
+        public const string RefreshToken = "refresh_token";
+        public const string CsrfToken = "XSRF-TOKEN";
+    }
+
+    public static class CookiePaths
+    {
+        public const string TokenApi = "/api/token";
+    }
 }
