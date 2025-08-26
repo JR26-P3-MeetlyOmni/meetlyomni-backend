@@ -2,10 +2,12 @@
 // Copyright (c) MeetlyOmni. All rights reserved.
 // </copyright>
 
+using MeetlyOmni.Api.Common.Extensions;
 using MeetlyOmni.Api.Models.Auth;
 using MeetlyOmni.Api.Service.AuthService.Interfaces;
 using MeetlyOmni.Api.Service.Common.Interfaces;
 
+using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -14,22 +16,54 @@ namespace MeetlyOmni.Api.Controllers;
 /// <summary>
 /// Controller responsible for token operations (refresh, validation, etc.).
 /// </summary>
-[Route("api/[controller]")]
+[Route("api/token")]
 [ApiController]
 public class TokenController : ControllerBase
 {
     private readonly ITokenService _tokenService;
     private readonly IClientInfoService _clientInfoService;
+    private readonly IAntiforgery _antiforgery;
     private readonly ILogger<TokenController> _logger;
 
     public TokenController(
         ITokenService tokenService,
         IClientInfoService clientInfoService,
+        IAntiforgery antiforgery,
         ILogger<TokenController> logger)
     {
         _tokenService = tokenService;
         _clientInfoService = clientInfoService;
+        _antiforgery = antiforgery;
         _logger = logger;
+    }
+
+    /// <summary>
+    /// Get CSRF token for token refresh operations.
+    /// </summary>
+    /// <returns>CSRF token for client-side storage.</returns>
+    [HttpGet("csrf")]
+    [AllowAnonymous]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public IActionResult GetCsrf()
+    {
+        try
+        {
+            var tokens = _antiforgery.GetAndStoreTokens(HttpContext);
+
+            // Set CSRF token cookie with consistent configuration
+            Response.SetCsrfTokenCookie(tokens.RequestToken!);
+
+            return Ok(new { message = "CSRF token generated successfully" });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error generating CSRF token");
+            return Problem(
+                title: "CSRF Token Generation Failed",
+                detail: "An error occurred while generating the CSRF token",
+                statusCode: StatusCodes.Status500InternalServerError);
+        }
     }
 
     /// <summary>
@@ -45,20 +79,11 @@ public class TokenController : ControllerBase
     {
         try
         {
-            // CSRF protection: require anti-CSRF header for refresh operations
-            var hasAntiCsrfHeader = Request.Headers.ContainsKey("X-Requested-With") ||
-                                   Request.Headers.ContainsKey("X-CSRF-Token");
-
-            if (!hasAntiCsrfHeader)
-            {
-                return Problem(
-                    title: "CSRF Protection Required",
-                    detail: "Anti-CSRF header (X-Requested-With or X-CSRF-Token) is required for token refresh",
-                    statusCode: StatusCodes.Status403Forbidden);
-            }
+            // CSRF protection: validate antiforgery token
+            await _antiforgery.ValidateRequestAsync(HttpContext);
 
             // Get refresh token from cookie
-            if (!Request.Cookies.TryGetValue("refresh_token", out var refreshToken) ||
+            if (!Request.Cookies.TryGetValue(AuthCookieExtensions.CookieNames.RefreshToken, out var refreshToken) ||
                 string.IsNullOrWhiteSpace(refreshToken))
             {
                 return Problem(
@@ -76,26 +101,12 @@ public class TokenController : ControllerBase
                 userAgent,
                 ipAddress);
 
-            var isDevelopment = HttpContext.RequestServices
-                .GetRequiredService<IWebHostEnvironment>().IsDevelopment();
+            // Set new Refresh Token cookie with consistent configuration
+            Response.SetRefreshTokenCookie(newTokens.refreshToken, newTokens.refreshTokenExpiresAt);
 
-            // Set new Refresh Token cookie
-            var origin = Request.Headers.Origin.ToString();
-            var isCrossSite = !string.IsNullOrEmpty(origin) &&
-                              !origin.Contains(Request.Host.Value, StringComparison.OrdinalIgnoreCase);
-
-            var rtCookieOptions = new CookieOptions
-            {
-                HttpOnly = true,
-                Secure = true, // SameSite=None Secure is required
-                SameSite = isCrossSite ? SameSiteMode.None : SameSiteMode.Lax,
-                Path = "/api/Token", // 与API路由保持一致
-                Expires = newTokens.refreshTokenExpiresAt,
-
-                // Domain = ".your-domain.com" // Enable when cross-subdomain in production
-            };
-
-            Response.Cookies.Append("refresh_token", newTokens.refreshToken, rtCookieOptions);
+            // ban cache
+            Response.Headers.CacheControl = "no-store";
+            Response.Headers.Pragma = "no-cache";
 
             // Return new access token in response body for frontend to store in memory
             var response = new LoginResponse
@@ -112,7 +123,7 @@ public class TokenController : ControllerBase
             _logger.LogWarning("Token refresh failed: {Message}", ex.Message);
 
             // Clear invalid refresh token cookie
-            Response.Cookies.Delete("refresh_token", new CookieOptions { Path = "/api/Token" });
+            Response.DeleteRefreshTokenCookie();
 
             return Problem(
                 title: "Token Refresh Failed",

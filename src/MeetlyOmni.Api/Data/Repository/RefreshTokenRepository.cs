@@ -44,31 +44,21 @@ public class RefreshTokenRepository : IRefreshTokenRepository
 
     public async Task<int> MarkTokenFamilyAsRevokedAsync(Guid familyId)
     {
-        var familyTokens = await _context.RefreshTokens
+        // Use ExecuteUpdateAsync for better performance and atomicity
+        // EF Core 8+ provides collection-level updates without loading entities into memory
+        return await _context.RefreshTokens
             .Where(rt => rt.FamilyId == familyId && rt.RevokedAt == null)
-            .ToListAsync();
-
-        var revokedCount = familyTokens.Count;
-        foreach (var token in familyTokens)
-        {
-            token.RevokedAt = DateTimeOffset.UtcNow;
-        }
-
-        return revokedCount;
+            .ExecuteUpdateAsync(setters => setters
+                .SetProperty(rt => rt.RevokedAt, _ => DateTimeOffset.UtcNow));
     }
 
     public async Task<int> MarkExpiredTokensForRemovalAsync(DateTimeOffset beforeDate)
     {
-        var expiredTokens = await _context.RefreshTokens
+        // Use ExecuteDeleteAsync for better performance and atomicity
+        // EF Core 8+ provides collection-level deletes without loading entities into memory
+        return await _context.RefreshTokens
             .Where(rt => rt.ExpiresAt < beforeDate)
-            .ToListAsync();
-
-        if (expiredTokens.Count > 0)
-        {
-            _context.RefreshTokens.RemoveRange(expiredTokens);
-        }
-
-        return expiredTokens.Count;
+            .ExecuteDeleteAsync();
     }
 
     public async Task<int> MarkSingleTokenAsReplacedAsync(Guid tokenId, string newTokenHash)

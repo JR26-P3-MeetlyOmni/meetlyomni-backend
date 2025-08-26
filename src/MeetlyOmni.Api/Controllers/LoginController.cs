@@ -2,6 +2,7 @@
 // Copyright (c) MeetlyOmni. All rights reserved.
 // </copyright>
 
+using MeetlyOmni.Api.Common.Extensions;
 using MeetlyOmni.Api.Models.Auth;
 using MeetlyOmni.Api.Service.AuthService.Interfaces;
 using MeetlyOmni.Api.Service.Common.Interfaces;
@@ -57,26 +58,11 @@ public class LoginController : ControllerBase
 
             var response = await _loginService.LoginAsync(request, userAgent, ipAddress);
 
-            var isDevelopment = HttpContext.RequestServices
-                .GetRequiredService<IWebHostEnvironment>().IsDevelopment();
+            // Set Refresh Token in HttpOnly cookie with consistent configuration
+            Response.SetRefreshTokenCookie(response.RefreshToken, response.RefreshTokenExpiresAt);
 
-            // Set Refresh Token in HttpOnly cookie with restricted path
-            var origin = Request.Headers.Origin.ToString();
-            var isCrossSite = !string.IsNullOrEmpty(origin) &&
-                              !origin.Contains(Request.Host.Value, StringComparison.OrdinalIgnoreCase);
-
-            var rtCookieOptions = new CookieOptions
-            {
-                HttpOnly = true, // Prevent XSS attacks
-                Secure = true, // SameSite=None Secure is required
-                SameSite = isCrossSite ? SameSiteMode.None : SameSiteMode.Lax,
-                Path = "/api/Token",
-                Expires = response.RefreshTokenExpiresAt,
-
-                // Domain = ".your-domain.com" // Enable when cross-subdomain in production
-            };
-
-            Response.Cookies.Append("refresh_token", response.RefreshToken, rtCookieOptions);
+            Response.Headers.CacheControl = "no-store";
+            Response.Headers.Pragma = "no-cache";
 
             // Return access token in response body for frontend to store in memory
             var loginResponse = new LoginResponse

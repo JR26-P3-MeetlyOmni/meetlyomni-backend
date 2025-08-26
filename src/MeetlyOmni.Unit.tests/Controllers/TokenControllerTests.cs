@@ -4,12 +4,14 @@
 
 using FluentAssertions;
 
+using MeetlyOmni.Api.Common.Extensions;
 using MeetlyOmni.Api.Controllers;
 using MeetlyOmni.Api.Models.Auth;
 using MeetlyOmni.Api.Service.AuthService.Interfaces;
 using MeetlyOmni.Api.Service.Common.Interfaces;
 using MeetlyOmni.Unit.tests.Helpers;
 
+using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -30,6 +32,7 @@ public class TokenControllerTests
 {
     private readonly Mock<ITokenService> _mockTokenService;
     private readonly Mock<IClientInfoService> _mockClientInfoService;
+    private readonly Mock<IAntiforgery> _mockAntiforgery;
     private readonly Mock<ILogger<TokenController>> _mockLogger;
     private readonly TokenController _tokenController;
 
@@ -40,7 +43,8 @@ public class TokenControllerTests
         _mockClientInfoService = new Mock<IClientInfoService>();
         _mockLogger = MockHelper.CreateMockLogger<TokenController>();
 
-        _tokenController = new TokenController(_mockTokenService.Object, _mockClientInfoService.Object, _mockLogger.Object);
+        _mockAntiforgery = new Mock<IAntiforgery>();
+        _tokenController = new TokenController(_mockTokenService.Object, _mockClientInfoService.Object, _mockAntiforgery.Object, _mockLogger.Object);
 
         // Configure HttpContext with required services
         SetupHttpContext();
@@ -59,10 +63,12 @@ public class TokenControllerTests
         );
 
         // Add refresh token to cookies
-        _tokenController.HttpContext.Request.Headers.Cookie = $"refresh_token={refreshToken}";
+        _tokenController.HttpContext.Request.Headers.Cookie = $"{AuthCookieExtensions.CookieNames.RefreshToken}={refreshToken}";
 
-        // Add CSRF protection header
-        _tokenController.HttpContext.Request.Headers["X-Requested-With"] = "XMLHttpRequest";
+        // Setup antiforgery validation to succeed
+        _mockAntiforgery
+            .Setup(x => x.ValidateRequestAsync(It.IsAny<HttpContext>()))
+            .Returns(Task.CompletedTask);
 
         _mockTokenService
             .Setup(x => x.RefreshTokenPairAsync(refreshToken, It.IsAny<string>(), It.IsAny<string>()))
@@ -81,8 +87,10 @@ public class TokenControllerTests
     [Fact]
     public async Task RefreshToken_WithMissingRefreshToken_ShouldReturnUnauthorized()
     {
-        // Arrange - No refresh token in cookies, but with CSRF header
-        _tokenController.HttpContext.Request.Headers["X-Requested-With"] = "XMLHttpRequest";
+        // Arrange - No refresh token in cookies, but with antiforgery validation
+        _mockAntiforgery
+            .Setup(x => x.ValidateRequestAsync(It.IsAny<HttpContext>()))
+            .Returns(Task.CompletedTask);
 
         // Act
         var result = await _tokenController.RefreshToken();
@@ -104,10 +112,12 @@ public class TokenControllerTests
         // Arrange
         var invalidRefreshToken = "invalid-refresh-token";
 
-        _tokenController.HttpContext.Request.Headers.Cookie = $"refresh_token={invalidRefreshToken}";
+        _tokenController.HttpContext.Request.Headers.Cookie = $"{AuthCookieExtensions.CookieNames.RefreshToken}={invalidRefreshToken}";
 
-        // Add CSRF protection header
-        _tokenController.HttpContext.Request.Headers["X-Requested-With"] = "XMLHttpRequest";
+        // Setup antiforgery validation to succeed
+        _mockAntiforgery
+            .Setup(x => x.ValidateRequestAsync(It.IsAny<HttpContext>()))
+            .Returns(Task.CompletedTask);
 
         _mockTokenService
             .Setup(x => x.RefreshTokenPairAsync(invalidRefreshToken, It.IsAny<string>(), It.IsAny<string>()))
@@ -139,10 +149,12 @@ public class TokenControllerTests
             DateTimeOffset.UtcNow.AddDays(7)
         );
 
-        _tokenController.HttpContext.Request.Headers.Cookie = $"refresh_token={refreshToken}";
+        _tokenController.HttpContext.Request.Headers.Cookie = $"{AuthCookieExtensions.CookieNames.RefreshToken}={refreshToken}";
 
-        // Add CSRF protection header
-        _tokenController.HttpContext.Request.Headers["X-Requested-With"] = "XMLHttpRequest";
+        // Setup antiforgery validation to succeed
+        _mockAntiforgery
+            .Setup(x => x.ValidateRequestAsync(It.IsAny<HttpContext>()))
+            .Returns(Task.CompletedTask);
 
         _mockTokenService
             .Setup(x => x.RefreshTokenPairAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
@@ -161,13 +173,18 @@ public class TokenControllerTests
     }
 
     [Fact]
-    public async Task RefreshToken_WithoutCsrfHeader_ShouldReturnForbidden()
+    public async Task RefreshToken_WithAntiforgeryValidationFailure_ShouldReturnInternalServerError()
     {
         // Arrange
         var refreshToken = "test-refresh-token";
 
-        // Add refresh token to cookies but NO CSRF header
-        _tokenController.HttpContext.Request.Headers.Cookie = $"refresh_token={refreshToken}";
+        // Add refresh token to cookies
+        _tokenController.HttpContext.Request.Headers.Cookie = $"{AuthCookieExtensions.CookieNames.RefreshToken}={refreshToken}";
+
+        // Setup antiforgery validation to fail
+        _mockAntiforgery
+            .Setup(x => x.ValidateRequestAsync(It.IsAny<HttpContext>()))
+            .ThrowsAsync(new InvalidOperationException("Antiforgery validation failed"));
 
         // Act
         var result = await _tokenController.RefreshToken();
@@ -175,12 +192,11 @@ public class TokenControllerTests
         // Assert
         result.Should().BeOfType<ObjectResult>();
         var objectResult = result as ObjectResult;
-        objectResult!.StatusCode.Should().Be(StatusCodes.Status403Forbidden);
+        objectResult!.StatusCode.Should().Be(StatusCodes.Status500InternalServerError);
 
         var problemDetails = objectResult.Value as ProblemDetails;
         problemDetails.Should().NotBeNull();
-        problemDetails!.Title.Should().Be("CSRF Protection Required");
-        problemDetails.Detail.Should().Contain("Anti-CSRF header");
+        problemDetails!.Title.Should().Be("Internal Server Error");
     }
 
     private void SetupHttpContext()

@@ -38,8 +38,10 @@ public class ClientInfoService : IClientInfoService
             const int maxLength = 500;
             if (userAgent.Length > maxLength)
             {
-                userAgent = userAgent[..maxLength] + "...";
-                _logger.LogWarning("User agent truncated due to length: {Length}", userAgent.Length);
+                var originalLength = userAgent.Length;
+                const int suffixLen = 3; // "..."
+                userAgent = userAgent[..Math.Max(0, maxLength - suffixLen)] + "...";
+                _logger.LogWarning("User agent truncated from {Original} to {New}", originalLength, userAgent.Length);
             }
 
             return userAgent;

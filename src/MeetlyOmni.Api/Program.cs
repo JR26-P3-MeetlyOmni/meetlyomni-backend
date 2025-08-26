@@ -84,6 +84,16 @@ builder.Services.AddHealthChecks()
 // CORS Configuration for cookie support
 builder.Services.AddCorsWithCookieSupport();
 
+// Antiforgery Configuration for CSRF protection
+builder.Services.AddAntiforgery(options =>
+{
+    options.HeaderName = "X-XSRF-TOKEN";
+    options.Cookie.Name = AuthCookieExtensions.CookieNames.CsrfToken;
+    options.Cookie.SameSite = SameSiteMode.None;
+    options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+    options.Cookie.Path = AuthCookieExtensions.CookiePaths.TokenApi;
+});
+
 builder.Services.AddControllers();
 
 // Swagger Configuration
@@ -108,6 +118,9 @@ app.UseHttpsRedirection();
 
 // Enable CORS
 app.UseCors();
+
+// Antiforgery middleware (must be before authentication)
+app.UseAntiforgery();
 
 // security headers
 app.Use(async (context, next) =>
