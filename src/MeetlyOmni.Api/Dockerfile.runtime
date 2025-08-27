@@ -1,0 +1,34 @@
+# Runtime-only Dockerfile for CI-led publish (Mode 2)
+# Expectation: CI runs `dotnet publish -c Release -o ./publish` at repo root.
+# Then build with: docker build -f src/MeetlyOmni.Api/Dockerfile.runtime -t <image>:<tag> .
+
+FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS final
+WORKDIR /app
+
+# Install useful runtime tools (optional): curl for healthcheck; psql for diagnostics
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends curl postgresql-client \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy published application from CI output (located at ./publish in build context)
+COPY publish/ .
+
+# Create non-root user for security
+RUN useradd -m -u 1001 appuser && chown -R appuser:appuser /app
+USER appuser
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD curl -f http://localhost:80/health || exit 1
+
+# Expose port
+EXPOSE 80
+
+# Default environment; can be overridden by ECS Task Definition
+ENV ASPNETCORE_ENVIRONMENT=Production
+ENV ASPNETCORE_URLS=http://+:80
+
+# Entrypoint
+ENTRYPOINT ["dotnet", "MeetlyOmni.Api.dll"]
+
+

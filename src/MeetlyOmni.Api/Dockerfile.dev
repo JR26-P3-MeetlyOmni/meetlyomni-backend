@@ -1,0 +1,19 @@
+# Development Dockerfile - for local development with hot reload
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+
+WORKDIR /app
+
+# Install Entity Framework Core tools
+RUN dotnet tool install --global dotnet-ef
+ENV PATH="$PATH:/root/.dotnet/tools"
+
+# Copy project files and restore dependencies
+COPY *.csproj ./
+RUN dotnet restore
+
+# Copy source code
+COPY . ./
+
+# Keep container running and enable hot reload
+EXPOSE 80
+ENTRYPOINT ["dotnet", "watch", "run", "--urls=http://0.0.0.0:80"]
