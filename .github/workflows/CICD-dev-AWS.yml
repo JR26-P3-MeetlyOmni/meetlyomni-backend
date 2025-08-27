@@ -43,10 +43,10 @@ jobs:
       - name: Build
         run: dotnet build ${{ env.SOLUTION_PATH }} -c Release --no-restore
 
-      - name: Test (unit)
+      - name: Unit Test
         run: dotnet test src/MeetlyOmni.Unit.tests/MeetlyOmni.Unit.tests.csproj -c Release --no-build
 
-      - name: Test (integration)
+      - name: Integration Test
         env:
           BASE_URL: http://localhost:7011
         run: dotnet test src/MeetlyOmni.IntegrationTests/MeetlyOmni.IntegrationTests.csproj -c Release --no-build
@@ -54,12 +54,12 @@ jobs:
 
   build_and_push_image:
     runs-on: ubuntu-latest
-
     environment: dev
     needs: CI
     permissions:
       id-token: write
       contents: read
+
     steps:
       - name: Check out code
         uses: actions/checkout@v4
@@ -115,11 +115,11 @@ jobs:
         id: render
         uses: aws-actions/amazon-ecs-render-task-definition@v1
         with:
-          task-definition: .github/workflows/taskdef.json
+          task-definition: .github/workflows/taskdef-1.json
           container-name: ${{env.CONTAINER_NAME}}
           image: ${{ steps.img.outputs.uri }}
 
-      - name: Deploy to ECS service (rolling update)
+      - name: Deploy to ECS service
         uses: aws-actions/amazon-ecs-deploy-task-definition@v1
         with:
           task-definition: ${{ steps.render.outputs.task-definition }}

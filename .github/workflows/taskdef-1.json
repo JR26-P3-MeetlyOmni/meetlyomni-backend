@@ -1,0 +1,29 @@
+{
+  "family": "meetlyomniapi-task",
+  "executionRoleArn": "arn:aws:iam::034362033405:role/ecsTaskExecutionRole",
+  "taskRoleArn": "arn:aws:iam::034362033405:role/meetlyomniapi-task-role",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "256",
+  "memory": "512",
+  "containerDefinitions": [
+    {
+      "name": "api",
+      "image": "public.ecr/image",
+      "essential": true,
+      "portMappings": [{ "containerPort": 80, "protocol": "tcp" }],
+      "environment": [
+        { "name": "ASPNETCORE_ENVIRONMENT", "value": "Development" },
+        { "name": "ASPNETCORE_URLS", "value": "http://0.0.0.0:80" },
+        { "name": "WEBSITES_PORT", "value": "80" }
+      ],
+      "secrets": [
+        {
+          "name": "ConnectionStrings__MeetlyOmniDb",
+          "valueFrom": "arn:aws:ssm:ap-southeast-2:034362033405:parameter/meetlyapi/dev/db-connection-string"
+        }
+      ]
+    }
+  ]
+}
+
