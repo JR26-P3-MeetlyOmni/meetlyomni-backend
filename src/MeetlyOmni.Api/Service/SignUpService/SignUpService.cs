@@ -15,33 +15,14 @@ namespace MeetlyOmni.Api.Service.SignUpService;
 
 public class SignUpService : ISignUpService
 {
-    /// <summary>
-    /// The user manager.
-    /// </summary>
     private readonly UserManager<Member> _userManager;
 
-    /// <summary>
-    /// The role manager.
-    /// </summary>
     private readonly RoleManager<ApplicationRole> _roleManager;
 
-    /// <summary>
-    /// The organization repository.
-    /// </summary>
     private readonly IOrganizationRepository _organizationRepository;
 
-    /// <summary>
-    /// The database context.
-    /// </summary>
     private readonly ApplicationDbContext _dbContext;
 
-    /// <summary>
-    /// Initializes a new instance of the <see cref="SignUpService"/> class.
-    /// </summary>
-    /// <param name="userManager">The user manager.</param>
-    /// <param name="roleManager">The role manager.</param>
-    /// <param name="organizationRepository">The organization repository.</param>
-    /// <param name="dbContext">The database context.</param>
     public SignUpService(
         UserManager<Member> userManager,
         RoleManager<ApplicationRole> roleManager,
@@ -54,18 +35,11 @@ public class SignUpService : ISignUpService
         this._dbContext = dbContext;
     }
 
-    /// <summary>
-    /// Signs up a new admin member and organization, using a transaction for all-or-nothing commit.
-    /// </summary>
-    /// <param name="input">Signup binding model.</param>
-    /// <returns>Member DTO for the created admin.</returns>
     public async Task<MemberDto> SignUpAdminAsync(SignUpBindingModel input)
     {
-        // Use transaction to ensure all-or-nothing
         using var transaction = await this._dbContext.Database.BeginTransactionAsync();
         try
         {
-            // Check if email already exists
             var existingMember = await this._userManager.FindByEmailAsync(input.Email);
             if (existingMember != null)
             {
@@ -127,11 +101,6 @@ public class SignUpService : ISignUpService
         }
     }
 
-    /// <summary>
-    /// Generates a unique organization code based on the name.
-    /// </summary>
-    /// <param name="name">Organization name.</param>
-    /// <returns>Unique organization code.</returns>
     public async Task<string> GenerateUniqueOrgCodeAsync(string name)
     {
         string BaseSlug(string s) =>
@@ -152,15 +121,8 @@ public class SignUpService : ISignUpService
         return $"{baseSlug}-{Guid.NewGuid():N}";
     }
 
-    /// <summary>
-    /// Exception thrown when a signup email already exists.
-    /// </summary>
     public class EmailAlreadyExistsException : Exception
     {
-        /// <summary>
-        /// Initializes a new instance of the <see cref="EmailAlreadyExistsException"/> class.
-        /// </summary>
-        /// <param name="message">The exception message.</param>
         public EmailAlreadyExistsException(string message)
             : base(message)
         {

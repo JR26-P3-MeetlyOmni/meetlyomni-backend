@@ -14,28 +14,18 @@ namespace MeetlyOmni.Api.Controllers;
 [ApiController]
 public class AuthController : Controller
 {
-    /// <summary>
-    /// The signup service.
-    /// </summary>
     private readonly ISignUpService _signUpService;
 
-    /// <summary>
-    /// Initializes a new instance of the <see cref="AuthController"/> class.
-    /// </summary>
-    /// <param name="signUpService">The signup service.</param>
     public AuthController(ISignUpService signUpService)
     {
         this._signUpService = signUpService;
     }
 
-    /// <summary>
-    /// Registers a new admin user.
-    /// </summary>
     /// <param name="request">Signup request model.</param>
     /// <response code="201">Successfully created the user.</response>
     /// <response code="400">Invalid request data.</response>
     /// <response code="409">Email already exists.</response>
-    /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
+    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous operation.</placeholder></returns>
     [HttpPost("signup")]
     [ProducesResponseType(typeof(Models.Members.MemberDto), 201)]
     [ProducesResponseType(typeof(object), 400)]
@@ -72,40 +62,22 @@ public class AuthController : Controller
         }
     }
 
-    /// <summary>
-    /// Signup request model for admin registration.
-    /// </summary>
     public class AdminSignupRequest
     {
-        /// <summary>
-        /// Gets or sets the username.
-        /// </summary>
         [Required]
         public string UserName { get; set; } = string.Empty;
 
-        /// <summary>
-        /// Gets or sets the email address.
-        /// </summary>
         [Required]
         [EmailAddress]
         public string Email { get; set; } = string.Empty;
 
-        /// <summary>
-        /// Gets or sets the password.
-        /// </summary>
         [Required]
         [MinLength(6)]
         public string Password { get; set; } = string.Empty;
 
-        /// <summary>
-        /// Gets or sets the organization name.
-        /// </summary>
         [Required]
         public string OrganizationName { get; set; } = string.Empty;
 
-        /// <summary>
-        /// Gets or sets the phone number.
-        /// </summary>
         [Required]
         public string PhoneNumber { get; set; } = string.Empty;
     }
