@@ -21,11 +21,14 @@ public class AuthController : Controller
         this._signUpService = signUpService;
     }
 
+    /// <summary>
+    /// Registers a new admin user.
+    /// </summary>
     /// <param name="request">Signup request model.</param>
     /// <response code="201">Successfully created the user.</response>
     /// <response code="400">Invalid request data.</response>
     /// <response code="409">Email already exists.</response>
-    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous operation.</placeholder></returns>
+    /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
     [HttpPost("signup")]
     [ProducesResponseType(typeof(Models.Members.MemberDto), 201)]
     [ProducesResponseType(typeof(object), 400)]
