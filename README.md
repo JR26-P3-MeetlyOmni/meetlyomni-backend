@@ -93,3 +93,4 @@ src/MeetlyOmni.Api/
 - **AutoMapper** - Object mapping
 - **StyleCop** - Code analysis
 
+1
