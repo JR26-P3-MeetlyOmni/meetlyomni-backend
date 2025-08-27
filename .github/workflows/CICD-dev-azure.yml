@@ -10,13 +10,11 @@ permissions:
   contents: read
 
 env:
-  # ---- Azure / ACR ----
   AZURE_CONTAINER_REGISTRY: meetlyapiacr
   ACR_REPO: meetlyomni-backend
-  # ---- Web App ----
   WEBAPP_NAME: meetly-api-dev
   WEBAPP_RESOURCE_GROUP: rg-meetly-api-dev
-  # ---- .NET & Docker ----
+
   DOTNET_VERSION: 8.0
   SOLUTION_PATH: ./MeetlyOmni.sln
   API_PROJECT: src/MeetlyOmni.Api/MeetlyOmni.Api.csproj
@@ -48,12 +46,11 @@ jobs:
       - name: Build
         run: dotnet build ${{ env.SOLUTION_PATH }} -c Release --no-restore
 
-      - name: Test (unit)
+      - name: Unit Test
         run: dotnet test src/MeetlyOmni.Unit.tests/MeetlyOmni.Unit.tests.csproj -c Release --no-build
         continue-on-error: true
 
-      # 登录 Azure（OIDC 无密钥）
-      - name: Azure Login (OIDC)
+      - name: Azure Login
         uses: azure/login@v2
         with:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
@@ -66,7 +63,7 @@ jobs:
           LOGIN_SERVER=$(az acr show -n "${{ env.AZURE_CONTAINER_REGISTRY }}" --query loginServer -o tsv)
           echo "login_server=$LOGIN_SERVER" >> $GITHUB_OUTPUT
 
-      - name: ACR docker login (via az)
+      - name: ACR docker login
         run: az acr login -n "${{ env.AZURE_CONTAINER_REGISTRY }}"
 
       - name: Build & Push Docker image
@@ -98,7 +95,7 @@ jobs:
       contents: read
 
     steps:
-      - name: Azure Login (OIDC)
+      - name: Azure Login
         uses: azure/login@v2
         with:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
@@ -129,7 +126,6 @@ jobs:
               WEBSITES_PORT=80 \
               ConnectionStrings__MeetlyOmniDb="${{ secrets.DEV_DB_CONNECTION_STRING }}"
 
-      # （可选）设置健康检查路径
       - name: Configure Health Check
         run: |
           az webapp update \
@@ -137,7 +133,6 @@ jobs:
             -n "${{ env.WEBAPP_NAME }}" \
             --set siteConfig.healthCheckPath="/health"
 
-      # 部署：指向 ACR 镜像（:dev）
       - name: Deploy to Web App for Containers
         uses: azure/webapps-deploy@v3
         with:
