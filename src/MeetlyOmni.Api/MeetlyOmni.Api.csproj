@@ -39,7 +39,6 @@
   <ItemGroup>
     <Folder Include="Common\Constants\" />
     <Folder Include="Middlewares\" />
-    <Folder Include="Filters\" />
     <Folder Include="Data\Repository\" />
   </ItemGroup>
 

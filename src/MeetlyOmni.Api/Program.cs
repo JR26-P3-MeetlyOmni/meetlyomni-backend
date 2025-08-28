@@ -11,6 +11,7 @@ using MeetlyOmni.Api.Data;
 using MeetlyOmni.Api.Data.Entities;
 using MeetlyOmni.Api.Data.Repository;
 using MeetlyOmni.Api.Data.Repository.Interfaces;
+using MeetlyOmni.Api.Filters;
 using MeetlyOmni.Api.Mapping;
 using MeetlyOmni.Api.Service.AuthService;
 using MeetlyOmni.Api.Service.AuthService.Interfaces;
@@ -26,6 +27,17 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Clear default JWT claim mappings to use standard claim names
 JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear();
+
+// RFC 7807 output application/problem+json
+builder.Services.AddProblemDetails(options =>
+{
+    options.CustomizeProblemDetails = ctx =>
+    {
+        // additional info not part of RFC 7807
+        ctx.ProblemDetails.Instance = ctx.HttpContext.Request.Path;
+        ctx.ProblemDetails.Extensions["traceId"] = ctx.HttpContext.TraceIdentifier;
+    };
+});
 
 // Logging config (optional, but recommended)
 builder.Logging.ClearProviders();
@@ -77,6 +89,14 @@ builder.Services.AddScoped<ITokenService, TokenService>();
 // ---- Common Services ----
 builder.Services.AddScoped<IClientInfoService, ClientInfoService>();
 
+// distribute exception handlers
+builder.Services.AddExceptionHandler<NotFoundExceptionHandler>();
+builder.Services.AddExceptionHandler<ValidationExceptionHandler>();
+builder.Services.AddExceptionHandler<UnauthorizedExceptionHandler>();
+builder.Services.AddExceptionHandler<ForbiddenExceptionHandler>();
+builder.Services.AddExceptionHandler<ConflictExceptionHandler>();
+builder.Services.AddExceptionHandler<GlobalUnhandledExceptionHandler>();
+
 // Health Check
 builder.Services.AddHealthChecks()
     .AddNpgSql(connectionString);
@@ -111,6 +131,16 @@ if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
+}
+
+// Exception in different environments
+if (app.Environment.IsDevelopment())
+{
+    app.UseDeveloperExceptionPage();
+}
+else
+{
+    app.UseExceptionHandler();
 }
 
 app.UseHttpsRedirection();
