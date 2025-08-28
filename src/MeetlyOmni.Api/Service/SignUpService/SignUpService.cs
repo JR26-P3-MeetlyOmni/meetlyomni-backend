@@ -78,10 +78,20 @@ public class SignUpService : ISignUpService
 
                 if (!await this._roleManager.RoleExistsAsync(roleName))
                 {
-                    await this._roleManager.CreateAsync(new ApplicationRole(roleName));
+                    var roleCreatedResult = await this._roleManager.CreateAsync(new ApplicationRole(roleName));
+
+                    if (!roleCreatedResult.Succeeded)
+                    {
+                        throw new InvalidOperationException(string.Join("; ", roleCreatedResult.Errors.Select(e => $"{e.Code}:{e.Description}")));
+                    }
                 }
 
                 var addToRoleResult = await this._userManager.AddToRoleAsync(memberEntity, roleName);
+
+                if (!addToRoleResult.Succeeded)
+                {
+                    throw new InvalidOperationException(string.Join("; ", addToRoleResult.Errors.Select(e => $"{e.Code}:{e.Description}")));
+                }
             }
 
             await transaction.CommitAsync();
