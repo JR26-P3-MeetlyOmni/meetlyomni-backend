@@ -2,6 +2,11 @@
 // Copyright (c) MeetlyOmni. All rights reserved.
 // </copyright>
 
+using System.Collections.ObjectModel;
+
+// <copyright file="DomainExceptions.cs" company="MeetlyOmni">
+// Copyright (c) MeetlyOmni. All rights reserved.
+// </copyright>
 namespace MeetlyOmni.Api.Filters;
 
 public sealed class EntityNotFoundException : Exception
@@ -20,10 +25,11 @@ public sealed class EntityNotFoundException : Exception
 
 public sealed class DomainValidationException : Exception
 {
-    public DomainValidationException(Dictionary<string, string[]> errors, string? message = null)
+    public DomainValidationException(IReadOnlyDictionary<string, string[]> errors, string? message = null)
         : base(message ?? "One or more validation errors occurred.")
     {
-        Errors = errors;
+        ArgumentNullException.ThrowIfNull(errors);
+        Errors = new ReadOnlyDictionary<string, string[]>(new Dictionary<string, string[]>(errors));
     }
 
     public IReadOnlyDictionary<string, string[]> Errors { get; }

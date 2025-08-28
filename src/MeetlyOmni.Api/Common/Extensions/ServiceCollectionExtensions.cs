@@ -11,8 +11,11 @@ using MeetlyOmni.Api.Common.Options;
 using MeetlyOmni.Api.Service.AuthService.Interfaces;
 
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+
+using Swashbuckle.AspNetCore.SwaggerGen;
 
 namespace MeetlyOmni.Api.Common.Extensions;
 
@@ -153,22 +156,7 @@ public static class ServiceCollectionExtensions
         services.AddEndpointsApiExplorer();
         services.AddSwaggerGen(options =>
         {
-            // Get the API version descriptions
-            var provider = services.BuildServiceProvider().GetRequiredService<IApiVersionDescriptionProvider>();
-
-            // Create a swagger document for each discovered API version
-            foreach (var description in provider.ApiVersionDescriptions)
-            {
-                options.SwaggerDoc(description.GroupName, new OpenApiInfo
-                {
-                    Title = $"{title} {description.ApiVersion}",
-                    Version = description.ApiVersion.ToString(),
-                    Description = description.IsDeprecated
-                        ? $"{title} {description.ApiVersion} - This API version has been deprecated."
-                        : $"{title} {description.ApiVersion}",
-                });
-            }
-
+            // Documents configured via IConfigureOptions<SwaggerGenOptions> to avoid building the provider here.
             // Add operation filter to handle API versioning
             options.OperationFilter<SwaggerDefaultValues>();
 
@@ -199,6 +187,9 @@ public static class ServiceCollectionExtensions
                 },
             });
         });
+
+        services.AddTransient<IConfigureOptions<SwaggerGenOptions>>(
+            sp => new ConfigureSwaggerOptions(sp.GetRequiredService<IApiVersionDescriptionProvider>(), title));
 
         return services;
     }

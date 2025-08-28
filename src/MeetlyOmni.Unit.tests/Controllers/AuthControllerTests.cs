@@ -69,7 +69,7 @@ public class AuthControllerTests
             AccessToken = "test-access-token",
             RefreshToken = "test-refresh-token",
             ExpiresAt = DateTimeOffset.UtcNow.AddHours(1),
-            RefreshTokenExpiresAt = DateTimeOffset.UtcNow.AddDays(7),
+            RefreshTokenExpiresAt = DateTimeOffset.UtcNow.AddDays(30),
             TokenType = "Bearer"
         };
 
@@ -140,7 +140,7 @@ public class AuthControllerTests
             "new-access-token",
             DateTimeOffset.UtcNow.AddHours(1),
             "new-refresh-token",
-            DateTimeOffset.UtcNow.AddDays(7));
+            DateTimeOffset.UtcNow.AddDays(30));
 
         // Add refresh token to cookies
         _authController.HttpContext.Request.Headers.Cookie = $"{AuthCookieExtensions.CookieNames.RefreshToken}={refreshToken}";

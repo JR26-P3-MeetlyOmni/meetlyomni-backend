@@ -18,8 +18,8 @@ public sealed class UnauthorizedExceptionHandler : IExceptionHandler
             return false;
         }
 
-        // Clear the refresh token cookie to avoid refresh loops
-        ctx.Response.Cookies.Delete(AuthCookieExtensions.CookieNames.RefreshToken);
+        // Clear the refresh token cookie to avoid refresh loops (use same Path/flags as set)
+        ctx.Response.DeleteRefreshTokenCookie();
 
         var pd = new ProblemDetails
         {

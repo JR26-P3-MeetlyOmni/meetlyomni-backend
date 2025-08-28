@@ -59,7 +59,7 @@ public class LoginServiceTests
             "access-token",
             DateTimeOffset.UtcNow.AddMinutes(15),
             "refresh-token",
-            DateTimeOffset.UtcNow.AddDays(7)
+            DateTimeOffset.UtcNow.AddDays(30)
         );
 
         MockHelper.SetupSuccessfulUserLookup(_mockUserManager, testMember);
@@ -135,7 +135,7 @@ public class LoginServiceTests
             "access-token",
             DateTimeOffset.UtcNow.AddMinutes(15),
             "refresh-token",
-            DateTimeOffset.UtcNow.AddDays(7)
+            DateTimeOffset.UtcNow.AddDays(30)
         );
 
         MockHelper.SetupSuccessfulUserLookup(_mockUserManager, testMember);

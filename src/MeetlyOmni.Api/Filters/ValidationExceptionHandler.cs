@@ -15,7 +15,7 @@ public sealed class ValidationExceptionHandler : IExceptionHandler
             return false;
         }
 
-        var vpd = new HttpValidationProblemDetails((IDictionary<string, string[]>)vex.Errors)
+        var vpd = new HttpValidationProblemDetails(new Dictionary<string, string[]>(vex.Errors))
         {
             Title = "Validation failed",
             Detail = vex.Message,

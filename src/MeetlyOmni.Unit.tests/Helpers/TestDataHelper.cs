@@ -110,7 +110,7 @@ public static class TestDataHelper
             TokenHash = "test-refresh-token-hash",
             UserId = Guid.NewGuid(),
             FamilyId = Guid.NewGuid(),
-            ExpiresAt = DateTimeOffset.UtcNow.AddDays(7),
+            ExpiresAt = DateTimeOffset.UtcNow.AddDays(30),
             CreatedAt = DateTimeOffset.UtcNow.AddDays(-1),
             IpAddress = "192.168.1.100",
             UserAgent = "TestUserAgent/1.0",
