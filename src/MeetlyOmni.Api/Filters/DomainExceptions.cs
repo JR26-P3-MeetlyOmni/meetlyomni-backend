@@ -6,27 +6,27 @@ namespace MeetlyOmni.Api.Filters;
 
 public sealed class EntityNotFoundException : Exception
 {
-    public string? Resource { get; }
-
-    public string? Key { get; }
-
     public EntityNotFoundException(string? resource, string? key, string? message = null)
         : base(message ?? "Resource not found.")
     {
         Resource = resource;
         Key = key;
     }
+
+    public string? Resource { get; }
+
+    public string? Key { get; }
 }
 
 public sealed class DomainValidationException : Exception
 {
-    public IReadOnlyDictionary<string, string[]> Errors { get; }
-
     public DomainValidationException(Dictionary<string, string[]> errors, string? message = null)
         : base(message ?? "One or more validation errors occurred.")
     {
         Errors = errors;
     }
+
+    public IReadOnlyDictionary<string, string[]> Errors { get; }
 }
 
 public sealed class UnauthorizedAppException : Exception
