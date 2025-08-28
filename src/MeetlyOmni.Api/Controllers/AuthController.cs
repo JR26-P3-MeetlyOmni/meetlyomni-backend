@@ -150,12 +150,14 @@ public class AuthController : ControllerBase
     /// <summary>
     /// User logout endpoint.
     /// </summary>
-    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous operation.</placeholder></returns>
+    /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
     [HttpPost("logout")]
     [Authorize]
     [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
     public async Task<IActionResult> LogoutAsync(CancellationToken ct)
     {
+        var userId = User.FindFirstValue(JwtClaimTypes.Subject);
+
         if (Request.Cookies.TryGetValue(AuthCookieExtensions.CookieNames.RefreshToken, out var refreshToken) &&
             !string.IsNullOrWhiteSpace(refreshToken))
         {
@@ -164,7 +166,9 @@ public class AuthController : ControllerBase
             {
                 _logger.LogWarning(
                     "Refresh token not found during logout for user {UserId}",
-                    User.FindFirstValue(JwtClaimTypes.Subject));
+                    userId);
+
+                return BadRequest(new { message = "Invalid refresh token" });
             }
         }
 
@@ -172,7 +176,7 @@ public class AuthController : ControllerBase
         Response.Cookies.Delete(AuthCookieExtensions.CookieNames.CsrfToken, new CookieOptions { Path = "/" });
         Response.Cookies.Delete("XSRF-TOKEN", new CookieOptions { Path = "/" });
 
-        _logger.LogInformation("User {UserId} logged out.", User.FindFirstValue(JwtClaimTypes.Subject));
+        _logger.LogInformation("User {UserId} logged out.", userId);
 
         return Ok(new { message = "Logged out successfully" });
     }

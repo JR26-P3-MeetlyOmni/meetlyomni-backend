@@ -272,7 +272,7 @@ public class TokenService : ITokenService
     /// <summary>
     /// Logout from the device.
     /// </summary>
-    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous operation.</placeholder></returns>
+    /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
     public async Task<bool> LogoutAsync(string refreshToken, CancellationToken ct = default)
     {
         var tokenHash = ComputeHash(refreshToken);
