@@ -5,6 +5,8 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 
+using Asp.Versioning.ApiExplorer;
+
 using MeetlyOmni.Api.Common.Options;
 using MeetlyOmni.Api.Service.AuthService.Interfaces;
 
@@ -141,18 +143,34 @@ public static class ServiceCollectionExtensions
     }
 
     /// <summary>
-    /// Configures Swagger/OpenAPI with JWT Bearer authentication support.
+    /// Configures Swagger/OpenAPI with API versioning support.
     /// </summary>
     /// <param name="services">The service collection.</param>
     /// <param name="title">API title. Defaults to "MeetlyOmni API".</param>
-    /// <param name="version">API version. Defaults to "v1".</param>
     /// <returns>The service collection for chaining.</returns>
-    public static IServiceCollection AddSwaggerWithJwtAuth(this IServiceCollection services, string title = "MeetlyOmni API", string version = "v1")
+    public static IServiceCollection AddSwaggerWithApiVersioning(this IServiceCollection services, string title = "MeetlyOmni API")
     {
         services.AddEndpointsApiExplorer();
-        services.AddSwaggerGen(c =>
+        services.AddSwaggerGen(options =>
         {
-            c.SwaggerDoc(version, new OpenApiInfo { Title = title, Version = version });
+            // Get the API version descriptions
+            var provider = services.BuildServiceProvider().GetRequiredService<IApiVersionDescriptionProvider>();
+
+            // Create a swagger document for each discovered API version
+            foreach (var description in provider.ApiVersionDescriptions)
+            {
+                options.SwaggerDoc(description.GroupName, new OpenApiInfo
+                {
+                    Title = $"{title} {description.ApiVersion}",
+                    Version = description.ApiVersion.ToString(),
+                    Description = description.IsDeprecated
+                        ? $"{title} {description.ApiVersion} - This API version has been deprecated."
+                        : $"{title} {description.ApiVersion}",
+                });
+            }
+
+            // Add operation filter to handle API versioning
+            options.OperationFilter<SwaggerDefaultValues>();
 
             // JWT auth configuration for Swagger UI
             var bearerSecurityScheme = new OpenApiSecurityScheme
@@ -164,9 +182,9 @@ public static class ServiceCollectionExtensions
                 Scheme = "bearer",
                 BearerFormat = "JWT",
             };
-            c.AddSecurityDefinition("Bearer", bearerSecurityScheme);
+            options.AddSecurityDefinition("Bearer", bearerSecurityScheme);
 
-            c.AddSecurityRequirement(new OpenApiSecurityRequirement
+            options.AddSecurityRequirement(new OpenApiSecurityRequirement
             {
                 {
                     new OpenApiSecurityScheme

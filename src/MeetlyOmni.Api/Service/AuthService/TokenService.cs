@@ -10,6 +10,7 @@ using System.Text;
 using MeetlyOmni.Api.Common.Options;
 using MeetlyOmni.Api.Data.Entities;
 using MeetlyOmni.Api.Data.Repository.Interfaces;
+using MeetlyOmni.Api.Filters;
 using MeetlyOmni.Api.Models.Auth;
 using MeetlyOmni.Api.Service.AuthService.Interfaces;
 
@@ -54,9 +55,10 @@ public class TokenService : ITokenService
         Member user,
         string userAgent,
         string ipAddress,
-        Guid? familyId = null)
+        Guid? familyId = null,
+        CancellationToken ct = default)
     {
-        var accessToken = await GenerateAccessTokenAsync(user);
+        var accessToken = await GenerateAccessTokenAsync(user, ct);
         var accessTokenExpires = DateTimeOffset.UtcNow.AddMinutes(_jwtOptions.AccessTokenExpirationMinutes);
 
         // Generate refresh token
@@ -93,7 +95,7 @@ public class TokenService : ITokenService
 
         // Add to repository and save atomically
         _unitOfWork.RefreshTokens.Add(refreshToken);
-        await _unitOfWork.SaveChangesAsync();
+        await _unitOfWork.SaveChangesAsync(ct);
 
         return new TokenResult(
             accessToken,
@@ -102,7 +104,7 @@ public class TokenService : ITokenService
             refreshTokenExpires);
     }
 
-    public async Task<string> GenerateAccessTokenAsync(Member user)
+    public async Task<string> GenerateAccessTokenAsync(Member user, CancellationToken ct = default)
     {
         var now = DateTimeOffset.UtcNow;
         var expires = now.AddMinutes(_jwtOptions.AccessTokenExpirationMinutes);
@@ -123,7 +125,7 @@ public class TokenService : ITokenService
         }
 
         // Get user claims and roles asynchronously
-        var (userClaims, userRoles) = await GetUserClaimsAndRolesAsync(user);
+        var (userClaims, userRoles) = await GetUserClaimsAndRolesAsync(user, ct);
 
         // Add user custom claims
         AddUserClaims(claims, userClaims);
@@ -146,15 +148,16 @@ public class TokenService : ITokenService
     public async Task<TokenResult> RefreshTokenPairAsync(
         string refreshToken,
         string userAgent,
-        string ipAddress)
+        string ipAddress,
+        CancellationToken ct = default)
     {
         var tokenHash = ComputeHash(refreshToken);
-        var storedToken = await _unitOfWork.RefreshTokens.FindByHashAsync(tokenHash);
+        var storedToken = await _unitOfWork.RefreshTokens.FindByHashAsync(tokenHash, ct);
 
         if (storedToken == null)
         {
             _logger.LogWarning("Refresh token not found: {TokenHash}", tokenHash[..8]);
-            throw new UnauthorizedAccessException("Invalid refresh token.");
+            throw new UnauthorizedAppException("Invalid refresh token.");
         }
 
         // Check for reuse attack - if token was already replaced
@@ -166,14 +169,14 @@ public class TokenService : ITokenService
                 storedToken.FamilyId);
 
             // Revoke all tokens in this family and save
-            var revokedCount = await _unitOfWork.RefreshTokens.MarkTokenFamilyAsRevokedAsync(storedToken.FamilyId);
-            await _unitOfWork.SaveChangesAsync();
+            var revokedCount = await _unitOfWork.RefreshTokens.MarkTokenFamilyAsRevokedAsync(storedToken.FamilyId, ct);
+            await _unitOfWork.SaveChangesAsync(ct);
 
             _logger.LogWarning(
                 "Revoked {Count} tokens in family {FamilyId} due to reuse detection",
                 revokedCount,
                 storedToken.FamilyId);
-            throw new UnauthorizedAccessException("Token reuse detected. Please login again.");
+            throw new UnauthorizedAppException("Token reuse detected. Please login again.");
         }
 
         // Check if token is expired or revoked
@@ -182,11 +185,11 @@ public class TokenService : ITokenService
             _logger.LogWarning(
                 "Inactive refresh token used for user {UserId}",
                 storedToken.UserId);
-            throw new UnauthorizedAccessException("Refresh token is expired or revoked.");
+            throw new UnauthorizedAppException("Refresh token is expired or revoked.");
         }
 
         // Use transaction to ensure atomicity
-        await _unitOfWork.BeginTransactionAsync();
+        await _unitOfWork.BeginTransactionAsync(ct);
 
         try
         {
@@ -195,20 +198,21 @@ public class TokenService : ITokenService
                 storedToken.User,
                 userAgent,
                 ipAddress,
-                storedToken.FamilyId);
+                storedToken.FamilyId,
+                ct);
 
             // Atomically mark old token as replaced only if still active and not replaced
             var newTokenHash = ComputeHash(newTokens.refreshToken);
             var affected = await _unitOfWork.RefreshTokens
-                .MarkSingleTokenAsReplacedAsync(storedToken.Id, newTokenHash);
+                .MarkSingleTokenAsReplacedAsync(storedToken.Id, newTokenHash, ct);
             if (affected == 0)
             {
                 await _unitOfWork.RollbackTransactionAsync();
-                throw new UnauthorizedAccessException("Refresh token already used.");
+                throw new UnauthorizedAppException("Refresh token already used.");
             }
 
             // Commit all changes atomically
-            await _unitOfWork.CommitTransactionAsync();
+            await _unitOfWork.CommitTransactionAsync(ct);
 
             _logger.LogInformation(
                 "Successfully refreshed tokens for user {UserId}",
@@ -255,9 +259,10 @@ public class TokenService : ITokenService
         return Convert.ToHexString(hashedBytes).ToLowerInvariant();
     }
 
-    private async Task<(IList<Claim> claims, IList<string> roles)> GetUserClaimsAndRolesAsync(Member member)
+    private async Task<(IList<Claim> claims, IList<string> roles)> GetUserClaimsAndRolesAsync(Member member, CancellationToken ct = default)
     {
         // Get user claims and roles sequentially to avoid DbContext concurrency issues
+        // Note: UserManager methods don't support CancellationToken, so we can't pass it through
         var userClaims = await _userManager.GetClaimsAsync(member);
         var userRoles = await _userManager.GetRolesAsync(member);
 

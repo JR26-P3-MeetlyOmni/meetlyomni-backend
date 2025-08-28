@@ -5,6 +5,9 @@
 using System.Buffers.Text;
 using System.IdentityModel.Tokens.Jwt;
 
+using Asp.Versioning;
+using Asp.Versioning.ApiExplorer;
+
 using MeetlyOmni.Api.Common.Extensions;
 using MeetlyOmni.Api.Common.Options;
 using MeetlyOmni.Api.Data;
@@ -95,6 +98,7 @@ builder.Services.AddExceptionHandler<ValidationExceptionHandler>();
 builder.Services.AddExceptionHandler<UnauthorizedExceptionHandler>();
 builder.Services.AddExceptionHandler<ForbiddenExceptionHandler>();
 builder.Services.AddExceptionHandler<ConflictExceptionHandler>();
+builder.Services.AddExceptionHandler<AntiforgeryExceptionHandler>();
 builder.Services.AddExceptionHandler<GlobalUnhandledExceptionHandler>();
 
 // Health Check
@@ -110,13 +114,30 @@ builder.Services.AddAntiforgery(options =>
     options.HeaderName = "X-XSRF-TOKEN";
     options.Cookie.SameSite = SameSiteMode.None;
     options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
-    options.Cookie.Path = AuthCookieExtensions.CookiePaths.TokenApi;
+    options.Cookie.Path = AuthCookieExtensions.CookiePaths.Root;
+});
+
+// API Versioning Configuration
+builder.Services.AddApiVersioning(options =>
+{
+    options.DefaultApiVersion = new ApiVersion(1, 0);
+    options.AssumeDefaultVersionWhenUnspecified = true;
+    options.ReportApiVersions = true;
+    options.ApiVersionReader = ApiVersionReader.Combine(
+        new UrlSegmentApiVersionReader(),
+        new HeaderApiVersionReader("X-API-Version"),
+        new MediaTypeApiVersionReader("version"));
+})
+.AddApiExplorer(options =>
+{
+    options.GroupNameFormat = "'v'VVV"; // v1, v2
+    options.SubstituteApiVersionInUrl = true;
 });
 
 builder.Services.AddControllers();
 
-// Swagger Configuration
-builder.Services.AddSwaggerWithJwtAuth();
+// Swagger Configuration with API versioning
+builder.Services.AddSwaggerWithApiVersioning();
 
 // Register AutoMapper and scan for profiles starting from MappingProfile's assembly
 builder.Services.AddAutoMapper(typeof(MappingProfile));
@@ -129,8 +150,7 @@ await app.InitializeDatabaseAsync();
 // Swagger
 if (app.Environment.IsDevelopment())
 {
-    app.UseSwagger();
-    app.UseSwaggerUI();
+    app.UseSwaggerWithApiVersioning();
 }
 
 // Exception in different environments

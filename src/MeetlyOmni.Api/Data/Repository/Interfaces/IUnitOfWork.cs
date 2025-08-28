@@ -11,11 +11,11 @@ public interface IUnitOfWork : IDisposable
 {
     IRefreshTokenRepository RefreshTokens { get; }
 
-    Task<int> SaveChangesAsync();
+    Task<int> SaveChangesAsync(CancellationToken ct = default);
 
-    Task BeginTransactionAsync();
+    Task BeginTransactionAsync(CancellationToken ct = default);
 
-    Task CommitTransactionAsync();
+    Task CommitTransactionAsync(CancellationToken ct = default);
 
     Task RollbackTransactionAsync();
 }

@@ -13,13 +13,13 @@ public interface IRefreshTokenRepository
 {
     void Add(RefreshToken refreshToken);
 
-    Task<RefreshToken?> FindByHashAsync(string tokenHash);
+    Task<RefreshToken?> FindByHashAsync(string tokenHash, CancellationToken ct = default);
 
     void Update(RefreshToken refreshToken);
 
-    Task<int> MarkTokenFamilyAsRevokedAsync(Guid familyId);
+    Task<int> MarkTokenFamilyAsRevokedAsync(Guid familyId, CancellationToken ct = default);
 
-    Task<int> MarkExpiredTokensForRemovalAsync(DateTimeOffset beforeDate);
+    Task<int> MarkExpiredTokensForRemovalAsync(DateTimeOffset beforeDate, CancellationToken ct = default);
 
-    Task<int> MarkSingleTokenAsReplacedAsync(Guid tokenId, string newTokenHash);
+    Task<int> MarkSingleTokenAsReplacedAsync(Guid tokenId, string newTokenHash, CancellationToken ct = default);
 }

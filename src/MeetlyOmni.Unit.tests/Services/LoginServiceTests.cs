@@ -5,6 +5,7 @@
 using FluentAssertions;
 
 using MeetlyOmni.Api.Data.Entities;
+using MeetlyOmni.Api.Filters;
 using MeetlyOmni.Api.Models.Auth;
 using MeetlyOmni.Api.Service.AuthService;
 using MeetlyOmni.Api.Service.AuthService.Interfaces;
@@ -65,11 +66,11 @@ public class LoginServiceTests
         MockHelper.SetupSuccessfulSignIn(_mockSignInManager);
 
         _mockTokenService
-            .Setup(x => x.GenerateTokenPairAsync(testMember, userAgent, ipAddress, null))
+            .Setup(x => x.GenerateTokenPairAsync(testMember, userAgent, ipAddress, null, It.IsAny<CancellationToken>()))
             .ReturnsAsync(tokenResult);
 
         // Act
-        var result = await _loginService.LoginAsync(loginRequest, userAgent, ipAddress);
+        var result = await _loginService.LoginAsync(loginRequest, userAgent, ipAddress, CancellationToken.None);
 
         // Assert
         result.Should().NotBeNull();
@@ -80,36 +81,44 @@ public class LoginServiceTests
     }
 
     [Fact]
-    public async Task LoginAsync_WithNonExistentUser_ShouldThrowUnauthorizedAccessException()
+    public async Task LoginAsync_WithNonExistentUser_ShouldThrowUnauthorizedAppException()
     {
         // Arrange
-        var loginRequest = TestDataHelper.CreateNonExistentUserRequest();
-        var userAgent = "TestUserAgent";
-        var ipAddress = "192.168.1.1";
+        var loginRequest = TestDataHelper.CreateValidLoginRequest();
+        loginRequest.Email = "nonexistent@example.com";
 
-        MockHelper.SetupFailedUserLookup(_mockUserManager);
+        _mockUserManager
+            .Setup(x => x.FindByEmailAsync(loginRequest.Email))
+            .ReturnsAsync((Member?)null);
 
-        // Act & Assert
-        var act = async () => await _loginService.LoginAsync(loginRequest, userAgent, ipAddress);
-        await act.Should().ThrowAsync<UnauthorizedAccessException>()
+        // Act
+        var act = () => _loginService.LoginAsync(loginRequest, "test-agent", "127.0.0.1", CancellationToken.None);
+
+        // Assert
+        await act.Should().ThrowAsync<UnauthorizedAppException>()
             .WithMessage("Invalid credentials.");
     }
 
     [Fact]
-    public async Task LoginAsync_WithWrongPassword_ShouldThrowUnauthorizedAccessException()
+    public async Task LoginAsync_WithWrongPassword_ShouldThrowUnauthorizedAppException()
     {
         // Arrange
-        var loginRequest = TestDataHelper.CreateWrongPasswordRequest();
+        var loginRequest = TestDataHelper.CreateValidLoginRequest();
         var testMember = TestDataHelper.CreateTestMember();
-        var userAgent = "TestUserAgent";
-        var ipAddress = "192.168.1.1";
 
-        MockHelper.SetupSuccessfulUserLookup(_mockUserManager, testMember);
-        MockHelper.SetupFailedSignIn(_mockSignInManager);
+        _mockUserManager
+            .Setup(x => x.FindByEmailAsync(loginRequest.Email))
+            .ReturnsAsync(testMember);
 
-        // Act & Assert
-        var act = async () => await _loginService.LoginAsync(loginRequest, userAgent, ipAddress);
-        await act.Should().ThrowAsync<UnauthorizedAccessException>()
+        _mockSignInManager
+            .Setup(x => x.CheckPasswordSignInAsync(testMember, loginRequest.Password, true))
+            .ReturnsAsync(SignInResult.Failed);
+
+        // Act
+        var act = () => _loginService.LoginAsync(loginRequest, "test-agent", "127.0.0.1", CancellationToken.None);
+
+        // Assert
+        await act.Should().ThrowAsync<UnauthorizedAppException>()
             .WithMessage("Invalid credentials.");
     }
 
@@ -133,15 +142,15 @@ public class LoginServiceTests
         MockHelper.SetupSuccessfulSignIn(_mockSignInManager);
 
         _mockTokenService
-            .Setup(x => x.GenerateTokenPairAsync(It.IsAny<Member>(), It.IsAny<string>(), It.IsAny<string>(), null))
+            .Setup(x => x.GenerateTokenPairAsync(It.IsAny<Member>(), It.IsAny<string>(), It.IsAny<string>(), null, It.IsAny<CancellationToken>()))
             .ReturnsAsync(tokenResult);
 
         // Act
-        await _loginService.LoginAsync(loginRequest, userAgent, ipAddress);
+        await _loginService.LoginAsync(loginRequest, userAgent, ipAddress, CancellationToken.None);
 
         // Assert
         _mockTokenService.Verify(
-            x => x.GenerateTokenPairAsync(testMember, userAgent, ipAddress, null),
+            x => x.GenerateTokenPairAsync(testMember, userAgent, ipAddress, null, It.IsAny<CancellationToken>()),
             Times.Once);
     }
 }

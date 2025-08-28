@@ -55,8 +55,6 @@ public class TokenServiceTests
         // Arrange
         var testMember = TestDataHelper.CreateTestMember();
 
-
-
         var tokenService = new TokenService(
             _mockUserManager.Object,
             _mockUnitOfWork.Object,
@@ -73,7 +71,7 @@ public class TokenServiceTests
             .ReturnsAsync(new List<string> { "User", "Admin" });
 
         // Act
-        var result = await tokenService.GenerateAccessTokenAsync(testMember);
+        var result = await tokenService.GenerateAccessTokenAsync(testMember, CancellationToken.None);
 
         // Assert
         result.Should().NotBeNullOrEmpty();
@@ -113,7 +111,7 @@ public class TokenServiceTests
             .ReturnsAsync(new List<string>());
 
         // Act
-        var result = await tokenService.GenerateAccessTokenAsync(testMember);
+        var result = await tokenService.GenerateAccessTokenAsync(testMember, CancellationToken.None);
 
         // Assert
         var tokenHandler = new JwtSecurityTokenHandler();
@@ -127,7 +125,6 @@ public class TokenServiceTests
     {
         // Arrange
         var testMember = TestDataHelper.CreateTestMember();
-
 
         var tokenService = new TokenService(
             _mockUserManager.Object,
@@ -145,7 +142,7 @@ public class TokenServiceTests
             .ReturnsAsync(new List<string>());
 
         // Act
-        var result = await tokenService.GenerateAccessTokenAsync(testMember);
+        var result = await tokenService.GenerateAccessTokenAsync(testMember, CancellationToken.None);
 
         // Assert
         var tokenHandler = new JwtSecurityTokenHandler();
@@ -160,7 +157,6 @@ public class TokenServiceTests
         // Arrange
         var testMember = TestDataHelper.CreateTestMember();
         var expectedRoles = new List<string> { "User", "Admin", "Manager" };
-
 
         var tokenService = new TokenService(
             _mockUserManager.Object,
@@ -178,7 +174,7 @@ public class TokenServiceTests
             .ReturnsAsync(expectedRoles);
 
         // Act
-        var result = await tokenService.GenerateAccessTokenAsync(testMember);
+        var result = await tokenService.GenerateAccessTokenAsync(testMember, CancellationToken.None);
 
         // Assert
         var tokenHandler = new JwtSecurityTokenHandler();
@@ -199,7 +195,6 @@ public class TokenServiceTests
         // Arrange
         var testMember = TestDataHelper.CreateTestMember();
 
-
         var tokenService = new TokenService(
             _mockUserManager.Object,
             _mockUnitOfWork.Object,
@@ -216,8 +211,8 @@ public class TokenServiceTests
             .ReturnsAsync(new List<string>());
 
         // Act
-        var result1 = await tokenService.GenerateAccessTokenAsync(testMember);
-        var result2 = await tokenService.GenerateAccessTokenAsync(testMember);
+        var result1 = await tokenService.GenerateAccessTokenAsync(testMember, CancellationToken.None);
+        var result2 = await tokenService.GenerateAccessTokenAsync(testMember, CancellationToken.None);
 
         // Assert
         var tokenHandler = new JwtSecurityTokenHandler();
@@ -258,7 +253,7 @@ public class TokenServiceTests
             .ReturnsAsync(new List<string>());
 
         // Act
-        var result = await tokenService.GenerateAccessTokenAsync(testMember);
+        var result = await tokenService.GenerateAccessTokenAsync(testMember, CancellationToken.None);
 
         // Assert
         var tokenHandler = new JwtSecurityTokenHandler();
@@ -292,7 +287,7 @@ public class TokenServiceTests
             .ReturnsAsync(new List<string>());
 
         // Act
-        var result = await tokenService.GenerateAccessTokenAsync(testMember);
+        var result = await tokenService.GenerateAccessTokenAsync(testMember, CancellationToken.None);
 
         // Assert
         var tokenHandler = new JwtSecurityTokenHandler();
@@ -324,7 +319,7 @@ public class TokenServiceTests
             .ReturnsAsync(new List<string>());
 
         // Act
-        var result = await tokenService.GenerateAccessTokenAsync(testMember);
+        var result = await tokenService.GenerateAccessTokenAsync(testMember, CancellationToken.None);
 
         // Assert
         var tokenHandler = new JwtSecurityTokenHandler();
@@ -356,7 +351,7 @@ public class TokenServiceTests
             .ReturnsAsync(new List<string>());
 
         // Act
-        var result = await tokenService.GenerateAccessTokenAsync(testMember);
+        var result = await tokenService.GenerateAccessTokenAsync(testMember, CancellationToken.None);
 
         // Assert
         var tokenHandler = new JwtSecurityTokenHandler();
@@ -390,7 +385,7 @@ public class TokenServiceTests
         var beforeGeneration = DateTimeOffset.UtcNow;
 
         // Act
-        var result = await tokenService.GenerateAccessTokenAsync(testMember);
+        var result = await tokenService.GenerateAccessTokenAsync(testMember, CancellationToken.None);
 
         // Assert
         var afterGeneration = DateTimeOffset.UtcNow;
@@ -427,7 +422,7 @@ public class TokenServiceTests
             .ReturnsAsync(new List<string>()); // Empty roles
 
         // Act
-        var result = await tokenService.GenerateAccessTokenAsync(testMember);
+        var result = await tokenService.GenerateAccessTokenAsync(testMember, CancellationToken.None);
 
         // Assert
         var tokenHandler = new JwtSecurityTokenHandler();
@@ -458,7 +453,7 @@ public class TokenServiceTests
             .ReturnsAsync(new List<string>());
 
         // Act
-        var result = await tokenService.GenerateAccessTokenAsync(testMember);
+        var result = await tokenService.GenerateAccessTokenAsync(testMember, CancellationToken.None);
 
         // Assert
         var tokenHandler = new JwtSecurityTokenHandler();

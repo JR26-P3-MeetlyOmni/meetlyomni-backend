@@ -25,22 +25,22 @@ public class UnitOfWork : IUnitOfWork
 
     public IRefreshTokenRepository RefreshTokens { get; }
 
-    public async Task<int> SaveChangesAsync()
+    public async Task<int> SaveChangesAsync(CancellationToken ct = default)
     {
-        return await _context.SaveChangesAsync();
+        return await _context.SaveChangesAsync(ct);
     }
 
-    public async Task BeginTransactionAsync()
+    public async Task BeginTransactionAsync(CancellationToken ct = default)
     {
         if (_transaction != null)
         {
             throw new InvalidOperationException("A transaction is already in progress.");
         }
 
-        _transaction = await _context.Database.BeginTransactionAsync();
+        _transaction = await _context.Database.BeginTransactionAsync(ct);
     }
 
-    public async Task CommitTransactionAsync()
+    public async Task CommitTransactionAsync(CancellationToken ct = default)
     {
         if (_transaction == null)
         {
@@ -49,8 +49,8 @@ public class UnitOfWork : IUnitOfWork
 
         try
         {
-            await _context.SaveChangesAsync();
-            await _transaction.CommitAsync();
+            await _context.SaveChangesAsync(ct);
+            await _transaction.CommitAsync(ct);
         }
         catch
         {

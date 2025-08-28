@@ -27,13 +27,13 @@ public class RefreshTokenRepository : IRefreshTokenRepository
         _context.RefreshTokens.Add(refreshToken);
     }
 
-    public async Task<RefreshToken?> FindByHashAsync(string tokenHash)
+    public async Task<RefreshToken?> FindByHashAsync(string tokenHash, CancellationToken ct = default)
     {
         ArgumentException.ThrowIfNullOrEmpty(tokenHash);
 
         return await _context.RefreshTokens
             .Include(rt => rt.User)
-            .FirstOrDefaultAsync(rt => rt.TokenHash == tokenHash);
+            .FirstOrDefaultAsync(rt => rt.TokenHash == tokenHash, ct);
     }
 
     public void Update(RefreshToken refreshToken)
@@ -42,26 +42,27 @@ public class RefreshTokenRepository : IRefreshTokenRepository
         _context.RefreshTokens.Update(refreshToken);
     }
 
-    public async Task<int> MarkTokenFamilyAsRevokedAsync(Guid familyId)
+    public async Task<int> MarkTokenFamilyAsRevokedAsync(Guid familyId, CancellationToken ct = default)
     {
         // Use ExecuteUpdateAsync for better performance and atomicity
         // EF Core 8+ provides collection-level updates without loading entities into memory
         return await _context.RefreshTokens
             .Where(rt => rt.FamilyId == familyId && rt.RevokedAt == null)
-            .ExecuteUpdateAsync(setters => setters
-                .SetProperty(rt => rt.RevokedAt, _ => DateTimeOffset.UtcNow));
+            .ExecuteUpdateAsync(
+                setters => setters
+                .SetProperty(rt => rt.RevokedAt, _ => DateTimeOffset.UtcNow), ct);
     }
 
-    public async Task<int> MarkExpiredTokensForRemovalAsync(DateTimeOffset beforeDate)
+    public async Task<int> MarkExpiredTokensForRemovalAsync(DateTimeOffset beforeDate, CancellationToken ct = default)
     {
         // Use ExecuteDeleteAsync for better performance and atomicity
         // EF Core 8+ provides collection-level deletes without loading entities into memory
         return await _context.RefreshTokens
             .Where(rt => rt.ExpiresAt < beforeDate)
-            .ExecuteDeleteAsync();
+            .ExecuteDeleteAsync(ct);
     }
 
-    public async Task<int> MarkSingleTokenAsReplacedAsync(Guid tokenId, string newTokenHash)
+    public async Task<int> MarkSingleTokenAsReplacedAsync(Guid tokenId, string newTokenHash, CancellationToken ct = default)
     {
         ArgumentException.ThrowIfNullOrEmpty(newTokenHash);
 
@@ -69,8 +70,9 @@ public class RefreshTokenRepository : IRefreshTokenRepository
         // Only update if token is still active (RevokedAt == null) and not already replaced
         return await _context.RefreshTokens
             .Where(rt => rt.Id == tokenId && rt.RevokedAt == null && rt.ReplacedByHash == null)
-            .ExecuteUpdateAsync(setters => setters
+            .ExecuteUpdateAsync(
+                setters => setters
                 .SetProperty(rt => rt.RevokedAt, _ => DateTimeOffset.UtcNow)
-                .SetProperty(rt => rt.ReplacedByHash, _ => newTokenHash));
+                .SetProperty(rt => rt.ReplacedByHash, _ => newTokenHash), ct);
     }
 }

@@ -16,12 +16,14 @@ public interface ITokenService
         Member user,
         string userAgent,
         string ipAddress,
-        Guid? familyId = null);
+        Guid? familyId = null,
+        CancellationToken ct = default);
 
-    Task<string> GenerateAccessTokenAsync(Member user);
+    Task<string> GenerateAccessTokenAsync(Member user, CancellationToken ct = default);
 
     Task<TokenResult> RefreshTokenPairAsync(
         string refreshToken,
         string userAgent,
-        string ipAddress);
+        string ipAddress,
+        CancellationToken ct = default);
 }

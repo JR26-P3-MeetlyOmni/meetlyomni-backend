@@ -3,6 +3,7 @@
 // </copyright>
 
 using MeetlyOmni.Api.Data.Entities;
+using MeetlyOmni.Api.Filters;
 using MeetlyOmni.Api.Models.Auth;
 using MeetlyOmni.Api.Service.AuthService.Interfaces;
 
@@ -32,7 +33,7 @@ public class LoginService : ILoginService
         _logger = logger;
     }
 
-    public async Task<InternalLoginResponse> LoginAsync(LoginRequest input, string userAgent, string ipAddress)
+    public async Task<InternalLoginResponse> LoginAsync(LoginRequest input, string userAgent, string ipAddress, CancellationToken ct)
     {
         var email = input.Email.Trim().ToLowerInvariant();
 
@@ -48,13 +49,13 @@ public class LoginService : ILoginService
         {
             _logger.LogWarning("Login attempt failed for email: {Email}", email);
 
-            throw new UnauthorizedAccessException("Invalid credentials.");
+            throw new UnauthorizedAppException("Invalid credentials.");
         }
 
         if (!user.EmailConfirmed)
         {
             _logger.LogWarning("Login attempt with unconfirmed email: {Email}", email);
-            throw new UnauthorizedAccessException("Email not confirmed.");
+            throw new UnauthorizedAppException("Email not confirmed.");
         }
 
         // Update user info in one go, avoid multiple database calls
@@ -71,7 +72,7 @@ public class LoginService : ILoginService
         }
 
         // Generate tokens
-        var tokens = await _tokenService.GenerateTokenPairAsync(user, userAgent, ipAddress);
+        var tokens = await _tokenService.GenerateTokenPairAsync(user, userAgent, ipAddress, ct: ct);
 
         _logger.LogInformation("User {UserId} logged in successfully", user.Id);
 

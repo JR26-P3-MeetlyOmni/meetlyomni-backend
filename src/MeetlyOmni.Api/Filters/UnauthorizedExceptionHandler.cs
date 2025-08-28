@@ -2,6 +2,8 @@
 // Copyright (c) MeetlyOmni. All rights reserved.
 // </copyright>
 
+using MeetlyOmni.Api.Common.Extensions;
+
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 
@@ -15,6 +17,9 @@ public sealed class UnauthorizedExceptionHandler : IExceptionHandler
         {
             return false;
         }
+
+        // Clear the refresh token cookie to avoid refresh loops
+        ctx.Response.Cookies.Delete(AuthCookieExtensions.CookieNames.RefreshToken);
 
         var pd = new ProblemDetails
         {

@@ -17,7 +17,7 @@ public static class AuthCookieExtensions
             HttpOnly = true,
             Secure = true,
             SameSite = SameSiteMode.None,
-            Path = CookiePaths.TokenApi,
+            Path = CookiePaths.Root,
             Expires = expiresAt,
 
             // Domain = ".your-domain.com"   // production; localhost should not be set
@@ -29,7 +29,7 @@ public static class AuthCookieExtensions
             HttpOnly = false,
             Secure = true,
             SameSite = SameSiteMode.None,
-            Path = CookiePaths.TokenApi,
+            Path = CookiePaths.Root,
         };
 
     public static void SetRefreshTokenCookie(this HttpResponse resp, string token, DateTimeOffset expiresAt)
@@ -39,7 +39,7 @@ public static class AuthCookieExtensions
         => resp.Cookies.Append(CookieNames.CsrfToken, csrfToken, CreateCsrfTokenCookieOptions());
 
     public static void DeleteRefreshTokenCookie(this HttpResponse resp)
-        => resp.Cookies.Delete(CookieNames.RefreshToken, new CookieOptions { Path = CookiePaths.TokenApi });
+        => resp.Cookies.Delete(CookieNames.RefreshToken, new CookieOptions { Path = CookiePaths.Root });
 
     public static class CookieNames
     {
@@ -49,6 +49,6 @@ public static class AuthCookieExtensions
 
     public static class CookiePaths
     {
-        public const string TokenApi = "/api/token";
+        public const string Root = "/";
     }
 }
