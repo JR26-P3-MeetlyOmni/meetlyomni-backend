@@ -146,4 +146,34 @@ public class AuthController : ControllerBase
             message = "Authentication via cookie is working!",
         });
     }
+
+    /// <summary>
+    /// User logout endpoint.
+    /// </summary>
+    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous operation.</placeholder></returns>
+    [HttpPost("logout")]
+    [Authorize]
+    [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
+    public async Task<IActionResult> LogoutAsync(CancellationToken ct)
+    {
+        if (Request.Cookies.TryGetValue(AuthCookieExtensions.CookieNames.RefreshToken, out var refreshToken) &&
+            !string.IsNullOrWhiteSpace(refreshToken))
+        {
+            var success = await _tokenService.LogoutAsync(refreshToken, ct);
+            if (!success)
+            {
+                _logger.LogWarning(
+                    "Refresh token not found during logout for user {UserId}",
+                    User.FindFirstValue(JwtClaimTypes.Subject));
+            }
+        }
+
+        Response.Cookies.Delete(AuthCookieExtensions.CookieNames.RefreshToken, new CookieOptions { Path = "/" });
+        Response.Cookies.Delete(AuthCookieExtensions.CookieNames.CsrfToken, new CookieOptions { Path = "/" });
+        Response.Cookies.Delete("XSRF-TOKEN", new CookieOptions { Path = "/" });
+
+        _logger.LogInformation("User {UserId} logged out.", User.FindFirstValue(JwtClaimTypes.Subject));
+
+        return Ok(new { message = "Logged out successfully" });
+    }
 }

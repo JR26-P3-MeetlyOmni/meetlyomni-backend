@@ -268,4 +268,29 @@ public class TokenService : ITokenService
 
         return (userClaims, userRoles);
     }
+
+    /// <summary>
+    /// Logout from the device.
+    /// </summary>
+    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous operation.</placeholder></returns>
+    public async Task<bool> LogoutAsync(string refreshToken, CancellationToken ct = default)
+    {
+        var tokenHash = ComputeHash(refreshToken);
+        var storedToken = await _unitOfWork.RefreshTokens.FindByHashAsync(tokenHash, ct);
+
+        if (storedToken == null)
+        {
+            _logger.LogWarning("Refresh token not found during logout: {TokenHash}", tokenHash[..8]);
+            return false;
+        }
+
+        _unitOfWork.RefreshTokens.Remove(storedToken);
+        await _unitOfWork.SaveChangesAsync(ct);
+
+        _logger.LogInformation(
+            "User {UserId} logged out from a single device.",
+            storedToken.UserId);
+
+        return true;
+    }
 }

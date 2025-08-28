@@ -22,4 +22,6 @@ public interface IRefreshTokenRepository
     Task<int> MarkExpiredTokensForRemovalAsync(DateTimeOffset beforeDate, CancellationToken ct = default);
 
     Task<int> MarkSingleTokenAsReplacedAsync(Guid tokenId, string newTokenHash, CancellationToken ct = default);
+
+    void Remove(RefreshToken refreshToken);
 }

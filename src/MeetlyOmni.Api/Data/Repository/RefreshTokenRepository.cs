@@ -75,4 +75,9 @@ public class RefreshTokenRepository : IRefreshTokenRepository
                 .SetProperty(rt => rt.RevokedAt, _ => DateTimeOffset.UtcNow)
                 .SetProperty(rt => rt.ReplacedByHash, _ => newTokenHash), ct);
     }
+
+    public void Remove(RefreshToken refreshToken)
+    {
+        _context.RefreshTokens.Remove(refreshToken);
+    }
 }
