@@ -6,7 +6,7 @@ namespace MeetlyOmni.IntegrationTests;
 
 public static class LaunchSettingsReader
 {
-    public static string GetBaseUrl(string profileName = "http")
+    public static string GetBaseUrl(string profileName = "https")
     {
         if (string.IsNullOrWhiteSpace(profileName))
         {
