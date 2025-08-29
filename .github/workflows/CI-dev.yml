@@ -60,90 +60,28 @@ jobs:
             pg_isready -h localhost -p 5432 -U usr -d testdb && break || sleep 1
           done
 
-name: CI-Dev-AWS
-
-on:
-  push:
-    branches: [dev, devops/leonard]
-  pull_request:
-    branches: [dev]
-  workflow_dispatch:
-
-env:
-  DOTNET_VERSION: 8.0
-  SOLUTION_PATH: ./MeetlyOmni.sln
-  API_PROJECT: src/MeetlyOmni.Api/MeetlyOmni.Api.csproj
-  DOCKERFILE: ./src/MeetlyOmni.Api/Dockerfile-2
-  CONTEXT: .
-  TAG_ENV: dev
-  REPO: meetlyomni-backend
-  ECR_URI: 034362033405.dkr.ecr.ap-southeast-2.amazonaws.com/meetlyomni-backend
-  ECR_REPO: meetlyomni-backend
-  AWS_REGION: ap-southeast-2
-
-jobs:
-  CI:
-    runs-on: ubuntu-latest
-    environment: dev
-    services:
-      postgres:
-        image: postgres:16
-        ports: ["5432:5432"]
-        env:
-          POSTGRES_USER: usr
-          POSTGRES_PASSWORD: pass
-          POSTGRES_DB: testdb
-        options: >-
-          --health-cmd="pg_isready -U usr -d testdb"
-          --health-interval=5s --health-timeout=5s --health-retries=20
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: ${{ env.DOTNET_VERSION }}
-          # cache: true
-
-      - name: Restore
-        run: dotnet restore ${{ env.SOLUTION_PATH }}
-
-      - name: Build
-        run: dotnet build ${{ env.SOLUTION_PATH }} -c Release --no-restore
-
-      - name: Unit Test
-        run: dotnet test src/MeetlyOmni.Unit.tests/MeetlyOmni.Unit.tests.csproj -c Release --no-build
-
-      - name: Wait DB ready
-        run: |
-          for i in {1..60}; do
-            pg_isready -h localhost -p 5432 -U usr -d testdb && break || sleep 1
-          done
-
       - name: Run API for Integration Test
         env:
           ASPNETCORE_URLS: http://localhost:7011
-          ASPNETCORE_ENVIRONMENT: Development # 命中 /swagger 需要 Development
+          ASPNETCORE_ENVIRONMENT: Development
           ConnectionStrings__MeetlyOmniDb: Host=localhost;Port=5432;Database=testdb;Username=usr;Password=pass
         run: |
           nohup dotnet run --no-build --configuration Release \
-            --project src/MeetlyOmni.Api/MeetlyOmni.Api.csproj > api.log 2>&1 &
+            --project src/MeetlyOmni.Api/MeetlyOmni.Api.csproj -- \
+            --urls http://127.0.0.1:7011 > api.log 2>&1 &
           echo $! > api.pid
-
-          # 等待就绪（最多 60s）
-          for i in {1..60}; do
-            if curl -fsS --max-time 2 http://localhost:7011/swagger/index.html > /dev/null; then
-              echo "API is up";
-              break;
-            fi
+      
+          # 等待就绪（最多 120s）
+          for i in {1..120}; do
+            if curl -fsS --max-time 2 --retry 1 --retry-connrefused http://127.0.0.1:7011/swagger/index.html > /dev/null; then
+              echo "API is up"; break; fi
             sleep 1
           done
-
-          # 若仍未就绪，打印日志并失败
-          if ! curl -fsS --max-time 2 http://localhost:7011/swagger/index.html > /dev/null; then
+      
+          # 若仍未就绪，打印日志并失败（顺便确认监听端口）
+          if ! curl -fsS --max-time 2 http://127.0.0.1:7011/swagger/index.html > /dev/null; then
             echo "API failed to start. Dumping logs:"
+            grep -E "Now listening on|Started|fail|error|warn" -i api.log || true
             tail -n 200 api.log || true
             exit 1
           fi
