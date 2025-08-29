@@ -43,10 +43,38 @@ jobs:
       - name: Unit Test
         run: dotnet test src/MeetlyOmni.Unit.tests/MeetlyOmni.Unit.tests.csproj -c Release --no-build
 
+      - name: Run API for Integration Test
+        env:
+          ASPNETCORE_URLS: http://localhost:7011
+          ASPNETCORE_ENVIRONMENT: Development # 命中 /swagger 需要 Development
+        run: |
+          nohup dotnet run --no-build --configuration Release \
+            --project src/MeetlyOmni.Api/MeetlyOmni.Api.csproj > api.log 2>&1 &
+          echo $! > api.pid
+
+          # 等待就绪（最多 60s）
+          for i in {1..60}; do
+            if curl -fsS --max-time 2 http://localhost:7011/swagger/index.html > /dev/null; then
+              echo "API is up";
+              break;
+            fi
+            sleep 1
+          done
+
+          # 若仍未就绪，打印日志并失败
+          if ! curl -fsS --max-time 2 http://localhost:7011/swagger/index.html > /dev/null; then
+            echo "API failed to start. Dumping logs:"
+            tail -n 200 api.log || true
+            exit 1
+          fi
+
       - name: Integration Test
         env:
           BASE_URL: http://localhost:7011
-        run: dotnet test src/MeetlyOmni.IntegrationTests/MeetlyOmni.IntegrationTests.csproj -c Release --no-build
+        run: |
+          dotnet test src/MeetlyOmni.IntegrationTests/MeetlyOmni.IntegrationTests.csproj -c Release --no-build
+          # 测试结束后清理 API 进程
+          kill $(cat api.pid) || true
 
   build_and_push_image:
     runs-on: ubuntu-latest
