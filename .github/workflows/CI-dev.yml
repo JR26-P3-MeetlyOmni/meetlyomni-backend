@@ -54,7 +54,7 @@ jobs:
       - name: Unit Test
         run: dotnet test src/MeetlyOmni.Unit.tests/MeetlyOmni.Unit.tests.csproj -c Release --no-build
 
-      - name: Wait DB ready
+      - name: Wait Testdb ready
         run: |
           for i in {1..60}; do
             pg_isready -h localhost -p 5432 -U usr -d testdb && break || sleep 1
@@ -71,14 +71,13 @@ jobs:
             --urls http://127.0.0.1:7011 > api.log 2>&1 &
           echo $! > api.pid
 
-          # 等待就绪（最多 120s）
           for i in {1..120}; do
             if curl -fsS --max-time 2 --retry 1 --retry-connrefused http://127.0.0.1:7011/swagger/index.html > /dev/null; then
               echo "API is up"; break; fi
             sleep 1
           done
 
-          # 若仍未就绪，打印日志并失败（顺便确认监听端口）
+
           if ! curl -fsS --max-time 2 http://127.0.0.1:7011/swagger/index.html > /dev/null; then
             echo "API failed to start. Dumping logs:"
             grep -E "Now listening on|Started|fail|error|warn" -i api.log || true
@@ -91,12 +90,7 @@ jobs:
           BASE_URL: http://localhost:7011
         run: |
           dotnet test src/MeetlyOmni.IntegrationTests/MeetlyOmni.IntegrationTests.csproj -c Release --no-build
-          # 测试结束后清理 API 进程
           kill $(cat api.pid) || true
-
-      - name: Dump API logs on failure
-        if: failure()
-        run: tail -n 400 api.log || true
 
   build_and_push_image:
     runs-on: ubuntu-latest
