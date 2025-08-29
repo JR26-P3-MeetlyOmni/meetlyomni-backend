@@ -158,25 +158,23 @@ public class AuthController : ControllerBase
     {
         var userId = User.FindFirstValue(JwtClaimTypes.Subject);
 
-        if (Request.Cookies.TryGetValue(AuthCookieExtensions.CookieNames.RefreshToken, out var refreshToken) &&
-            !string.IsNullOrWhiteSpace(refreshToken))
+        if (Request.Cookies.TryGetValue(AuthCookieExtensions.CookieNames.RefreshToken, out var refreshToken) ||
+            string.IsNullOrWhiteSpace(refreshToken))
         {
-            var success = await _tokenService.LogoutAsync(refreshToken, ct);
-            if (!success)
-            {
-                _logger.LogWarning(
-                    "Refresh token not found during logout for user {UserId}",
-                    userId);
+            _logger.LogWarning("Logout attempt without refresh token. UserId={UserId}", userId);
+            return Unauthorized(new { message = "Refresh token missing" });
+        }
 
-                return BadRequest(new { message = "Invalid refresh token" });
-            }
+        var success = await _tokenService.LogoutAsync(refreshToken, ct);
+
+        if (!success)
+        {
+            return Unauthorized(new { message = "Invalid or expired refresh token" });
         }
 
         Response.Cookies.Delete(AuthCookieExtensions.CookieNames.RefreshToken, new CookieOptions { Path = "/" });
         Response.Cookies.Delete(AuthCookieExtensions.CookieNames.CsrfToken, new CookieOptions { Path = "/" });
         Response.Cookies.Delete("XSRF-TOKEN", new CookieOptions { Path = "/" });
-
-        _logger.LogInformation("User {UserId} logged out.", userId);
 
         return Ok(new { message = "Logged out successfully" });
     }
