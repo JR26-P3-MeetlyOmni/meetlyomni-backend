@@ -19,20 +19,9 @@ public class OrganizationRepository : IOrganizationRepository
 
     public async Task<Entities.Organization> AddOrganizationAsync(Entities.Organization organization)
     {
-        try
-        {
-            this._context.Organizations.Add(organization);
-            await this._context.SaveChangesAsync();
-            return organization;
-        }
-        catch (DbUpdateException ex)
-        {
-            throw new Exception("An error occurred while adding the organization to the database.", ex);
-        }
-        catch (Exception ex)
-        {
-            throw new Exception("An unexpected error occurred.", ex);
-        }
+        this._context.Organizations.Add(organization);
+        await this._context.SaveChangesAsync();
+        return organization;
     }
 
     public async Task<bool> OrganizationCodeExistsAsync(string organizationCode)
