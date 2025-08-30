@@ -305,4 +305,140 @@ public class AuthControllerTests
             HttpContext = httpContext
         };
     }
+    // ---------------------------
+    // LogoutAsync Tests
+    // ---------------------------
+
+    [Fact]
+    public async Task LogoutAsync_WithValidUserAndRefreshToken_ShouldCallTokenServiceAndClearCookies()
+    {
+        // Arrange
+        var refreshToken = "refresh-token-to-logout";
+
+        var mockCookies = new Mock<IRequestCookieCollection>();
+        mockCookies
+            .Setup(c => c.TryGetValue(AuthCookieExtensions.CookieNames.RefreshToken, out refreshToken))
+            .Returns(true);
+        mockCookies
+            .Setup(c => c[AuthCookieExtensions.CookieNames.RefreshToken])
+            .Returns(refreshToken);
+
+        _authController.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext()
+            {
+                Request = { Cookies = mockCookies.Object }
+            }
+        };
+
+        _mockTokenService
+            .Setup(x => x.LogoutAsync(refreshToken, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+
+        // Act
+        var result = await _authController.LogoutAsync(CancellationToken.None);
+
+        // Assert
+        _mockTokenService.Verify(x => x.LogoutAsync(refreshToken, It.IsAny<CancellationToken>()), Times.Once);
+
+        result.Should().BeOfType<OkObjectResult>();
+        var okResult = result as OkObjectResult;
+        okResult!.Value.Should().BeEquivalentTo(new { message = "Logged out successfully" });
+    }
+
+    [Fact]
+    public async Task LogoutAsync_WithoutRefreshToken_ShouldReturnUnauthorized()
+    {
+        // Arrange
+        var mockCookies = new Mock<IRequestCookieCollection>();
+        mockCookies.Setup(c => c[AuthCookieExtensions.CookieNames.RefreshToken]).Returns<string?>(null);
+        _authController.HttpContext.Request.Cookies = mockCookies.Object;
+
+        var claims = new List<Claim>
+    {
+        new Claim(JwtClaimTypes.Subject, Guid.NewGuid().ToString())
+    };
+        _authController.HttpContext.User = new ClaimsPrincipal(new ClaimsIdentity(claims, "mock"));
+
+        // Act
+        var result = await _authController.LogoutAsync(CancellationToken.None);
+
+        // Assert
+        _mockTokenService.Verify(x => x.LogoutAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()), Times.Never);
+
+        result.Should().BeOfType<UnauthorizedObjectResult>();
+        var unauthorizedResult = result as UnauthorizedObjectResult;
+        unauthorizedResult!.Value.Should().BeEquivalentTo(new { message = "Refresh token missing" });
+    }
+
+    [Fact]
+    public async Task LogoutAsync_WithInvalidRefreshToken_ShouldReturnUnauthorized()
+    {
+        // Arrange
+        var refreshToken = "invalid-refresh-token";
+
+        var mockCookies = new Mock<IRequestCookieCollection>();
+        mockCookies
+            .Setup(c => c.TryGetValue(AuthCookieExtensions.CookieNames.RefreshToken, out refreshToken))
+            .Returns(true);
+        mockCookies
+            .Setup(c => c[AuthCookieExtensions.CookieNames.RefreshToken])
+            .Returns(refreshToken);
+
+        _authController.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext()
+            {
+                Request = { Cookies = mockCookies.Object }
+            }
+        };
+
+        _mockTokenService
+            .Setup(x => x.LogoutAsync(refreshToken, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(false);
+
+        // Act
+        var result = await _authController.LogoutAsync(CancellationToken.None);
+
+        // Assert
+        _mockTokenService.Verify(x => x.LogoutAsync(refreshToken, It.IsAny<CancellationToken>()), Times.Once);
+
+        result.Should().BeOfType<UnauthorizedObjectResult>();
+        var unauthorizedResult = result as UnauthorizedObjectResult;
+        unauthorizedResult!.Value.Should().BeEquivalentTo(new { message = "Invalid or expired refresh token" });
+    }
+
+    [Fact]
+    public async Task LogoutAsync_WhenServiceThrows_ShouldReturnInternalServerError()
+    {
+        // Arrange
+        var refreshToken = "refresh-token-to-logout";
+
+        var mockCookies = new Mock<IRequestCookieCollection>();
+        mockCookies
+            .Setup(c => c.TryGetValue(AuthCookieExtensions.CookieNames.RefreshToken, out refreshToken))
+            .Returns(true);
+        mockCookies
+            .Setup(c => c[AuthCookieExtensions.CookieNames.RefreshToken])
+            .Returns(refreshToken);
+
+        _authController.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext()
+            {
+                Request = { Cookies = mockCookies.Object }
+            }
+        };
+
+        _mockTokenService
+            .Setup(x => x.LogoutAsync(refreshToken, It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new Exception("Unexpected error"));
+
+        // Act
+        Func<Task> act = async () => await _authController.LogoutAsync(CancellationToken.None);
+
+        // Assert
+        await act.Should().ThrowAsync<Exception>().WithMessage("Unexpected error");
+    }
+
 }

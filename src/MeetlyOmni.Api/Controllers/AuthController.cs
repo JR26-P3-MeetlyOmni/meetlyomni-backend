@@ -156,26 +156,33 @@ public class AuthController : ControllerBase
     [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
     public async Task<IActionResult> LogoutAsync(CancellationToken ct)
     {
-        var userId = User.FindFirstValue(JwtClaimTypes.Subject);
-
-        if (Request.Cookies.TryGetValue(AuthCookieExtensions.CookieNames.RefreshToken, out var refreshToken) ||
-            string.IsNullOrWhiteSpace(refreshToken))
+        try
         {
-            _logger.LogWarning("Logout attempt without refresh token. UserId={UserId}", userId);
-            return Unauthorized(new { message = "Refresh token missing" });
+            var userId = User.FindFirstValue(JwtClaimTypes.Subject);
+
+            if (!Request.Cookies.TryGetValue(AuthCookieExtensions.CookieNames.RefreshToken, out var refreshToken) ||
+                string.IsNullOrWhiteSpace(refreshToken))
+            {
+                _logger.LogWarning("Logout attempt without refresh token. UserId={UserId}", userId);
+                return Unauthorized(new { message = "Refresh token missing" });
+            }
+
+            var success = await _tokenService.LogoutAsync(refreshToken, ct);
+
+            if (!success)
+            {
+                return Unauthorized(new { message = "Invalid or expired refresh token" });
+            }
+
+            Response.Cookies.Delete(AuthCookieExtensions.CookieNames.RefreshToken, new CookieOptions { Path = "/" });
+            Response.Cookies.Delete(AuthCookieExtensions.CookieNames.CsrfToken, new CookieOptions { Path = "/" });
+            Response.Cookies.Delete("XSRF-TOKEN", new CookieOptions { Path = "/" });
+
+            return Ok(new { message = "Logged out successfully" });
         }
-
-        var success = await _tokenService.LogoutAsync(refreshToken, ct);
-
-        if (!success)
+        catch
         {
-            return Unauthorized(new { message = "Invalid or expired refresh token" });
+            throw new Exception("Unexpected error");
         }
-
-        Response.Cookies.Delete(AuthCookieExtensions.CookieNames.RefreshToken, new CookieOptions { Path = "/" });
-        Response.Cookies.Delete(AuthCookieExtensions.CookieNames.CsrfToken, new CookieOptions { Path = "/" });
-        Response.Cookies.Delete("XSRF-TOKEN", new CookieOptions { Path = "/" });
-
-        return Ok(new { message = "Logged out successfully" });
     }
 }

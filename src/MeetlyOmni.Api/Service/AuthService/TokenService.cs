@@ -273,7 +273,7 @@ public class TokenService : ITokenService
     /// Logout from the device.
     /// </summary>
     /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
-    public async Task LogoutAsync(string refreshToken, CancellationToken ct = default)
+    public async Task<bool> LogoutAsync(string refreshToken, CancellationToken ct = default)
     {
         var tokenHash = ComputeHash(refreshToken);
         var storedToken = await _unitOfWork.RefreshTokens.FindByHashAsync(tokenHash, ct);
@@ -290,5 +290,7 @@ public class TokenService : ITokenService
         _logger.LogInformation(
             "User {UserId} logged out from a single device.",
             storedToken.UserId);
+
+        return true;
     }
 }
