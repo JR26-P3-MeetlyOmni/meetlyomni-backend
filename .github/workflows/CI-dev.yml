@@ -1,10 +1,10 @@
 name: CI-Dev-AWS
 
 on:
-  # push:
-  #   branches: ['feat/*', 'devops/*']
-  # pull_request:
-  #   branches: [dev]
+  push:
+    branches: ["feat/*", "devops/*"]
+  pull_request:
+    branches: [dev]
   workflow_dispatch:
 
 env:
@@ -42,7 +42,7 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          global-json-file: global.json
+          dotnet-version: ${{ env.DOTNET_VERSION }}
           # cache: true
 
       - name: Restore
