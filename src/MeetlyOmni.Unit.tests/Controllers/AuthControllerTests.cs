@@ -40,6 +40,7 @@ public class AuthControllerTests
     private readonly Mock<IClientInfoService> _mockClientInfoService;
     private readonly Mock<IAntiforgery> _mockAntiforgery;
     private readonly Mock<ILogger<AuthController>> _mockLogger;
+    private readonly Mock<ISignUpService> _mockSignUpServcie;
 
     public AuthControllerTests()
     {
@@ -48,13 +49,15 @@ public class AuthControllerTests
         _mockClientInfoService = new Mock<IClientInfoService>();
         _mockAntiforgery = new Mock<IAntiforgery>();
         _mockLogger = new Mock<ILogger<AuthController>>();
+        _mockSignUpServcie = new Mock<ISignUpService>();
 
         _authController = new AuthController(
             _mockLoginService.Object,
             _mockTokenService.Object,
             _mockClientInfoService.Object,
             _mockAntiforgery.Object,
-            _mockLogger.Object);
+            _mockLogger.Object,
+            _mockSignUpServcie.Object);
 
         SetupHttpContext();
     }
