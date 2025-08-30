@@ -11,6 +11,7 @@ using MeetlyOmni.Api.Common.Options;
 using MeetlyOmni.Api.Data;
 using MeetlyOmni.Api.Data.Entities;
 using MeetlyOmni.Api.Data.Repository.Interfaces;
+using MeetlyOmni.Api.Filters;
 using MeetlyOmni.Api.Service.AuthService;
 using MeetlyOmni.Api.Service.AuthService.Interfaces;
 using MeetlyOmni.Unit.tests.Helpers;
@@ -36,6 +37,7 @@ public class TokenServiceTests
     private readonly Mock<IJwtKeyProvider> _mockKeyProvider;
     private readonly Mock<IUnitOfWork> _mockUnitOfWork;
     private readonly Mock<ILogger<TokenService>> _mockLogger;
+    private readonly Mock<IRefreshTokenRepository> _mockRefreshTokenRepository;
 
     public TokenServiceTests()
     {
@@ -45,6 +47,9 @@ public class TokenServiceTests
         _mockKeyProvider = MockHelper.CreateMockJwtKeyProvider();
         _mockUnitOfWork = new Mock<IUnitOfWork>();
         _mockLogger = MockHelper.CreateMockLogger<TokenService>();
+        _mockRefreshTokenRepository = new Mock<IRefreshTokenRepository>();
+
+        _mockUnitOfWork.Setup(u => u.RefreshTokens).Returns(_mockRefreshTokenRepository.Object);
     }
 
     // Note: GenerateTokenPairAsync requires database operations and is better tested in integration tests
@@ -511,4 +516,79 @@ public class TokenServiceTests
         // Assert
         result1.Should().NotBe(result2);
     }
+
+    // ---------------------------
+    // LogoutAsync Tests
+    // ---------------------------
+
+    [Fact]
+    public async Task LogoutAsync_WithValidRefreshToken_ShouldRemoveTokenAndReturnTrue()
+    {
+        // Arrange
+        var refreshTokenValue = "valid-refresh-token";
+        var ct = CancellationToken.None;
+
+        var tokenService = new TokenService(
+            _mockUserManager.Object,
+            _mockUnitOfWork.Object,
+            _mockJwtOptions.Object,
+            _mockKeyProvider.Object,
+            _mockLogger.Object);
+
+        var tokenHash = tokenService.ComputeHash(refreshTokenValue);
+
+        var userId = Guid.NewGuid();
+
+        var storedToken = new RefreshToken
+        {
+            Id = Guid.NewGuid(),
+            TokenHash = tokenHash,
+            UserId = userId,
+            RevokedAt = null
+        };
+
+        _mockRefreshTokenRepository
+            .Setup(r => r.FindByHashAsync(tokenHash, ct))
+            .ReturnsAsync(storedToken);
+
+        // Act
+        var result = await tokenService.LogoutAsync(refreshTokenValue);
+
+        // Assert
+        result.Should().BeTrue();
+        storedToken.RevokedAt.Should().NotBeNull();
+        storedToken.RevokedAt.Should().BeCloseTo(DateTimeOffset.UtcNow, TimeSpan.FromSeconds(5));
+
+        _mockRefreshTokenRepository.Verify(r => r.Update(storedToken), Times.Once);
+        _mockUnitOfWork.Verify(u => u.SaveChangesAsync(ct), Times.Once);
+    }
+
+    [Fact]
+    public async Task LogoutAsync_WithNonExistentToken_ShouldThrowUnauthorizedException()
+    {
+        // Arrange
+        var refreshTokenValue = "invalid-refresh-token";
+        var tokenHash = "hashed-token-value";
+        var ct = CancellationToken.None;
+
+        _mockRefreshTokenRepository
+            .Setup(r => r.FindByHashAsync(tokenHash, ct))
+            .ReturnsAsync((RefreshToken?)null);
+
+        var tokenService = new TokenService(
+            _mockUserManager.Object,
+            _mockUnitOfWork.Object,
+            _mockJwtOptions.Object,
+            _mockKeyProvider.Object,
+            _mockLogger.Object);
+
+        // Act
+        var act = async () => await tokenService.LogoutAsync(refreshTokenValue);
+
+        // Assert
+        await act.Should().ThrowAsync<UnauthorizedAppException>();
+        _mockRefreshTokenRepository.Verify(r => r.Update(It.IsAny<RefreshToken>()), Times.Never);
+        _mockUnitOfWork.Verify(u => u.SaveChangesAsync(ct), Times.Never);
+    }
+
 }
