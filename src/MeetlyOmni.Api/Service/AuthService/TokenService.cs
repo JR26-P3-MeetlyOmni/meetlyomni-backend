@@ -252,7 +252,7 @@ public class TokenService : ITokenService
         return Convert.ToBase64String(bytes);
     }
 
-    private static string ComputeHash(string input)
+    internal static string ComputeHash(string input)
     {
         using var sha256 = SHA256.Create();
         var hashedBytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(input));

@@ -535,7 +535,7 @@ public class TokenServiceTests
             _mockKeyProvider.Object,
             _mockLogger.Object);
 
-        var tokenHash = tokenService.ComputeHash(refreshTokenValue);
+        var tokenHash = TokenService.ComputeHash(refreshTokenValue);
 
         var userId = Guid.NewGuid();
 
@@ -544,7 +544,6 @@ public class TokenServiceTests
             Id = Guid.NewGuid(),
             TokenHash = tokenHash,
             UserId = userId,
-            RevokedAt = null
         };
 
         _mockRefreshTokenRepository
@@ -556,10 +555,8 @@ public class TokenServiceTests
 
         // Assert
         result.Should().BeTrue();
-        storedToken.RevokedAt.Should().NotBeNull();
-        storedToken.RevokedAt.Should().BeCloseTo(DateTimeOffset.UtcNow, TimeSpan.FromSeconds(5));
 
-        _mockRefreshTokenRepository.Verify(r => r.Update(storedToken), Times.Once);
+        _mockRefreshTokenRepository.Verify(r => r.Remove(storedToken), Times.Once);
         _mockUnitOfWork.Verify(u => u.SaveChangesAsync(ct), Times.Once);
     }
 
