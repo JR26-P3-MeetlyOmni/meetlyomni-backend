@@ -103,7 +103,7 @@ jobs:
       id-token: write
       contents: read
 
-    if: github.event_name == 'pull_request' && github.base_ref == 'dev'
+    # if: github.event_name == 'pull_request' && github.base_ref == 'dev'
     steps:
       - name: Check out code
         uses: actions/checkout@v4
