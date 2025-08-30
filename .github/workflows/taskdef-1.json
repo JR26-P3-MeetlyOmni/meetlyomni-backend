@@ -1,6 +1,6 @@
 {
   "family": "meetlyomniapi-task",
-  "executionRoleArn": "arn:aws:iam::034362033405:role/ecsTaskExecutionRole",
+  "executionRoleArn": "arn:aws:iam::034362033405:role/meetlyomniapi-exec-role",
   "taskRoleArn": "arn:aws:iam::034362033405:role/meetlyomniapi-task-role",
   "networkMode": "awsvpc",
   "requiresCompatibilities": ["FARGATE"],
