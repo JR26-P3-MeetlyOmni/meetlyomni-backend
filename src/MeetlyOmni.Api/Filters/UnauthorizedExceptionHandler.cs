@@ -20,6 +20,7 @@ public sealed class UnauthorizedExceptionHandler : IExceptionHandler
 
         // Clear the refresh token cookie to avoid refresh loops (use same Path/flags as set)
         ctx.Response.DeleteRefreshTokenCookie();
+        ctx.Response.DeleteAccessTokenCookie();
 
         var pd = new ProblemDetails
         {

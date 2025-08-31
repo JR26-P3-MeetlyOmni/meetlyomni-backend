@@ -78,9 +78,20 @@ public static class ServiceCollectionExtensions
                     context.Options.TokenValidationParameters.ValidIssuer = jwtOptions.Value.Issuer;
                     context.Options.TokenValidationParameters.ValidAudience = jwtOptions.Value.Audience;
 
-                    // Standard JWT Bearer token authentication
-                    // Token should be provided in Authorization header as "Bearer <token>"
-                    // No cookie fallback needed for access tokens
+                    // Primary: Get token from cookie (main authentication method)
+                    var token = context.Request.Cookies["access_token"];
+
+                    // Fallback: Get token from Authorization header (for API clients)
+                    if (string.IsNullOrEmpty(token))
+                    {
+                        token = context.Request.Headers["Authorization"].FirstOrDefault()?.Split(" ").Last();
+                    }
+
+                    if (!string.IsNullOrEmpty(token))
+                    {
+                        context.Token = token;
+                    }
+
                     return Task.CompletedTask;
                 },
                 OnAuthenticationFailed = context =>
@@ -159,33 +170,6 @@ public static class ServiceCollectionExtensions
             // Documents configured via IConfigureOptions<SwaggerGenOptions> to avoid building the provider here.
             // Add operation filter to handle API versioning
             options.OperationFilter<SwaggerDefaultValues>();
-
-            // JWT auth configuration for Swagger UI
-            var bearerSecurityScheme = new OpenApiSecurityScheme
-            {
-                Description = "JWT Authorization header using the Bearer scheme. Example: \"Authorization: Bearer {token}\"",
-                Name = "Authorization",
-                In = ParameterLocation.Header,
-                Type = SecuritySchemeType.Http,
-                Scheme = "bearer",
-                BearerFormat = "JWT",
-            };
-            options.AddSecurityDefinition("Bearer", bearerSecurityScheme);
-
-            options.AddSecurityRequirement(new OpenApiSecurityRequirement
-            {
-                {
-                    new OpenApiSecurityScheme
-                    {
-                        Reference = new OpenApiReference
-                        {
-                            Type = ReferenceType.SecurityScheme,
-                            Id = "Bearer",
-                        },
-                    },
-                    Array.Empty<string>()
-                },
-            });
         });
 
         services.AddTransient<IConfigureOptions<SwaggerGenOptions>>(

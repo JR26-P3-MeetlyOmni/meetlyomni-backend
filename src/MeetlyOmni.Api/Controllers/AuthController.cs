@@ -54,6 +54,7 @@ public class AuthController : ControllerBase
     /// <returns>A <see cref="Task{IActionResult}"/> representing the asynchronous operation.</returns>
     [HttpPost("login")]
     [AllowAnonymous]
+    [NoCacheFilter]
     [ProducesResponseType(typeof(LoginResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
@@ -62,15 +63,13 @@ public class AuthController : ControllerBase
         var (userAgent, ipAddress) = _clientInfoService.GetClientInfo(HttpContext);
         var result = await _loginService.LoginAsync(request, userAgent, ipAddress, ct);
 
+        Response.SetAccessTokenCookie(result.AccessToken, result.ExpiresAt);
         Response.SetRefreshTokenCookie(result.RefreshToken, result.RefreshTokenExpiresAt);
-        Response.Headers.CacheControl = "no-store";
-        Response.Headers.Pragma = "no-cache";
 
         _logger.LogInformation("User {Email} logged in.", request.Email);
 
         return Ok(new LoginResponse
         {
-            AccessToken = result.AccessToken,
             ExpiresAt = result.ExpiresAt,
             TokenType = result.TokenType,
         });
@@ -96,29 +95,26 @@ public class AuthController : ControllerBase
     /// <returns>New access and refresh tokens.</returns>
     [HttpPost("refresh")]
     [AllowAnonymous]
+    [NoCacheFilter]
+    [RefreshTokenValidationFilter]
     [ProducesResponseType(typeof(LoginResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> RefreshTokenAsync(CancellationToken ct)
     {
-        await _antiforgery.ValidateRequestAsync(HttpContext); // 失败 -> 全局 Handler
+        await _antiforgery.ValidateRequestAsync(HttpContext);
 
-        if (!Request.Cookies.TryGetValue(AuthCookieExtensions.CookieNames.RefreshToken, out var refreshToken) ||
-            string.IsNullOrWhiteSpace(refreshToken))
-        {
-            throw new UnauthorizedAppException("Refresh token is missing."); // 交给全局 Handler（可在那边清 Cookie）
-        }
+        // Get refresh token from cookie (validated by RefreshTokenValidationFilter)
+        var refreshToken = Request.Cookies[AuthCookieExtensions.CookieNames.RefreshToken]!;
 
         var (userAgent, ipAddress) = _clientInfoService.GetClientInfo(HttpContext);
         var (accessToken, accessTokenExpiresAt, newRefreshToken, newRefreshTokenExpiresAt) =
             await _tokenService.RefreshTokenPairAsync(refreshToken, userAgent, ipAddress, ct);
 
+        Response.SetAccessTokenCookie(accessToken, accessTokenExpiresAt);
         Response.SetRefreshTokenCookie(newRefreshToken, newRefreshTokenExpiresAt);
-        Response.Headers.CacheControl = "no-store";
-        Response.Headers.Pragma = "no-cache";
 
         return Ok(new LoginResponse
         {
-            AccessToken = accessToken,
             ExpiresAt = accessTokenExpiresAt,
             TokenType = "Bearer",
         });

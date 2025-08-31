@@ -15,6 +15,8 @@ public interface IRefreshTokenRepository
 
     Task<RefreshToken?> FindByHashAsync(string tokenHash, CancellationToken ct = default);
 
+    Task<RefreshToken?> FindByFamilyIdAsync(Guid familyId, CancellationToken ct = default);
+
     void Update(RefreshToken refreshToken);
 
     Task<int> MarkTokenFamilyAsRevokedAsync(Guid familyId, CancellationToken ct = default);

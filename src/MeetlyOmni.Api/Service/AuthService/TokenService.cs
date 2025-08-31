@@ -65,7 +65,18 @@ public class TokenService : ITokenService
         var tokenFamilyId = familyId ?? Guid.NewGuid();
         var refreshTokenValue = GenerateRandomToken();
         var refreshTokenHash = ComputeHash(refreshTokenValue);
-        var refreshTokenExpires = DateTimeOffset.UtcNow.AddMinutes(_jwtOptions.RefreshTokenExpirationMinutes);
+
+        // Calculate family expiration time (prevents infinite renewal)
+        var now = DateTimeOffset.UtcNow;
+        var familyExpiresAt = familyId == null
+            ? now.AddMinutes(_jwtOptions.RefreshTokenExpirationMinutes) // New family: set max lifetime
+            : await GetFamilyExpirationTimeAsync(tokenFamilyId, ct); // Existing family: use existing max lifetime
+
+        // Calculate individual token expiration (respects family limit)
+        var individualExpiresAt = now.AddMinutes(_jwtOptions.RefreshTokenExpirationMinutes);
+        var refreshTokenExpires = individualExpiresAt < familyExpiresAt
+            ? individualExpiresAt
+            : familyExpiresAt;
 
         // Sanitize inputs to respect database constraints
         var ua = (userAgent ?? string.Empty).Trim();
@@ -88,7 +99,8 @@ public class TokenService : ITokenService
             TokenHash = refreshTokenHash,
             FamilyId = tokenFamilyId,
             ExpiresAt = refreshTokenExpires,
-            CreatedAt = DateTimeOffset.UtcNow,
+            FamilyExpiresAt = familyExpiresAt,
+            CreatedAt = now,
             UserAgent = ua,
             IpAddress = ip,
         };
@@ -267,5 +279,12 @@ public class TokenService : ITokenService
         var userRoles = await _userManager.GetRolesAsync(member);
 
         return (userClaims, userRoles);
+    }
+
+    private async Task<DateTimeOffset> GetFamilyExpirationTimeAsync(Guid familyId, CancellationToken ct)
+    {
+        // Get the family expiration time from any existing token in the family
+        var existingToken = await _unitOfWork.RefreshTokens.FindByFamilyIdAsync(familyId, ct);
+        return existingToken?.FamilyExpiresAt ?? DateTimeOffset.UtcNow.AddMinutes(_jwtOptions.RefreshTokenExpirationMinutes);
     }
 }
