@@ -8,7 +8,6 @@ using Asp.Versioning;
 
 using MeetlyOmni.Api.Common.Constants;
 using MeetlyOmni.Api.Common.Extensions;
-using MeetlyOmni.Api.Filters;
 using MeetlyOmni.Api.Models.Auth;
 using MeetlyOmni.Api.Service.AuthService.Interfaces;
 using MeetlyOmni.Api.Service.Common.Interfaces;
@@ -54,7 +53,6 @@ public class AuthController : ControllerBase
     /// <returns>A <see cref="Task{IActionResult}"/> representing the asynchronous operation.</returns>
     [HttpPost("login")]
     [AllowAnonymous]
-    [NoCacheFilter]
     [ProducesResponseType(typeof(LoginResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
@@ -85,7 +83,7 @@ public class AuthController : ControllerBase
     public IActionResult GetCsrf()
     {
         var tokens = _antiforgery.GetAndStoreTokens(HttpContext);
-        Response.SetCsrfTokenCookie(tokens.RequestToken!);
+        Response.SetCsrfTokenCookie(tokens.RequestToken ?? string.Empty);
         return Ok(new { message = "CSRF token generated" });
     }
 
@@ -95,20 +93,15 @@ public class AuthController : ControllerBase
     /// <returns>New access and refresh tokens.</returns>
     [HttpPost("refresh")]
     [AllowAnonymous]
-    [NoCacheFilter]
-    [RefreshTokenValidationFilter]
     [ProducesResponseType(typeof(LoginResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> RefreshTokenAsync(CancellationToken ct)
     {
         await _antiforgery.ValidateRequestAsync(HttpContext);
 
-        // Get refresh token from cookie (validated by RefreshTokenValidationFilter)
-        var refreshToken = Request.Cookies[AuthCookieExtensions.CookieNames.RefreshToken]!;
-
         var (userAgent, ipAddress) = _clientInfoService.GetClientInfo(HttpContext);
         var (accessToken, accessTokenExpiresAt, newRefreshToken, newRefreshTokenExpiresAt) =
-            await _tokenService.RefreshTokenPairAsync(refreshToken, userAgent, ipAddress, ct);
+            await _tokenService.RefreshTokenPairFromCookiesAsync(HttpContext, userAgent, ipAddress, ct);
 
         Response.SetAccessTokenCookie(accessToken, accessTokenExpiresAt);
         Response.SetRefreshTokenCookie(newRefreshToken, newRefreshTokenExpiresAt);
@@ -130,15 +123,11 @@ public class AuthController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     public IActionResult GetCurrentUser()
     {
-        var userId = User.FindFirstValue(JwtClaimTypes.Subject);
-        var email = User.FindFirstValue(JwtClaimTypes.Email);
-        var orgId = User.FindFirstValue(JwtClaimTypes.OrganizationId);
-
         return Ok(new
         {
-            userId,
-            email,
-            orgId,
+            userId = User.FindFirstValue(JwtClaimTypes.Subject),
+            email = User.FindFirstValue(JwtClaimTypes.Email),
+            orgId = User.FindFirstValue(JwtClaimTypes.OrganizationId),
             message = "Authentication via cookie is working!",
         });
     }

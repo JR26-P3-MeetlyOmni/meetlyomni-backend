@@ -14,7 +14,6 @@ using MeetlyOmni.Api.Data;
 using MeetlyOmni.Api.Data.Entities;
 using MeetlyOmni.Api.Data.Repository;
 using MeetlyOmni.Api.Data.Repository.Interfaces;
-using MeetlyOmni.Api.Filters;
 using MeetlyOmni.Api.Mapping;
 using MeetlyOmni.Api.Service.AuthService;
 using MeetlyOmni.Api.Service.AuthService.Interfaces;
@@ -92,14 +91,7 @@ builder.Services.AddScoped<ITokenService, TokenService>();
 // ---- Common Services ----
 builder.Services.AddScoped<IClientInfoService, ClientInfoService>();
 
-// distribute exception handlers
-builder.Services.AddExceptionHandler<NotFoundExceptionHandler>();
-builder.Services.AddExceptionHandler<ValidationExceptionHandler>();
-builder.Services.AddExceptionHandler<UnauthorizedExceptionHandler>();
-builder.Services.AddExceptionHandler<ForbiddenExceptionHandler>();
-builder.Services.AddExceptionHandler<ConflictExceptionHandler>();
-builder.Services.AddExceptionHandler<AntiforgeryExceptionHandler>();
-builder.Services.AddExceptionHandler<GlobalUnhandledExceptionHandler>();
+// Global exception handling is now handled by middleware
 
 // Health Check
 builder.Services.AddHealthChecks()
@@ -153,15 +145,11 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerWithApiVersioning();
 }
 
-// Exception in different environments
-if (app.Environment.IsDevelopment())
-{
-    app.UseDeveloperExceptionPage();
-}
-else
-{
-    app.UseExceptionHandler();
-}
+// Global exception handling middleware (placed early in pipeline)
+app.UseGlobalExceptionHandler();
+
+// No-cache middleware for authentication endpoints
+app.UseNoCache();
 
 app.UseHttpsRedirection();
 

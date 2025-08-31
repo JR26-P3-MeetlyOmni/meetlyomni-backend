@@ -160,7 +160,7 @@ public class AuthControllerTests
             .Returns((userAgent, ipAddress));
 
         _mockTokenService
-            .Setup(x => x.RefreshTokenPairAsync(refreshToken, userAgent, ipAddress, It.IsAny<CancellationToken>()))
+            .Setup(x => x.RefreshTokenPairFromCookiesAsync(It.IsAny<HttpContext>(), userAgent, ipAddress, It.IsAny<CancellationToken>()))
             .ReturnsAsync(expectedTokens);
 
         // Act
@@ -179,19 +179,7 @@ public class AuthControllerTests
         accessTokenCookie.Should().NotBeNull();
     }
 
-    [Fact]
-    public async Task RefreshTokenAsync_WithMissingToken_ShouldThrowException()
-    {
-        // Arrange
-        // Don't add any refresh token to cookies
-        // Note: In unit tests, filters are not automatically executed
-        // This test verifies the controller logic when refresh token is missing
 
-        // Act & Assert
-        var act = () => _authController.RefreshTokenAsync(CancellationToken.None);
-
-        await act.Should().ThrowAsync<NullReferenceException>();
-    }
 
     [Fact]
     public async Task RefreshTokenAsync_WithInvalidRefreshToken_ShouldThrowException()
@@ -215,7 +203,7 @@ public class AuthControllerTests
             .Returns((userAgent, ipAddress));
 
         _mockTokenService
-            .Setup(x => x.RefreshTokenPairAsync(refreshToken, userAgent, ipAddress, It.IsAny<CancellationToken>()))
+            .Setup(x => x.RefreshTokenPairFromCookiesAsync(It.IsAny<HttpContext>(), userAgent, ipAddress, It.IsAny<CancellationToken>()))
             .ThrowsAsync(new UnauthorizedAppException("Invalid refresh token"));
 
         // Act & Assert
@@ -379,7 +367,7 @@ public class AuthControllerTests
 
         // Setup token service to throw an exception
         _mockTokenService
-            .Setup(x => x.RefreshTokenPairAsync(refreshToken, userAgent, ipAddress, It.IsAny<CancellationToken>()))
+            .Setup(x => x.RefreshTokenPairFromCookiesAsync(It.IsAny<HttpContext>(), userAgent, ipAddress, It.IsAny<CancellationToken>()))
             .ThrowsAsync(new InvalidOperationException("Token service error"));
 
         // Act & Assert
@@ -403,6 +391,9 @@ public class AuthControllerTests
         var mockEnvironment = new Mock<IWebHostEnvironment>();
         mockEnvironment.Setup(x => x.EnvironmentName).Returns("Production"); // Default to production for tests
         services.AddSingleton(mockEnvironment.Object);
+
+        // Add the mocked antiforgery service to the service collection
+        services.AddSingleton(_mockAntiforgery.Object);
 
         // Build the service provider
         var serviceProvider = services.BuildServiceProvider();

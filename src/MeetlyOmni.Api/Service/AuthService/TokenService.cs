@@ -7,6 +7,7 @@ using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
 
+using MeetlyOmni.Api.Common.Extensions;
 using MeetlyOmni.Api.Common.Options;
 using MeetlyOmni.Api.Data.Entities;
 using MeetlyOmni.Api.Data.Repository.Interfaces;
@@ -237,6 +238,23 @@ public class TokenService : ITokenService
             await _unitOfWork.RollbackTransactionAsync();
             throw;
         }
+    }
+
+    public async Task<TokenResult> RefreshTokenPairFromCookiesAsync(
+        HttpContext httpContext,
+        string userAgent,
+        string ipAddress,
+        CancellationToken ct = default)
+    {
+        // Extract refresh token from cookies
+        if (!httpContext.Request.Cookies.TryGetValue(AuthCookieExtensions.CookieNames.RefreshToken, out var refreshToken) ||
+            string.IsNullOrWhiteSpace(refreshToken))
+        {
+            throw new UnauthorizedAppException("Refresh token is missing.");
+        }
+
+        // Delegate to the existing method
+        return await RefreshTokenPairAsync(refreshToken, userAgent, ipAddress, ct);
     }
 
     private static void AddUserClaims(List<Claim> claims, IList<Claim> userClaims)

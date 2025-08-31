@@ -19,6 +19,7 @@ public static class AuthCookieExtensions
             SameSite = SameSiteMode.None,
             Path = CookiePaths.Root,
             Expires = expiresAt,
+            IsEssential = true,
 
             // Domain = ".your-domain.com"   // production; localhost should not be set
         };
@@ -31,6 +32,7 @@ public static class AuthCookieExtensions
             SameSite = SameSiteMode.None,
             Path = CookiePaths.Root,
             Expires = expiresAt,
+            IsEssential = true,
 
             // Domain = ".your-domain.com"   // production; localhost should not be set
         };
@@ -42,6 +44,7 @@ public static class AuthCookieExtensions
             Secure = true,
             SameSite = SameSiteMode.None,
             Path = CookiePaths.Root,
+            IsEssential = true,
         };
 
     public static void SetRefreshTokenCookie(this HttpResponse resp, string token, DateTimeOffset expiresAt)

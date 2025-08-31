@@ -4,6 +4,8 @@
 
 using Asp.Versioning.ApiExplorer;
 
+using MeetlyOmni.Api.Middlewares;
+
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -36,5 +38,28 @@ public static class ApplicationBuilderExtensions
         });
 
         return app;
+    }
+
+    /// <summary>
+    /// Adds the global exception handler middleware to the application pipeline.
+    /// This middleware should be placed early in the pipeline to catch exceptions
+    /// from all subsequent middleware and handlers.
+    /// </summary>
+    /// <param name="app">The application builder.</param>
+    /// <returns>The application builder for chaining.</returns>
+    public static IApplicationBuilder UseGlobalExceptionHandler(this IApplicationBuilder app)
+    {
+        return app.UseMiddleware<GlobalExceptionHandlerMiddleware>();
+    }
+
+    /// <summary>
+    /// Adds the no-cache middleware to the application pipeline.
+    /// This middleware prevents caching of authentication-related responses.
+    /// </summary>
+    /// <param name="app">The application builder.</param>
+    /// <returns>The application builder for chaining.</returns>
+    public static IApplicationBuilder UseNoCache(this IApplicationBuilder app)
+    {
+        return app.UseMiddleware<NoCacheMiddleware>();
     }
 }
