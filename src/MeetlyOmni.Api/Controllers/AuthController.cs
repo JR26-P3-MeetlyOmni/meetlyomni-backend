@@ -31,19 +31,22 @@ public class AuthController : ControllerBase
     private readonly IClientInfoService _clientInfoService;
     private readonly IAntiforgery _antiforgery;
     private readonly ILogger<AuthController> _logger;
+    private readonly ILogoutService _logoutService;
 
     public AuthController(
         ILoginService loginService,
         ITokenService tokenService,
         IClientInfoService clientInfoService,
         IAntiforgery antiforgery,
-        ILogger<AuthController> logger)
+        ILogger<AuthController> logger,
+        ILogoutService logoutService)
     {
         _loginService = loginService;
         _tokenService = tokenService;
         _clientInfoService = clientInfoService;
         _antiforgery = antiforgery;
         _logger = logger;
+        _logoutService = logoutService;
     }
 
     /// <summary>
@@ -130,5 +133,22 @@ public class AuthController : ControllerBase
             orgId = User.FindFirstValue(JwtClaimTypes.OrganizationId),
             message = "Authentication via cookie is working!",
         });
+    }
+
+    /// <summary>
+    /// User logout endpoint.
+    /// </summary>
+    /// <returns>A <see cref="Task{IActionResult}"/> representing the asynchronous operation.</returns>
+    [HttpPost("logout")]
+    [Authorize]
+    [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> LogoutAsync(CancellationToken ct)
+    {
+        await _logoutService.LogoutAsync(HttpContext, ct);
+
+        _logger.LogInformation("User logged out successfully.");
+
+        return Ok(new { message = "Logged out successfully" });
     }
 }

@@ -87,6 +87,7 @@ builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 // ---- Application Services ----
 builder.Services.AddScoped<ILoginService, LoginService>();
 builder.Services.AddScoped<ITokenService, TokenService>();
+builder.Services.AddScoped<ILogoutService, LogoutService>();
 
 // ---- Common Services ----
 builder.Services.AddScoped<IClientInfoService, ClientInfoService>();

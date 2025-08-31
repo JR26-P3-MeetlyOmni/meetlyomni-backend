@@ -39,6 +39,7 @@ public class AuthControllerTests
     private readonly Mock<ITokenService> _mockTokenService;
     private readonly Mock<IClientInfoService> _mockClientInfoService;
     private readonly Mock<IAntiforgery> _mockAntiforgery;
+    private readonly Mock<ILogoutService> _mockLogoutService;
     private readonly Mock<ILogger<AuthController>> _mockLogger;
 
     public AuthControllerTests()
@@ -47,6 +48,7 @@ public class AuthControllerTests
         _mockTokenService = new Mock<ITokenService>();
         _mockClientInfoService = new Mock<IClientInfoService>();
         _mockAntiforgery = new Mock<IAntiforgery>();
+        _mockLogoutService = new Mock<ILogoutService>();
         _mockLogger = new Mock<ILogger<AuthController>>();
 
         _authController = new AuthController(
@@ -54,7 +56,8 @@ public class AuthControllerTests
             _mockTokenService.Object,
             _mockClientInfoService.Object,
             _mockAntiforgery.Object,
-            _mockLogger.Object);
+            _mockLogger.Object,
+            _mockLogoutService.Object);
 
         SetupHttpContext();
     }
@@ -377,6 +380,37 @@ public class AuthControllerTests
             .WithMessage("Token service error");
     }
 
+    [Fact]
+    public async Task LogoutAsync_WithValidUser_ShouldReturnOkAndClearCookies()
+    {
+        // Arrange
+        var refreshToken = "valid-refresh-token";
+
+        // Add refresh token to cookies
+        _authController.HttpContext.Request.Headers.Cookie = $"{AuthCookieExtensions.CookieNames.RefreshToken}={refreshToken}";
+
+        // Setup logout service
+        _mockLogoutService
+            .Setup(x => x.LogoutAsync(It.IsAny<HttpContext>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        // Act
+        var result = await _authController.LogoutAsync(CancellationToken.None);
+
+        // Assert
+        result.Should().BeOfType<OkObjectResult>();
+        var okResult = result as OkObjectResult;
+        var response = okResult!.Value;
+
+        // Use reflection to access the anonymous type properties
+        var message = response.GetType().GetProperty("message")?.GetValue(response);
+        message.Should().Be("Logged out successfully");
+
+        // Verify that logout service was called
+        _mockLogoutService.Verify(
+            x => x.LogoutAsync(It.IsAny<HttpContext>(), It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
 
 
     private void SetupHttpContext()
