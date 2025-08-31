@@ -277,6 +277,118 @@ public class AuthControllerTests
         orgId.Should().Be("test-org-id");
     }
 
+    [Fact]
+    public void GetCurrentUser_WithMissingClaims_ShouldReturnOkWithNullValues()
+    {
+        // Arrange
+        var claims = new List<Claim>
+        {
+            new(JwtClaimTypes.Subject, "test-user-id")
+            // Missing email and orgId claims
+        };
+
+        _authController.HttpContext.User = new ClaimsPrincipal(new ClaimsIdentity(claims, "Bearer"));
+
+        // Act
+        var result = _authController.GetCurrentUser();
+
+        // Assert
+        result.Should().BeOfType<OkObjectResult>();
+        var okResult = result as OkObjectResult;
+        var response = okResult!.Value;
+
+        // Use reflection to access the anonymous type properties
+        var userId = response.GetType().GetProperty("userId")?.GetValue(response);
+        var email = response.GetType().GetProperty("email")?.GetValue(response);
+        var orgId = response.GetType().GetProperty("orgId")?.GetValue(response);
+
+        userId.Should().Be("test-user-id");
+        email.Should().BeNull();
+        orgId.Should().BeNull();
+    }
+
+    [Fact]
+    public void GetCurrentUser_WithNoUser_ShouldReturnOkWithNullValues()
+    {
+        // Arrange
+        _authController.HttpContext.User = new ClaimsPrincipal(new ClaimsIdentity());
+
+        // Act
+        var result = _authController.GetCurrentUser();
+
+        // Assert
+        result.Should().BeOfType<OkObjectResult>();
+        var okResult = result as OkObjectResult;
+        var response = okResult!.Value;
+
+        // Use reflection to access the anonymous type properties
+        var userId = response.GetType().GetProperty("userId")?.GetValue(response);
+        var email = response.GetType().GetProperty("email")?.GetValue(response);
+        var orgId = response.GetType().GetProperty("orgId")?.GetValue(response);
+
+        userId.Should().BeNull();
+        email.Should().BeNull();
+        orgId.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task LoginAsync_WithNullRequest_ShouldThrowNullReferenceException()
+    {
+        // Arrange
+        LoginRequest? request = null;
+
+        // Act & Assert
+        var act = () => _authController.LoginAsync(request!, CancellationToken.None);
+
+        await act.Should().ThrowAsync<NullReferenceException>();
+    }
+
+    [Fact]
+    public async Task LoginAsync_WithInvalidModelState_ShouldThrowNullReferenceException()
+    {
+        // Arrange
+        var request = new LoginRequest { Email = "", Password = "" };
+        _authController.ModelState.AddModelError("Email", "Email is required");
+
+        // Act & Assert
+        var act = () => _authController.LoginAsync(request, CancellationToken.None);
+
+        await act.Should().ThrowAsync<NullReferenceException>();
+    }
+
+    [Fact]
+    public async Task RefreshTokenAsync_WithValidTokenAndServiceException_ShouldThrowException()
+    {
+        // Arrange
+        var refreshToken = "valid-refresh-token";
+        var userAgent = "TestUserAgent";
+        var ipAddress = "192.168.1.1";
+
+        // Add refresh token to cookies
+        _authController.HttpContext.Request.Headers.Cookie = $"{AuthCookieExtensions.CookieNames.RefreshToken}={refreshToken}";
+
+        // Setup antiforgery validation to succeed
+        _mockAntiforgery
+            .Setup(x => x.ValidateRequestAsync(It.IsAny<HttpContext>()))
+            .Returns(Task.CompletedTask);
+
+        // Setup client info service
+        _mockClientInfoService
+            .Setup(x => x.GetClientInfo(It.IsAny<HttpContext>()))
+            .Returns((userAgent, ipAddress));
+
+        // Setup token service to throw an exception
+        _mockTokenService
+            .Setup(x => x.RefreshTokenPairAsync(refreshToken, userAgent, ipAddress, It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new InvalidOperationException("Token service error"));
+
+        // Act & Assert
+        var act = () => _authController.RefreshTokenAsync(CancellationToken.None);
+
+        await act.Should().ThrowAsync<InvalidOperationException>()
+            .WithMessage("Token service error");
+    }
+
 
 
     private void SetupHttpContext()
