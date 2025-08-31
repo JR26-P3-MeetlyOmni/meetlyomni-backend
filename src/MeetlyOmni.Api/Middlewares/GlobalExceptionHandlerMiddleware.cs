@@ -4,6 +4,7 @@
 
 using System.Text.Json;
 
+using MeetlyOmni.Api.Common.Extensions;
 using MeetlyOmni.Api.Filters;
 
 using Microsoft.AspNetCore.Http.Extensions;
@@ -45,17 +46,8 @@ public class GlobalExceptionHandlerMiddleware
 
     private static void ClearAuthenticationCookies(HttpContext context)
     {
-        var cookieOptions = new CookieOptions
-        {
-            HttpOnly = true,
-            Secure = true,
-            SameSite = SameSiteMode.None,
-            Path = "/",
-            Expires = DateTimeOffset.UnixEpoch,
-        };
-
-        context.Response.Cookies.Delete("access_token", cookieOptions);
-        context.Response.Cookies.Delete("refresh_token", cookieOptions);
+        context.Response.DeleteAccessTokenCookie();
+        context.Response.DeleteRefreshTokenCookie();
     }
 
     private static string GetProblemType(int statusCode) => statusCode switch
