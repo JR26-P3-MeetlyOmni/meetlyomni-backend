@@ -43,6 +43,32 @@ public class GlobalExceptionHandlerMiddleware
         }
     }
 
+    private static void ClearAuthenticationCookies(HttpContext context)
+    {
+        var cookieOptions = new CookieOptions
+        {
+            HttpOnly = true,
+            Secure = true,
+            SameSite = SameSiteMode.None,
+            Path = "/",
+            Expires = DateTimeOffset.UnixEpoch,
+        };
+
+        context.Response.Cookies.Delete("access_token", cookieOptions);
+        context.Response.Cookies.Delete("refresh_token", cookieOptions);
+    }
+
+    private static string GetProblemType(int statusCode) => statusCode switch
+    {
+        StatusCodes.Status400BadRequest => "https://tools.ietf.org/html/rfc7231#section-6.5.1",
+        StatusCodes.Status401Unauthorized => "https://tools.ietf.org/html/rfc7235#section-3.1",
+        StatusCodes.Status403Forbidden => "https://tools.ietf.org/html/rfc7231#section-6.5.3",
+        StatusCodes.Status404NotFound => "https://tools.ietf.org/html/rfc7231#section-6.5.4",
+        StatusCodes.Status409Conflict => "https://tools.ietf.org/html/rfc7231#section-6.5.8",
+        StatusCodes.Status500InternalServerError => "https://tools.ietf.org/html/rfc7231#section-6.6.1",
+        _ => "https://tools.ietf.org/html/rfc7231#section-6.6.1"
+    };
+
     private async Task HandleExceptionAsync(HttpContext context, Exception exception)
     {
         _logger.LogError(exception, "An unhandled exception occurred while processing request: {RequestUrl}", context.Request.GetDisplayUrl());
@@ -86,30 +112,4 @@ public class GlobalExceptionHandlerMiddleware
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
         });
     }
-
-    private static void ClearAuthenticationCookies(HttpContext context)
-    {
-        var cookieOptions = new CookieOptions
-        {
-            HttpOnly = true,
-            Secure = true,
-            SameSite = SameSiteMode.None,
-            Path = "/",
-            Expires = DateTimeOffset.UnixEpoch,
-        };
-
-        context.Response.Cookies.Delete("access_token", cookieOptions);
-        context.Response.Cookies.Delete("refresh_token", cookieOptions);
-    }
-
-    private static string GetProblemType(int statusCode) => statusCode switch
-    {
-        StatusCodes.Status400BadRequest => "https://tools.ietf.org/html/rfc7231#section-6.5.1",
-        StatusCodes.Status401Unauthorized => "https://tools.ietf.org/html/rfc7235#section-3.1",
-        StatusCodes.Status403Forbidden => "https://tools.ietf.org/html/rfc7231#section-6.5.3",
-        StatusCodes.Status404NotFound => "https://tools.ietf.org/html/rfc7231#section-6.5.4",
-        StatusCodes.Status409Conflict => "https://tools.ietf.org/html/rfc7231#section-6.5.8",
-        StatusCodes.Status500InternalServerError => "https://tools.ietf.org/html/rfc7231#section-6.6.1",
-        _ => "https://tools.ietf.org/html/rfc7231#section-6.6.1"
-    };
 }
