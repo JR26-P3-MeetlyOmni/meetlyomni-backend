@@ -47,7 +47,7 @@ public sealed class AntiforgeryProtectionMiddleware
             bool hasBearer = ctx.Request.Headers.Authorization.ToString()
                 .StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase);
 
-            bool usesCookies = opt.CookieNames.Any(n => ctx.Request.Cookies.ContainsKey(n));
+            bool usesCookies = opt.CookieNames?.Any(n => ctx.Request.Cookies.ContainsKey(n)) ?? false;
 
             // Force CSRF on auth endpoints even if cookies are not yet present
             bool isAuthEndpoint = ctx.Request.Path.StartsWithSegments("/api/v1/auth", StringComparison.OrdinalIgnoreCase)
@@ -56,7 +56,8 @@ public sealed class AntiforgeryProtectionMiddleware
             bool needValidate = isUnsafe && !hasBearer && (usesCookies || isAuthEndpoint);
             if (opt.ShouldValidate is not null)
             {
-                needValidate = opt.ShouldValidate(ctx);
+                // Custom predicate can only add validation, not remove it.
+                needValidate = needValidate || opt.ShouldValidate(ctx);
             }
 
             if (needValidate)
