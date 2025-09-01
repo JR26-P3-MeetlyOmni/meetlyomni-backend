@@ -231,4 +231,6 @@ public class GlobalExceptionHandlerMiddlewareTests
         // Assert
         httpContext.Response.StatusCode.Should().Be(200);
     }
+
+
 }

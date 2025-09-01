@@ -79,6 +79,7 @@ public class AuthController : ControllerBase
     /// <returns>CSRF token information.</returns>
     [HttpGet("csrf")]
     [AllowAnonymous]
+    [SkipAntiforgery]
     [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
     public IActionResult GetCsrf()
     {
@@ -97,8 +98,6 @@ public class AuthController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> RefreshTokenAsync(CancellationToken ct)
     {
-        await _antiforgery.ValidateRequestAsync(HttpContext);
-
         var (userAgent, ipAddress) = _clientInfoService.GetClientInfo(HttpContext);
         var (accessToken, accessTokenExpiresAt, newRefreshToken, newRefreshTokenExpiresAt) =
             await _tokenService.RefreshTokenPairFromCookiesAsync(HttpContext, userAgent, ipAddress, ct);
