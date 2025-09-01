@@ -5,29 +5,33 @@
 using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.Extensions.Options;
 
-[AttributeUsage(AttributeTargets.Class | AttributeTargets.Method)]
-public sealed class SkipAntiforgeryAttribute : Attribute
-{
-}
+namespace MeetlyOmni.Api.Middlewares.Antiforgery;
 
-public sealed class AntiforgeryProtectionOptions
-{
-    public string[] CookieNames { get; set; } = Array.Empty<string>();
-
-    public Func<HttpContext, bool>? ShouldValidate { get; set; }
-}
-
+/// <summary>
+/// Middleware that provides CSRF protection for cookie-based authentication.
+/// </summary>
 public sealed class AntiforgeryProtectionMiddleware
 {
     private readonly RequestDelegate _next;
     private readonly IOptionsMonitor<AntiforgeryProtectionOptions> _opt;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="AntiforgeryProtectionMiddleware"/> class.
+    /// </summary>
+    /// <param name="next">The next middleware in the pipeline.</param>
+    /// <param name="opt">The antiforgery protection options.</param>
     public AntiforgeryProtectionMiddleware(RequestDelegate next, IOptionsMonitor<AntiforgeryProtectionOptions> opt)
     {
         _next = next;
         _opt = opt;
     }
 
+    /// <summary>
+    /// Invokes the middleware to perform CSRF validation if needed.
+    /// </summary>
+    /// <param name="ctx">The HTTP context.</param>
+    /// <param name="af">The antiforgery service.</param>
+    /// <returns>A task representing the asynchronous operation.</returns>
     public async Task InvokeAsync(HttpContext ctx, IAntiforgery af)
     {
         var opt = _opt.CurrentValue;

@@ -7,6 +7,7 @@ using System;
 using Asp.Versioning.ApiExplorer;
 
 using MeetlyOmni.Api.Middlewares;
+using MeetlyOmni.Api.Middlewares.Antiforgery;
 
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;

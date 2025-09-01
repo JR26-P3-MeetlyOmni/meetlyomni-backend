@@ -8,6 +8,7 @@ using Asp.Versioning;
 
 using MeetlyOmni.Api.Common.Constants;
 using MeetlyOmni.Api.Common.Extensions;
+using MeetlyOmni.Api.Middlewares.Antiforgery;
 using MeetlyOmni.Api.Models.Auth;
 using MeetlyOmni.Api.Service.AuthService.Interfaces;
 using MeetlyOmni.Api.Service.Common.Interfaces;

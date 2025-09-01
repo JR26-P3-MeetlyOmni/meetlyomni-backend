@@ -15,6 +15,7 @@ using MeetlyOmni.Api.Data.Entities;
 using MeetlyOmni.Api.Data.Repository;
 using MeetlyOmni.Api.Data.Repository.Interfaces;
 using MeetlyOmni.Api.Mapping;
+using MeetlyOmni.Api.Middlewares.Antiforgery;
 using MeetlyOmni.Api.Service.AuthService;
 using MeetlyOmni.Api.Service.AuthService.Interfaces;
 using MeetlyOmni.Api.Service.Common;
