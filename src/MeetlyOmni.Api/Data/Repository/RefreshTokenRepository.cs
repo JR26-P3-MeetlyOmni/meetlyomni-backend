@@ -36,6 +36,15 @@ public class RefreshTokenRepository : IRefreshTokenRepository
             .FirstOrDefaultAsync(rt => rt.TokenHash == tokenHash, ct);
     }
 
+    public async Task<RefreshToken?> FindByFamilyIdAsync(Guid familyId, CancellationToken ct = default)
+    {
+        return await _context.RefreshTokens
+            .Include(rt => rt.User)
+            .Where(rt => rt.FamilyId == familyId && rt.RevokedAt == null)
+            .OrderByDescending(rt => rt.CreatedAt)
+            .FirstOrDefaultAsync(ct);
+    }
+
     public void Update(RefreshToken refreshToken)
     {
         ArgumentNullException.ThrowIfNull(refreshToken);

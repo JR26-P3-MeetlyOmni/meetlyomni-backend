@@ -19,6 +19,8 @@ public class RefreshToken
 
     public DateTimeOffset ExpiresAt { get; set; }
 
+    public DateTimeOffset FamilyExpiresAt { get; set; }
+
     public DateTimeOffset CreatedAt { get; set; }
 
     public DateTimeOffset? RevokedAt { get; set; }
@@ -29,7 +31,7 @@ public class RefreshToken
 
     public string IpAddress { get; set; } = string.Empty;
 
-    public bool IsActive => RevokedAt == null && ExpiresAt > DateTimeOffset.UtcNow;
+    public bool IsActive => RevokedAt == null && ExpiresAt > DateTimeOffset.UtcNow && FamilyExpiresAt > DateTimeOffset.UtcNow;
 
     public bool IsReplaced => !string.IsNullOrEmpty(ReplacedByHash);
 

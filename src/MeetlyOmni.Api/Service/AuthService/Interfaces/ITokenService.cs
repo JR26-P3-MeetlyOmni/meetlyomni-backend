@@ -26,4 +26,10 @@ public interface ITokenService
         string userAgent,
         string ipAddress,
         CancellationToken ct = default);
+
+    Task<TokenResult> RefreshTokenPairFromCookiesAsync(
+        HttpContext httpContext,
+        string userAgent,
+        string ipAddress,
+        CancellationToken ct = default);
 }

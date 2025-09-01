@@ -8,7 +8,7 @@ using Asp.Versioning;
 
 using MeetlyOmni.Api.Common.Constants;
 using MeetlyOmni.Api.Common.Extensions;
-using MeetlyOmni.Api.Filters;
+using MeetlyOmni.Api.Middlewares.Antiforgery;
 using MeetlyOmni.Api.Models.Auth;
 using MeetlyOmni.Api.Service.AuthService.Interfaces;
 using MeetlyOmni.Api.Service.Common.Interfaces;
@@ -65,15 +65,13 @@ public class AuthController : ControllerBase
         var (userAgent, ipAddress) = _clientInfoService.GetClientInfo(HttpContext);
         var result = await _loginService.LoginAsync(request, userAgent, ipAddress, ct);
 
+        Response.SetAccessTokenCookie(result.AccessToken, result.ExpiresAt);
         Response.SetRefreshTokenCookie(result.RefreshToken, result.RefreshTokenExpiresAt);
-        Response.Headers.CacheControl = "no-store";
-        Response.Headers.Pragma = "no-cache";
 
         _logger.LogInformation("User {Email} logged in.", request.Email);
 
         return Ok(new LoginResponse
         {
-            AccessToken = result.AccessToken,
             ExpiresAt = result.ExpiresAt,
             TokenType = result.TokenType,
         });
@@ -85,11 +83,12 @@ public class AuthController : ControllerBase
     /// <returns>CSRF token information.</returns>
     [HttpGet("csrf")]
     [AllowAnonymous]
+    [SkipAntiforgery]
     [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
     public IActionResult GetCsrf()
     {
         var tokens = _antiforgery.GetAndStoreTokens(HttpContext);
-        Response.SetCsrfTokenCookie(tokens.RequestToken!);
+        Response.SetCsrfTokenCookie(tokens.RequestToken ?? string.Empty);
         return Ok(new { message = "CSRF token generated" });
     }
 
@@ -103,25 +102,15 @@ public class AuthController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> RefreshTokenAsync(CancellationToken ct)
     {
-        await _antiforgery.ValidateRequestAsync(HttpContext); // 失败 -> 全局 Handler
-
-        if (!Request.Cookies.TryGetValue(AuthCookieExtensions.CookieNames.RefreshToken, out var refreshToken) ||
-            string.IsNullOrWhiteSpace(refreshToken))
-        {
-            throw new UnauthorizedAppException("Refresh token is missing."); // 交给全局 Handler（可在那边清 Cookie）
-        }
-
         var (userAgent, ipAddress) = _clientInfoService.GetClientInfo(HttpContext);
         var (accessToken, accessTokenExpiresAt, newRefreshToken, newRefreshTokenExpiresAt) =
-            await _tokenService.RefreshTokenPairAsync(refreshToken, userAgent, ipAddress, ct);
+            await _tokenService.RefreshTokenPairFromCookiesAsync(HttpContext, userAgent, ipAddress, ct);
 
+        Response.SetAccessTokenCookie(accessToken, accessTokenExpiresAt);
         Response.SetRefreshTokenCookie(newRefreshToken, newRefreshTokenExpiresAt);
-        Response.Headers.CacheControl = "no-store";
-        Response.Headers.Pragma = "no-cache";
 
         return Ok(new LoginResponse
         {
-            AccessToken = accessToken,
             ExpiresAt = accessTokenExpiresAt,
             TokenType = "Bearer",
         });
@@ -137,15 +126,11 @@ public class AuthController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     public IActionResult GetCurrentUser()
     {
-        var userId = User.FindFirstValue(JwtClaimTypes.Subject);
-        var email = User.FindFirstValue(JwtClaimTypes.Email);
-        var orgId = User.FindFirstValue(JwtClaimTypes.OrganizationId);
-
         return Ok(new
         {
-            userId,
-            email,
-            orgId,
+            userId = User.FindFirstValue(JwtClaimTypes.Subject),
+            email = User.FindFirstValue(JwtClaimTypes.Email),
+            orgId = User.FindFirstValue(JwtClaimTypes.OrganizationId),
             message = "Authentication via cookie is working!",
         });
     }

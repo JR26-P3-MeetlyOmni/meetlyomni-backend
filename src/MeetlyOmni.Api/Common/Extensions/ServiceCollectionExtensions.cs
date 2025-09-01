@@ -78,9 +78,22 @@ public static class ServiceCollectionExtensions
                     context.Options.TokenValidationParameters.ValidIssuer = jwtOptions.Value.Issuer;
                     context.Options.TokenValidationParameters.ValidAudience = jwtOptions.Value.Audience;
 
-                    // Standard JWT Bearer token authentication
-                    // Token should be provided in Authorization header as "Bearer <token>"
-                    // No cookie fallback needed for access tokens
+                    // 1) priority: Authorization header (for script/mobile/Postman)
+                    var auth = context.Request.Headers["Authorization"].ToString();
+                    if (!string.IsNullOrWhiteSpace(auth) &&
+                        auth.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+                    {
+                        context.Token = auth.Substring("Bearer ".Length).Trim();
+                        return Task.CompletedTask;
+                    }
+
+                    // 2) backup: cookie (for browser auto-carry)
+                    if (context.Request.Cookies.TryGetValue("access_token", out var cookieToken) &&
+                        !string.IsNullOrWhiteSpace(cookieToken))
+                    {
+                        context.Token = cookieToken;
+                    }
+
                     return Task.CompletedTask;
                 },
                 OnAuthenticationFailed = context =>
@@ -160,31 +173,35 @@ public static class ServiceCollectionExtensions
             // Add operation filter to handle API versioning
             options.OperationFilter<SwaggerDefaultValues>();
 
-            // JWT auth configuration for Swagger UI
-            var bearerSecurityScheme = new OpenApiSecurityScheme
+            // JWT security for Swagger UI
+            var bearerScheme = new OpenApiSecurityScheme
             {
-                Description = "JWT Authorization header using the Bearer scheme. Example: \"Authorization: Bearer {token}\"",
                 Name = "Authorization",
+                Description = "Enter 'Bearer {token}'",
                 In = ParameterLocation.Header,
                 Type = SecuritySchemeType.Http,
                 Scheme = "bearer",
                 BearerFormat = "JWT",
+                Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Bearer" },
             };
-            options.AddSecurityDefinition("Bearer", bearerSecurityScheme);
+            options.AddSecurityDefinition("Bearer", bearerScheme);
 
+            // CSRF security for Swagger UI
+            var csrfScheme = new OpenApiSecurityScheme
+            {
+                Name = "X-XSRF-TOKEN",
+                Description = "CSRF token for POST/PUT/PATCH/DELETE requests",
+                In = ParameterLocation.Header,
+                Type = SecuritySchemeType.ApiKey,
+                Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "XSRF" },
+            };
+            options.AddSecurityDefinition("XSRF", csrfScheme);
+
+            // Apply both JWT and CSRF security requirements
             options.AddSecurityRequirement(new OpenApiSecurityRequirement
             {
-                {
-                    new OpenApiSecurityScheme
-                    {
-                        Reference = new OpenApiReference
-                        {
-                            Type = ReferenceType.SecurityScheme,
-                            Id = "Bearer",
-                        },
-                    },
-                    Array.Empty<string>()
-                },
+                { bearerScheme, Array.Empty<string>() },
+                { csrfScheme, Array.Empty<string>() },
             });
         });
 

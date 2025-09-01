@@ -7,6 +7,7 @@ using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
 
+using MeetlyOmni.Api.Common.Extensions;
 using MeetlyOmni.Api.Common.Options;
 using MeetlyOmni.Api.Data.Entities;
 using MeetlyOmni.Api.Data.Repository.Interfaces;
@@ -65,7 +66,18 @@ public class TokenService : ITokenService
         var tokenFamilyId = familyId ?? Guid.NewGuid();
         var refreshTokenValue = GenerateRandomToken();
         var refreshTokenHash = ComputeHash(refreshTokenValue);
-        var refreshTokenExpires = DateTimeOffset.UtcNow.AddMinutes(_jwtOptions.RefreshTokenExpirationMinutes);
+
+        // Calculate family expiration time (prevents infinite renewal)
+        var now = DateTimeOffset.UtcNow;
+        var familyExpiresAt = familyId == null
+            ? now.AddMinutes(_jwtOptions.RefreshTokenExpirationMinutes) // New family: set max lifetime
+            : await GetFamilyExpirationTimeAsync(tokenFamilyId, ct); // Existing family: use existing max lifetime
+
+        // Calculate individual token expiration (respects family limit)
+        var individualExpiresAt = now.AddMinutes(_jwtOptions.RefreshTokenExpirationMinutes);
+        var refreshTokenExpires = individualExpiresAt < familyExpiresAt
+            ? individualExpiresAt
+            : familyExpiresAt;
 
         // Sanitize inputs to respect database constraints
         var ua = (userAgent ?? string.Empty).Trim();
@@ -88,7 +100,8 @@ public class TokenService : ITokenService
             TokenHash = refreshTokenHash,
             FamilyId = tokenFamilyId,
             ExpiresAt = refreshTokenExpires,
-            CreatedAt = DateTimeOffset.UtcNow,
+            FamilyExpiresAt = familyExpiresAt,
+            CreatedAt = now,
             UserAgent = ua,
             IpAddress = ip,
         };
@@ -227,6 +240,23 @@ public class TokenService : ITokenService
         }
     }
 
+    public async Task<TokenResult> RefreshTokenPairFromCookiesAsync(
+        HttpContext httpContext,
+        string userAgent,
+        string ipAddress,
+        CancellationToken ct = default)
+    {
+        // Extract refresh token from cookies
+        if (!httpContext.Request.Cookies.TryGetValue(AuthCookieExtensions.CookieNames.RefreshToken, out var refreshToken) ||
+            string.IsNullOrWhiteSpace(refreshToken))
+        {
+            throw new UnauthorizedAppException("Refresh token is missing.");
+        }
+
+        // Delegate to the existing method
+        return await RefreshTokenPairAsync(refreshToken, userAgent, ipAddress, ct);
+    }
+
     private static void AddUserClaims(List<Claim> claims, IList<Claim> userClaims)
     {
         // Add all user custom claims directly
@@ -267,5 +297,12 @@ public class TokenService : ITokenService
         var userRoles = await _userManager.GetRolesAsync(member);
 
         return (userClaims, userRoles);
+    }
+
+    private async Task<DateTimeOffset> GetFamilyExpirationTimeAsync(Guid familyId, CancellationToken ct)
+    {
+        // Get the family expiration time from any existing token in the family
+        var existingToken = await _unitOfWork.RefreshTokens.FindByFamilyIdAsync(familyId, ct);
+        return existingToken?.FamilyExpiresAt ?? DateTimeOffset.UtcNow.AddMinutes(_jwtOptions.RefreshTokenExpirationMinutes);
     }
 }
