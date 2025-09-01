@@ -15,7 +15,7 @@ public class BackendStatusTests
             Timeout = TimeSpan.FromSeconds(30)
         };
 
-        var baseUrl = LaunchSettingsReader.GetBaseUrl();
+        var baseUrl = Environment.GetEnvironmentVariable("BASE_URL") ?? LaunchSettingsReader.GetBaseUrl("http");
         var response = await httpClient.GetAsync($"{baseUrl}/swagger/index.html");
 
         Assert.True(response.IsSuccessStatusCode, $"Backend is not available. Status: {response.StatusCode}, Reason: {response.ReasonPhrase}");
