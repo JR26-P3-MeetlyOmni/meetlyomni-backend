@@ -31,7 +31,7 @@
       "logConfiguration": {
         "logDriver": "awslogs",
         "options": {
-          "awslogs-group": "/ecs/meetly-omni-backend",
+          "awslogs-group": "/ecs/meetly-omni-backend-task",
           "awslogs-region": "ap-southeast-2",
           "awslogs-stream-prefix": "ecs"
         }
