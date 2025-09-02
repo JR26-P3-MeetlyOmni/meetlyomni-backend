@@ -2,9 +2,12 @@
 // Copyright (c) MeetlyOmni. All rights reserved.
 // </copyright>
 
+using System;
+
 using Asp.Versioning.ApiExplorer;
 
 using MeetlyOmni.Api.Middlewares;
+using MeetlyOmni.Api.Middlewares.Antiforgery;
 
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
@@ -61,5 +64,15 @@ public static class ApplicationBuilderExtensions
     public static IApplicationBuilder UseNoCache(this IApplicationBuilder app)
     {
         return app.UseMiddleware<NoCacheMiddleware>();
+    }
+
+    /// <summary>
+    /// Adds antiforgery protection middleware using DI-registered options.
+    /// </summary>
+    /// <param name="app">The application builder.</param>
+    /// <returns>The application builder for chaining.</returns>
+    public static IApplicationBuilder UseAntiforgeryProtection(this IApplicationBuilder app)
+    {
+        return app.UseMiddleware<AntiforgeryProtectionMiddleware>();
     }
 }

@@ -225,16 +225,16 @@ public class AuthControllerTests
         // Add refresh token to cookies
         _authController.HttpContext.Request.Headers.Cookie = $"{AuthCookieExtensions.CookieNames.RefreshToken}={refreshToken}";
 
-        // Setup antiforgery validation to fail
-        _mockAntiforgery
-            .Setup(x => x.ValidateRequestAsync(It.IsAny<HttpContext>()))
-            .ThrowsAsync(new AntiforgeryValidationException("Antiforgery validation failed"));
+        // Setup token service to throw exception (since antiforgery is now handled by middleware)
+        _mockTokenService
+            .Setup(x => x.RefreshTokenPairFromCookiesAsync(It.IsAny<HttpContext>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new UnauthorizedAppException("Invalid refresh token"));
 
         // Act & Assert
         var act = () => _authController.RefreshTokenAsync(CancellationToken.None);
 
-        await act.Should().ThrowAsync<AntiforgeryValidationException>()
-            .WithMessage("Antiforgery validation failed");
+        await act.Should().ThrowAsync<UnauthorizedAppException>()
+            .WithMessage("Invalid refresh token");
     }
 
     [Fact]

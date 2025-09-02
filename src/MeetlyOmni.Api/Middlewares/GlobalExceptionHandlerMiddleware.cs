@@ -9,6 +9,7 @@ using MeetlyOmni.Api.Filters;
 
 using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace MeetlyOmni.Api.Middlewares;
 
@@ -63,7 +64,7 @@ public class GlobalExceptionHandlerMiddleware
 
     private async Task HandleExceptionAsync(HttpContext context, Exception exception)
     {
-        _logger.LogError(exception, "An unhandled exception occurred while processing request: {RequestUrl}", context.Request.GetDisplayUrl());
+        _logger.LogError(exception, "Unhandled exception: {Url}", context.Request.GetDisplayUrl());
 
         var (statusCode, title) = exception switch
         {
@@ -72,15 +73,27 @@ public class GlobalExceptionHandlerMiddleware
             EntityNotFoundException => (StatusCodes.Status404NotFound, "Not found"),
             ConflictAppException => (StatusCodes.Status409Conflict, "Conflict"),
             ForbiddenAppException => (StatusCodes.Status403Forbidden, "Forbidden"),
+            Microsoft.AspNetCore.Antiforgery.AntiforgeryValidationException => (StatusCodes.Status403Forbidden, "CSRF validation failed"),
+            Microsoft.IdentityModel.Tokens.SecurityTokenExpiredException => (StatusCodes.Status401Unauthorized, "Token expired"),
+            Microsoft.IdentityModel.Tokens.SecurityTokenValidationException => (StatusCodes.Status401Unauthorized, "Token validation failed"),
+            OperationCanceledException => (StatusCodes.Status400BadRequest, "Request cancelled"),
             _ => (StatusCodes.Status500InternalServerError, "Internal Server Error")
         };
 
-        // Clear authentication cookies for unauthorized/forbidden errors
-        if (statusCode == StatusCodes.Status401Unauthorized || statusCode == StatusCodes.Status403Forbidden)
+        // Check if response has already started before making any modifications
+        if (context.Response.HasStarted)
+        {
+            _logger.LogWarning("Response already started, cannot modify headers/body for: {Url}", context.Request.GetDisplayUrl());
+            return;
+        }
+
+        // Clear authentication cookies for 401/403 responses
+        if (statusCode is StatusCodes.Status401Unauthorized or StatusCodes.Status403Forbidden)
         {
             ClearAuthenticationCookies(context);
         }
 
+        // Create ProblemDetails manually for consistent formatting
         var problemDetails = new ProblemDetails
         {
             Title = title,
@@ -90,10 +103,10 @@ public class GlobalExceptionHandlerMiddleware
             Type = GetProblemType(statusCode),
         };
 
-        // Add additional details for validation errors
-        if (exception is DomainValidationException validationEx)
+        // Add custom extensions for specific exceptions
+        if (exception is DomainValidationException domainValidationException)
         {
-            problemDetails.Extensions["errors"] = validationEx.Errors;
+            problemDetails.Extensions["errors"] = domainValidationException.Errors;
         }
 
         context.Response.StatusCode = statusCode;

@@ -2,6 +2,8 @@
 // Copyright (c) MeetlyOmni. All rights reserved.
 // </copyright>
 
+using Microsoft.Net.Http.Headers;
+
 namespace MeetlyOmni.Api.Middlewares;
 
 /// <summary>
@@ -22,28 +24,27 @@ public class NoCacheMiddleware
 
     public async Task InvokeAsync(HttpContext context)
     {
-        try
+        // Apply no-cache headers for authentication-related endpoints BEFORE calling next middleware
+        if (IsAuthenticationEndpoint(context.Request.Path))
         {
-            // Call the next middleware in the pipeline
-            await _next(context);
-
-            // Apply no-cache headers only for authentication-related endpoints
-            if (IsAuthenticationEndpoint(context.Request.Path) &&
-                context.Response.StatusCode == 200 &&
-                context.Response.ContentType?.Contains("application/json") == true)
+            context.Response.OnStarting(() =>
             {
-                context.Response.Headers.CacheControl = "no-store, no-cache, must-revalidate, max-age=0";
-                context.Response.Headers.Pragma = "no-cache";
-                context.Response.Headers.Expires = "0";
+                var th = context.Response.GetTypedHeaders();
+                th.CacheControl = new CacheControlHeaderValue
+                {
+                    NoCache = true,
+                    NoStore = true,
+                    MustRevalidate = true,
+                    MaxAge = TimeSpan.Zero,
+                };
+                context.Response.Headers[HeaderNames.Pragma] = "no-cache";
+                th.Expires = DateTimeOffset.UnixEpoch;
+                return Task.CompletedTask;
+            });
+        }
 
-                _logger.LogDebug("Applied no-cache headers for authentication endpoint: {Path}", context.Request.Path);
-            }
-        }
-        catch
-        {
-            // Re-throw to let the global exception handler deal with it
-            throw;
-        }
+        // Call the next middleware in the pipeline
+        await _next(context);
     }
 
     private static bool IsAuthenticationEndpoint(PathString path)

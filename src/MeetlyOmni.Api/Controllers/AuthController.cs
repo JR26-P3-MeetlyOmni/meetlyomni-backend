@@ -8,6 +8,7 @@ using Asp.Versioning;
 
 using MeetlyOmni.Api.Common.Constants;
 using MeetlyOmni.Api.Common.Extensions;
+using MeetlyOmni.Api.Middlewares.Antiforgery;
 using MeetlyOmni.Api.Models.Auth;
 using MeetlyOmni.Api.Service.AuthService.Interfaces;
 using MeetlyOmni.Api.Service.Common.Interfaces;
@@ -82,6 +83,7 @@ public class AuthController : ControllerBase
     /// <returns>CSRF token information.</returns>
     [HttpGet("csrf")]
     [AllowAnonymous]
+    [SkipAntiforgery]
     [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
     public IActionResult GetCsrf()
     {
@@ -100,8 +102,6 @@ public class AuthController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> RefreshTokenAsync(CancellationToken ct)
     {
-        await _antiforgery.ValidateRequestAsync(HttpContext);
-
         var (userAgent, ipAddress) = _clientInfoService.GetClientInfo(HttpContext);
         var (accessToken, accessTokenExpiresAt, newRefreshToken, newRefreshTokenExpiresAt) =
             await _tokenService.RefreshTokenPairFromCookiesAsync(HttpContext, userAgent, ipAddress, ct);

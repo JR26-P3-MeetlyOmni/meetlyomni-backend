@@ -15,6 +15,7 @@ using MeetlyOmni.Api.Data.Entities;
 using MeetlyOmni.Api.Data.Repository;
 using MeetlyOmni.Api.Data.Repository.Interfaces;
 using MeetlyOmni.Api.Mapping;
+using MeetlyOmni.Api.Middlewares.Antiforgery;
 using MeetlyOmni.Api.Service.AuthService;
 using MeetlyOmni.Api.Service.AuthService.Interfaces;
 using MeetlyOmni.Api.Service.Common;
@@ -80,6 +81,9 @@ builder.Services.AddSingleton<IJwtKeyProvider, JwtKeyProvider>();
 // JWT Authentication Configuration
 builder.Services.AddJwtAuthentication(builder.Configuration);
 
+// Authorization services (required for [Authorize])
+builder.Services.AddAuthorization();
+
 // ---- Repositories ----
 builder.Services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
@@ -105,8 +109,9 @@ builder.Services.AddCorsWithCookieSupport();
 builder.Services.AddAntiforgery(options =>
 {
     options.HeaderName = "X-XSRF-TOKEN";
-    options.Cookie.SameSite = SameSiteMode.None;
     options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+    options.Cookie.SameSite = SameSiteMode.None;
+    options.Cookie.IsEssential = true;
     options.Cookie.Path = AuthCookieExtensions.CookiePaths.Root;
 });
 
@@ -127,18 +132,23 @@ builder.Services.AddApiVersioning(options =>
     options.SubstituteApiVersionInUrl = true;
 });
 
-builder.Services.AddControllers();
-
 // Swagger Configuration with API versioning
 builder.Services.AddSwaggerWithApiVersioning();
 
 // Register AutoMapper and scan for profiles starting from MappingProfile's assembly
 builder.Services.AddAutoMapper(typeof(MappingProfile));
 
+// Antiforgery options binding (must be registered before building the app)
+builder.Services.Configure<AntiforgeryProtectionOptions>(
+    builder.Configuration.GetSection("AntiforgeryProtection"));
+
 var app = builder.Build();
 
 // Database initialization
 await app.InitializeDatabaseAsync();
+
+// Global exception handling middleware (placed early in pipeline to catch all exceptions)
+app.UseGlobalExceptionHandler();
 
 // Swagger
 if (app.Environment.IsDevelopment())
@@ -146,19 +156,16 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerWithApiVersioning();
 }
 
-// Global exception handling middleware (placed early in pipeline)
-app.UseGlobalExceptionHandler();
+app.UseHttpsRedirection();
 
 // No-cache middleware for authentication endpoints
 app.UseNoCache();
 
-app.UseHttpsRedirection();
-
 // Enable CORS
 app.UseCors();
 
-// Antiforgery middleware (must be before authentication)
-app.UseAntiforgery();
+// Antiforgery protection (must be before authentication)
+app.UseAntiforgeryProtection();
 
 // security headers
 app.Use(async (context, next) =>

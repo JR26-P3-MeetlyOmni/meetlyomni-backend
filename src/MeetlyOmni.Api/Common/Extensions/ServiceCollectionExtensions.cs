@@ -185,9 +185,23 @@ public static class ServiceCollectionExtensions
                 Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Bearer" },
             };
             options.AddSecurityDefinition("Bearer", bearerScheme);
+
+            // CSRF security for Swagger UI
+            var csrfScheme = new OpenApiSecurityScheme
+            {
+                Name = "X-XSRF-TOKEN",
+                Description = "CSRF token for POST/PUT/PATCH/DELETE requests",
+                In = ParameterLocation.Header,
+                Type = SecuritySchemeType.ApiKey,
+                Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "XSRF" },
+            };
+            options.AddSecurityDefinition("XSRF", csrfScheme);
+
+            // Apply both JWT and CSRF security requirements
             options.AddSecurityRequirement(new OpenApiSecurityRequirement
             {
                 { bearerScheme, Array.Empty<string>() },
+                { csrfScheme, Array.Empty<string>() },
             });
         });
 
