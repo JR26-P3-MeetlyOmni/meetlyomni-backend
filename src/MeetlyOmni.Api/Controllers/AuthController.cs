@@ -3,19 +3,26 @@
 // </copyright>
 
 using System.Security.Claims;
+using System.Text;
 
 using Asp.Versioning;
 
 using MeetlyOmni.Api.Common.Constants;
 using MeetlyOmni.Api.Common.Extensions;
+using MeetlyOmni.Api.Data.Entities;
 using MeetlyOmni.Api.Middlewares.Antiforgery;
 using MeetlyOmni.Api.Models.Auth;
+using MeetlyOmni.Api.Models.Member;
 using MeetlyOmni.Api.Service.AuthService.Interfaces;
 using MeetlyOmni.Api.Service.Common.Interfaces;
+using MeetlyOmni.Api.Service.EmailService;
 
 using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.WebUtilities;
 
 namespace MeetlyOmni.Api.Controllers;
 
@@ -34,6 +41,9 @@ public class AuthController : ControllerBase
     private readonly ILogger<AuthController> _logger;
     private readonly ILogoutService _logoutService;
     private readonly ISignUpService _signUpService;
+    private readonly IEmailSender _emailSender;
+    private readonly IConfiguration _config;
+    private readonly UserManager<Member> _userManager;
 
     public AuthController(
         ILoginService loginService,
@@ -42,7 +52,10 @@ public class AuthController : ControllerBase
         IAntiforgery antiforgery,
         ILogger<AuthController> logger,
         ILogoutService logoutService,
-        ISignUpService signUpService)
+        ISignUpService signUpService,
+        IEmailSender emailSender,
+        IConfiguration config,
+        UserManager<Member> userManager)
     {
         _loginService = loginService;
         _tokenService = tokenService;
@@ -51,6 +64,9 @@ public class AuthController : ControllerBase
         _logger = logger;
         _signUpService = signUpService;
         _logoutService = logoutService;
+        _emailSender = emailSender;
+        _config = config;
+        _userManager = userManager;
     }
 
     /// <summary>
@@ -169,14 +185,75 @@ public class AuthController : ControllerBase
     [ProducesResponseType(typeof(object), 409)]
     public async Task<IActionResult> SignUp([FromBody] AdminSignupRequest request)
     {
-        if (!this.ModelState.IsValid)
+        var memberDto = await _signUpService.SignUpAdminAsync(request);
+        var userIdStr = memberDto.Id.ToString();
+        var user = await _userManager.FindByIdAsync(userIdStr);
+
+        var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+        var code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
+        var frontendBase = _config["Frontend:BaseUrl"]!.TrimEnd('/');
+        var returnUrl = "/login";
+        var verifyUrl = QueryHelpers.AddQueryString(
+            $"{frontendBase}/verify-email",
+            new Dictionary<string, string?>
+            {
+                ["userId"] = user.Id.ToString(), // Guid -> string
+                ["code"] = code,
+                ["returnUrl"] = returnUrl,
+            });
+
+        var html = $"""
+            <p>Hi {user.UserName},</p>
+            <p>Please confirm your email by clicking the link below:</p>
+            <p><a href="{verifyUrl}">Verify Email</a></p>
+            <p>If you did not register, please ignore this email.</p>
+            """;
+        await _emailSender.SendEmailAsync(user.Email!, "Verify your email", html);
+
+        return CreatedAtRoute(
+            "GetMemberById",
+            new { id = memberDto.Id },
+            new { member = memberDto, emailConfirmation = "sent" });
+    }
+
+    [HttpGet("members/{id:guid}", Name = "GetMemberById")]
+    public async Task<ActionResult<MemberDto>> GetMemberById([FromRoute] Guid id)
+    {
+        var dto = await _signUpService.GetMemberById(id);
+        return dto is null ? NotFound() : Ok(dto);
+    }
+
+    [HttpPost("confirm-email")]
+    public async Task<IActionResult> ConfirmEmail([FromBody] ConfirmEmailRequest dto)
+    {
+        if (string.IsNullOrWhiteSpace(dto.UserId) || string.IsNullOrWhiteSpace(dto.Code))
         {
-            return this.BadRequest(this.ModelState);
+            return BadRequest(new { message = "Missing userId or code" });
         }
 
-        var memberDto = await this._signUpService.SignUpAdminAsync(request);
+        var user = await _userManager.FindByIdAsync(dto.UserId);
+        if (user is null)
+        {
+            return NotFound(new { message = "User not found" });
+        }
 
-        // Return 201 Created with location header
-        return this.CreatedAtAction(nameof(this.SignUp), new { id = memberDto.Id }, memberDto);
+        string token;
+        try
+        {
+            token = Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(dto.Code));
+        }
+        catch
+        {
+            return BadRequest(new { message = "Invalid code" });
+        }
+
+        var result = await _userManager.ConfirmEmailAsync(user, token);
+        return result.Succeeded
+            ? Ok(new { message = "Email confirmed" })
+            : BadRequest(new
+            {
+                message = "Confirm failed",
+                errors = result.Errors.Select(e => new { e.Code, e.Description }),
+            });
     }
 }

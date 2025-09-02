@@ -2,16 +2,15 @@
 // Copyright (c) MeetlyOmni. All rights reserved.
 // </copyright>
 
-using System.Buffers.Text;
 using System.IdentityModel.Tokens.Jwt;
+using System.Net;
+using System.Net.Mail;
 
 using Asp.Versioning;
-using Asp.Versioning.ApiExplorer;
 
 using MeetlyOmni.Api.Common.Extensions;
 using MeetlyOmni.Api.Common.Options;
 using MeetlyOmni.Api.Data;
-using MeetlyOmni.Api.Data.Entities;
 using MeetlyOmni.Api.Data.Repository;
 using MeetlyOmni.Api.Data.Repository.Interfaces;
 using MeetlyOmni.Api.Mapping;
@@ -20,8 +19,10 @@ using MeetlyOmni.Api.Service.AuthService;
 using MeetlyOmni.Api.Service.AuthService.Interfaces;
 using MeetlyOmni.Api.Service.Common;
 using MeetlyOmni.Api.Service.Common.Interfaces;
+using MeetlyOmni.Api.Service.EmailService;
 
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.EntityFrameworkCore;
 
 using Npgsql;
@@ -40,6 +41,11 @@ builder.Services.AddProblemDetails(options =>
         ctx.ProblemDetails.Instance = ctx.HttpContext.Request.Path;
         ctx.ProblemDetails.Extensions["traceId"] = ctx.HttpContext.TraceIdentifier;
     };
+});
+
+builder.Services.Configure<DataProtectionTokenProviderOptions>(o =>
+{
+    o.TokenLifespan = TimeSpan.FromHours(24);
 });
 
 // Logging config (optional, but recommended)
@@ -143,6 +149,26 @@ builder.Services.AddAutoMapper(typeof(MappingProfile));
 // Antiforgery options binding (must be registered before building the app)
 builder.Services.Configure<AntiforgeryProtectionOptions>(
     builder.Configuration.GetSection("AntiforgeryProtection"));
+
+// ---------- FluentEmail + SMTP ----------
+builder.Services
+  .AddFluentEmail(
+      builder.Configuration["Smtp:FromAddress"],
+      builder.Configuration["Smtp:FromName"])
+  .AddSmtpSender(() => new SmtpClient
+  {
+      Host = builder.Configuration["Smtp:Host"],
+      Port = int.Parse(builder.Configuration["Smtp:Port"] ?? "587"),
+      EnableSsl = bool.Parse(builder.Configuration["Smtp:EnableSsl"] ?? "true"), // 587 = STARTTLS
+      DeliveryMethod = SmtpDeliveryMethod.Network,
+      UseDefaultCredentials = false,
+      Credentials = new NetworkCredential(
+          builder.Configuration["Smtp:User"],
+          builder.Configuration["Smtp:Pass"]),
+  });
+
+// IEmailSender ʵ�֣���ҵ��/Identity ���ã�
+builder.Services.AddTransient<IEmailSender, EmailSender>();
 
 var app = builder.Build();
 

@@ -10,4 +10,6 @@ namespace MeetlyOmni.Api.Service.AuthService.Interfaces;
 public interface ISignUpService
 {
     Task<MemberDto> SignUpAdminAsync(AdminSignupRequest input);
+
+    Task<MemberDto?> GetMemberById(Guid id);
 }

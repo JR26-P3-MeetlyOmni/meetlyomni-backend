@@ -94,6 +94,21 @@ public class SignUpService : ISignUpService
         }
     }
 
+    public async Task<MemberDto?> GetMemberById(Guid id)
+    {
+        var member = await this._userManager.FindByIdAsync(id.ToString());
+        if (member == null)
+        {
+            return null;
+        }
+
+        return new MemberDto
+        {
+            Id = member.Id,
+            Email = member.Email,
+        };
+    }
+
     public async Task<string> GenerateUniqueOrgCodeAsync(string name)
     {
         string BaseSlug(string s) =>
