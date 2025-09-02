@@ -41,6 +41,7 @@
   <ItemGroup>
     <Folder Include="Common\Constants\" />
     <Folder Include="Data\Repository\" />
+    <Folder Include="Middlewares\" />
   </ItemGroup>
 
 </Project>

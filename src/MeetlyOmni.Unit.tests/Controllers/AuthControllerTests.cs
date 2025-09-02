@@ -41,6 +41,7 @@ public class AuthControllerTests
     private readonly Mock<IAntiforgery> _mockAntiforgery;
     private readonly Mock<ILogoutService> _mockLogoutService;
     private readonly Mock<ILogger<AuthController>> _mockLogger;
+    private readonly Mock<ISignUpService> _mockSignUpServcie;
 
     public AuthControllerTests()
     {
@@ -50,6 +51,7 @@ public class AuthControllerTests
         _mockAntiforgery = new Mock<IAntiforgery>();
         _mockLogoutService = new Mock<ILogoutService>();
         _mockLogger = new Mock<ILogger<AuthController>>();
+        _mockSignUpServcie = new Mock<ISignUpService>();
 
         _authController = new AuthController(
             _mockLoginService.Object,
@@ -57,7 +59,8 @@ public class AuthControllerTests
             _mockClientInfoService.Object,
             _mockAntiforgery.Object,
             _mockLogger.Object,
-            _mockLogoutService.Object);
+            _mockLogoutService.Object,
+            _mockSignUpServcie.Object);
 
         SetupHttpContext();
     }

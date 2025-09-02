@@ -33,6 +33,7 @@ public class AuthController : ControllerBase
     private readonly IAntiforgery _antiforgery;
     private readonly ILogger<AuthController> _logger;
     private readonly ILogoutService _logoutService;
+    private readonly ISignUpService _signUpService;
 
     public AuthController(
         ILoginService loginService,
@@ -40,13 +41,15 @@ public class AuthController : ControllerBase
         IClientInfoService clientInfoService,
         IAntiforgery antiforgery,
         ILogger<AuthController> logger,
-        ILogoutService logoutService)
+        ILogoutService logoutService,
+        ISignUpService signUpService)
     {
         _loginService = loginService;
         _tokenService = tokenService;
         _clientInfoService = clientInfoService;
         _antiforgery = antiforgery;
         _logger = logger;
+        _signUpService = signUpService;
         _logoutService = logoutService;
     }
 
@@ -150,5 +153,30 @@ public class AuthController : ControllerBase
         _logger.LogInformation("User logged out successfully.");
 
         return Ok(new { message = "Logged out successfully" });
+    }
+
+    /// <summary>
+    /// Registers a new admin user.
+    /// </summary>
+    /// <param name="request">Signup request model.</param>
+    /// <response code="201">Successfully created the user.</response>
+    /// <response code="400">Invalid request data.</response>
+    /// <response code="409">Email already exists.</response>
+    /// <returns>A <see cref="Task"/> Id and email of the new user.</returns>
+    [HttpPost("signup")]
+    [ProducesResponseType(typeof(Models.Member.MemberDto), 201)]
+    [ProducesResponseType(typeof(object), 400)]
+    [ProducesResponseType(typeof(object), 409)]
+    public async Task<IActionResult> SignUp([FromBody] AdminSignupRequest request)
+    {
+        if (!this.ModelState.IsValid)
+        {
+            return this.BadRequest(this.ModelState);
+        }
+
+        var memberDto = await this._signUpService.SignUpAdminAsync(request);
+
+        // Return 201 Created with location header
+        return this.CreatedAtAction(nameof(this.SignUp), new { id = memberDto.Id }, memberDto);
     }
 }
