@@ -53,7 +53,7 @@ jobs:
         uses: aws-actions/amazon-ecs-render-task-definition@v1.8.0
         with:
           task-definition: ecs-task-definition.json
-          container-name: meetlyomni-backend
+          container-name: meetly-omni-backend
           image: ${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}
 
       - name: Deploy Amazon ECS task definition
