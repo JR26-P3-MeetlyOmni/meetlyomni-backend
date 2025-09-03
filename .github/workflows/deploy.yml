@@ -2,7 +2,9 @@ name: Build and Deploy to ECS
 
 on:
   push:
-    branches: [ devops-uat ]
+    branches: [ devops-di ]
+  pull_request:
+    branches: [ dev ]
 
 env:
   AWS_REGION: ${{ vars.AWS_REGION }}
