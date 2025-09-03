@@ -118,7 +118,8 @@ public class SignUpService : ISignUpService
             new string(s.Trim().ToLowerInvariant().Where(ch => char.IsLetterOrDigit(ch) || ch == ' ').ToArray())
             .Replace(' ', '-');
 
-        var baseSlug = BaseSlug(name);
+        var baseSlug = string.IsNullOrWhiteSpace(name) ? "org" : BaseSlug(name);
+
         for (int i = 0; i < 5; i++)
         {
             var suffix = Convert.ToHexString(RandomNumberGenerator.GetBytes(3)).ToLowerInvariant();

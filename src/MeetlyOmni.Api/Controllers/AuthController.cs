@@ -149,14 +149,8 @@ public class AuthController : ControllerBase
     [ProducesResponseType(typeof(object), 409)]
     public async Task<IActionResult> SignUp([FromBody] AdminSignupRequest request)
     {
-        if (!this.ModelState.IsValid)
-        {
-            return this.BadRequest(this.ModelState);
-        }
-
         var memberDto = await this._signUpService.SignUpAdminAsync(request);
 
-        // Return 201 Created with location header
-        return this.CreatedAtAction(nameof(this.SignUp), new { id = memberDto.Id }, memberDto);
+        return StatusCode(StatusCodes.Status201Created, memberDto);
     }
 }
