@@ -25,7 +25,7 @@
         },
         {
           "name": "ConnectionStrings__MeetlyOmniDb",
-          "value": "Host=aws-1-ap-southeast-2.pooler.supabase.com;Port=6543;Database=postgres;Username=postgres.yqnhjjliceujuoujvcrz;Password=t88ahHappC7FddcV;SSL Mode=Require;Trust Server Certificate=true"
+          "value": "Host=pg-161cfda4-meetlyomini-dev.c.aivencloud.com;Port=28623;Database=meetlyomni_dev;Username=avnadmin;Password=AVNS_I6rJ2zD4wgYhg6nCRiz"
         }
       ],
       "logConfiguration": {
