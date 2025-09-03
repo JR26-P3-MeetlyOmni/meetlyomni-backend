@@ -3,7 +3,7 @@ name: Build and Deploy to ECS
 on:
 
   push:
-    branches: [ dev, devops-di ]
+    branches: [ dev, devops-uat ]
 env:
   AWS_REGION: ${{ vars.AWS_REGION }}
   ECR_REPOSITORY: ${{ vars.ECR_REPOSITORY }}
