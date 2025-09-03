@@ -20,7 +20,6 @@ public class OrganizationRepository : IOrganizationRepository
     public async Task<Entities.Organization> AddOrganizationAsync(Entities.Organization organization)
     {
         this._context.Organizations.Add(organization);
-        await this._context.SaveChangesAsync();
         return organization;
     }
 

@@ -22,17 +22,20 @@ public class SignUpService : ISignUpService
     private readonly RoleManager<ApplicationRole> _roleManager;
     private readonly IOrganizationRepository _organizationRepository;
     private readonly ApplicationDbContext _dbContext;
+    private readonly ILogger<SignUpService> _logger;
 
     public SignUpService(
         UserManager<Member> userManager,
         RoleManager<ApplicationRole> roleManager,
         IOrganizationRepository organizationRepository,
-        ApplicationDbContext dbContext)
+        ApplicationDbContext dbContext,
+        ILogger<SignUpService> logger)
     {
         this._userManager = userManager;
         this._roleManager = roleManager;
         this._organizationRepository = organizationRepository;
         this._dbContext = dbContext;
+        this._logger = logger;
     }
 
     public async Task<MemberDto> SignUpAdminAsync(AdminSignupRequest request)
@@ -68,8 +71,15 @@ public class SignUpService : ISignUpService
 
             var createResult = await this._userManager.CreateAsync(memberEntity, request.Password);
 
-            var roleName = "Admin";
+            if (!createResult.Succeeded)
+            {
+                await transaction.RollbackAsync();
+                var errorMessages = string.Join("; ", createResult.Errors.Select(e => e.Description));
+                _logger.LogError("User creation failed for email {Email}: {Errors}", request.Email, errorMessages);
+                throw new InvalidOperationException($"User creation failed: {errorMessages}");
+            }
 
+            var roleName = "Admin";
             if (!await this._roleManager.RoleExistsAsync(roleName))
             {
                 var roleCreatedResult = await this._roleManager.CreateAsync(new ApplicationRole(roleName));
@@ -77,6 +87,15 @@ public class SignUpService : ISignUpService
 
             var addToRoleResult = await this._userManager.AddToRoleAsync(memberEntity, roleName);
 
+            if (!addToRoleResult.Succeeded)
+            {
+                await transaction.RollbackAsync();
+                var errorMessages = string.Join("; ", addToRoleResult.Errors.Select(e => e.Description));
+                _logger.LogError("Role assignment failed for user {Email}: {Errors}", request.Email, errorMessages);
+                throw new InvalidOperationException($"Role assignment failed: {errorMessages}");
+            }
+
+            await this._dbContext.SaveChangesAsync();
             await transaction.CommitAsync();
 
             var dto = new MemberDto
@@ -84,7 +103,6 @@ public class SignUpService : ISignUpService
                 Id = memberEntity.Id,
                 Email = memberEntity.Email,
             };
-
             return dto;
         }
         catch
