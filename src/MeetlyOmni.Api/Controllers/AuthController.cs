@@ -189,26 +189,45 @@ public class AuthController : ControllerBase
         var userIdStr = memberDto.Id.ToString();
         var user = await _userManager.FindByIdAsync(userIdStr);
 
+        // Validate that the user was actually created and found
+        if (user == null)
+        {
+            _logger.LogError("User with ID {UserId} was not found after creation", userIdStr);
+            return StatusCode(500, new { message = "User creation succeeded but user could not be retrieved" });
+        }
+
         var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
         var code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
-        var frontendBase = _config["Frontend:BaseUrl"]!.TrimEnd('/');
+        
+        // Add null check for Frontend:BaseUrl configuration
+        var frontendBase = _config["Frontend:BaseUrl"];
+        if (string.IsNullOrWhiteSpace(frontendBase))
+        {
+            _logger.LogError("Frontend:BaseUrl configuration is missing or empty");
+            return StatusCode(500, new { message = "Frontend configuration is missing" });
+        }
+        
+        frontendBase = frontendBase.TrimEnd('/');
         var returnUrl = "/login";
-        var verifyUrl = QueryHelpers.AddQueryString(
-            $"{frontendBase}/verify-email",
-            new Dictionary<string, string?>
-            {
-                ["userId"] = user.Id.ToString(), // Guid -> string
-                ["code"] = code,
-                ["returnUrl"] = returnUrl,
-            });
-
-        var html = $"""
+        
+        // Build the verification URL manually to avoid encoding issues
+        var verifyUrl = $"{frontendBase}/verify-email?userId={user.Id}&code={code}&returnUrl={Uri.EscapeDataString(returnUrl)}";
+        
+        // Log the generated URL for debugging
+        _logger.LogInformation("Generated verification URL: {VerifyUrl}", verifyUrl);
+        
+        // Create HTML message with verification link
+        var htmlMessage = $"""
             <p>Hi {user.UserName},</p>
             <p>Please confirm your email by clicking the link below:</p>
             <p><a href="{verifyUrl}">Verify Email</a></p>
             <p>If you did not register, please ignore this email.</p>
+            <p>Or click this link:</p>
+            <p><a href="{verifyUrl}">{verifyUrl}</a></p>
             """;
-        await _emailSender.SendEmailAsync(user.Email!, "Verify your email", html);
+        
+        // Send email with HTML message
+        await _emailSender.SendEmailAsync(user.Email!, "Verify your email", htmlMessage);
 
         return CreatedAtRoute(
             "GetMemberById",
