@@ -31,28 +31,38 @@ public class LogoutService : ILogoutService
 
     public async Task LogoutAsync(HttpContext httpContext, CancellationToken ct = default)
     {
-        if (httpContext.Request.Cookies.TryGetValue(AuthCookieExtensions.CookieNames.RefreshToken, out var refreshToken) &&
-            !string.IsNullOrWhiteSpace(refreshToken))
+        ArgumentNullException.ThrowIfNull(httpContext);
+
+        try
         {
-            var tokenHash = ComputeHash(refreshToken);
-            var storedToken = await _unitOfWork.RefreshTokens.FindByHashAsync(tokenHash, ct);
-
-            if (storedToken != null)
+            if (httpContext.Request.Cookies.TryGetValue(AuthCookieExtensions.CookieNames.RefreshToken, out var refreshToken) &&
+                !string.IsNullOrWhiteSpace(refreshToken))
             {
-                // Revoke all tokens in this family
-                var revokedCount = await _unitOfWork.RefreshTokens.MarkTokenFamilyAsRevokedAsync(storedToken.FamilyId, ct);
-                await _unitOfWork.SaveChangesAsync(ct);
+                var tokenHash = ComputeHash(refreshToken);
+                var storedToken = await _unitOfWork.RefreshTokens.FindByHashAsync(tokenHash, ct);
 
-                _logger.LogInformation(
-                    "User {UserId} logged out. Revoked {Count} tokens in family {FamilyId}",
-                    storedToken.UserId,
-                    revokedCount,
-                    storedToken.FamilyId);
+                if (storedToken != null)
+                {
+                    var revokedCount = await _unitOfWork.RefreshTokens.MarkTokenFamilyAsRevokedAsync(storedToken.FamilyId, ct);
+                    await _unitOfWork.SaveChangesAsync(ct);
+
+                    _logger.LogInformation(
+                        "User {UserId} logged out. Revoked {Count} tokens in family {FamilyId}",
+                        storedToken.UserId,
+                        revokedCount,
+                        storedToken.FamilyId);
+                }
             }
         }
-
-        httpContext.Response.DeleteAccessTokenCookie();
-        httpContext.Response.DeleteRefreshTokenCookie();
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Logout encountered an error before clearing cookies.");
+        }
+        finally
+        {
+            httpContext.Response.DeleteAccessTokenCookie();
+            httpContext.Response.DeleteRefreshTokenCookie();
+        }
     }
 
     private static string ComputeHash(string input)
