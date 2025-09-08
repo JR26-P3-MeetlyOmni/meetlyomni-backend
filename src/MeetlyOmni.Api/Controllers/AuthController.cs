@@ -123,6 +123,10 @@ public class AuthController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     public IActionResult GetCurrentUser()
     {
+        var userId = User.FindFirst("sub")?.Value;
+        var email = User.FindFirst("email")?.Value;
+        var orgId = User.FindFirst("org_id")?.Value;
+
         return Ok(new
         {
             userId = User.FindFirstValue(JwtClaimTypes.Subject),

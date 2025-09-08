@@ -199,10 +199,10 @@ public static class ServiceCollectionExtensions
 
             // Apply both JWT and CSRF security requirements
             options.AddSecurityRequirement(new OpenApiSecurityRequirement
-            {
+                        {
                 { bearerScheme, Array.Empty<string>() },
                 { csrfScheme, Array.Empty<string>() },
-            });
+                        });
         });
 
         services.AddTransient<IConfigureOptions<SwaggerGenOptions>>(
