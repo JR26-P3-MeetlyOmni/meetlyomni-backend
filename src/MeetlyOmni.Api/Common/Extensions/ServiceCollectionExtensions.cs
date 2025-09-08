@@ -88,7 +88,7 @@ public static class ServiceCollectionExtensions
                     }
 
                     // 2) backup: cookie (for browser auto-carry)
-                    if (context.Request.Cookies.TryGetValue("access_token", out var cookieToken) &&
+                    if (context.Request.Cookies.TryGetValue(AuthCookieExtensions.CookieNames.AccessToken, out var cookieToken) &&
                         !string.IsNullOrWhiteSpace(cookieToken))
                     {
                         context.Token = cookieToken;
