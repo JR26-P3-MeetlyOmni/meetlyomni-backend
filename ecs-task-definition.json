@@ -2,6 +2,7 @@
   "family": "meetly-omni-backend-task",
   "networkMode": "awsvpc",
   "executionRoleArn": "arn:aws:iam::351889159066:role/meetly-omni-backend-ecs-task-execution",
+  "taskRoleArn": "arn:aws:iam::351889159066:role/meetly-omni-ecs-task",
   "containerDefinitions": [
     {
       "name": "meetly-omni-backend",
@@ -45,3 +46,4 @@
     "operatingSystemFamily": "LINUX"
   }
 }
+
