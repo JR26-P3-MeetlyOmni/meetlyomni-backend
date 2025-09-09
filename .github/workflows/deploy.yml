@@ -1,7 +1,7 @@
 name: Build and Deploy to ECS
 on:
- push:
-  branches: [ dev, devops-uat ]
+  push:
+    branches: [dev, devops-uat]
 env:
   AWS_REGION: ${{ vars.AWS_REGION }}
   ECR_REPOSITORY: ${{ vars.ECR_REPOSITORY }}
@@ -10,6 +10,8 @@ env:
   AWS_OIDC_PROVIDER_ARN: ${{ vars.AWS_OIDC_PROVIDER_ARN }}
   AWS_ROLE_ARN: ${{ vars.AWS_ROLE_ARN }}
   IMAGE_TAG: ${{ github.sha }}
+  SLACK_BOT_TOKEN: ${{vars.SLACK_BOT_TOKEN}}
+  SLACK_CHANNEL: ${{vars.SLACK_CHANNEL}}
 
 permissions:
   contents: read
@@ -61,3 +63,22 @@ jobs:
           service: ${{ env.ECS_SERVICE }}
           cluster: ${{ env.ECS_CLUSTER }}
           wait-for-service-stability: true
+
+      - name: Notify Slack on Deploy Success
+        if: success()
+        uses: slackapi/slack-github-action@v1.26.0
+        with:
+          channel-id: ${{ vars.SLACK_CHANNEL }}
+          slack-message: ":white_check_mark: BE Deployment completed successfully"
+        env:
+          SLACK_BOT_TOKEN: ${{ vars.SLACK_BOT_TOKEN }}
+
+      - name: Notify Slack on Deploy Failure
+        if: failure()
+        uses: slackapi/slack-github-action@v1.26.0
+        with:
+          channel-id: ${{ vars.SLACK_CHANNEL }}
+          slack-message: ":x: BE Deployment failed"
+        env:
+          SLACK_BOT_TOKEN: ${{ vars.SLACK_BOT_TOKEN }}
+
