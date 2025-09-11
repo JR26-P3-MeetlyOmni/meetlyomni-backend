@@ -22,10 +22,12 @@
         {
           "name": "ASPNETCORE_URLS",
           "value": "http://0.0.0.0:80"
-        },
+        }
+        ],
+      "secrets": [
         {
           "name": "ConnectionStrings__MeetlyOmniDb",
-          "value": "Host=pg-161cfda4-meetlyomini-dev.c.aivencloud.com;Port=28623;Database=meetlyomni_dev;Username=avnadmin;Password=AVNS_I6rJ2zD4wgYhg6nCRiz"
+          "valueFrom": "arn:aws:ssm:ap-southeast-2:351889159066:parameter/ConnectionStrings__MeetlyOmniDb"
         }
       ],
       "logConfiguration": {
