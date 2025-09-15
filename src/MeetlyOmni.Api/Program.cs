@@ -74,6 +74,10 @@ builder.Services.AddOptions<JwtOptions>()
 
 // Identity Services
 builder.Services.AddApplicationIdentity();
+builder.Services.Configure<IdentityOptions>(options =>
+{
+    options.User.AllowedUserNameCharacters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 -._@+";
+});
 
 // JWT Key Provider
 builder.Services.AddSingleton<IJwtKeyProvider, JwtKeyProvider>();

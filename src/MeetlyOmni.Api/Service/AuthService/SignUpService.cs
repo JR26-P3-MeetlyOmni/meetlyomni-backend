@@ -83,6 +83,14 @@ public class SignUpService : ISignUpService
             if (!await this._roleManager.RoleExistsAsync(roleName))
             {
                 var roleCreatedResult = await this._roleManager.CreateAsync(new ApplicationRole(roleName));
+
+                if (!roleCreatedResult.Succeeded)
+                {
+                    await transaction.RollbackAsync();
+                    var errorMessages = string.Join("; ", roleCreatedResult.Errors.Select(e => e.Description));
+                    _logger.LogError("Role creation failed for role {RoleName}: {Errors}", roleName, errorMessages);
+                    throw new InvalidOperationException($"Role creation failed: {errorMessages}");
+                }
             }
 
             var addToRoleResult = await this._userManager.AddToRoleAsync(memberEntity, roleName);
