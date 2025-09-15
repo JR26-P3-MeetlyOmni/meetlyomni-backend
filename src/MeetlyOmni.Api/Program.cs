@@ -79,7 +79,7 @@ builder.Services.AddApplicationIdentity();
 builder.Services.AddSingleton<IJwtKeyProvider, JwtKeyProvider>();
 
 // JWT Authentication Configuration
-builder.Services.AddJwtAuthentication(builder.Configuration);
+//builder.Services.AddJwtAuthentication(builder.Configuration);
 
 // Authorization services (required for [Authorize])
 builder.Services.AddAuthorization();
@@ -87,10 +87,12 @@ builder.Services.AddAuthorization();
 // ---- Repositories ----
 builder.Services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
+builder.Services.AddScoped<IOrganizationRepository, OrganizationRepository>();
 
 // ---- Application Services ----
 builder.Services.AddScoped<ILoginService, LoginService>();
 builder.Services.AddScoped<ITokenService, TokenService>();
+builder.Services.AddScoped<ISignUpService, SignUpService>();
 
 // ---- Common Services ----
 builder.Services.AddScoped<IClientInfoService, ClientInfoService>();
