@@ -83,7 +83,7 @@ builder.Services.Configure<IdentityOptions>(options =>
 builder.Services.AddSingleton<IJwtKeyProvider, JwtKeyProvider>();
 
 // JWT Authentication Configuration
-//builder.Services.AddJwtAuthentication(builder.Configuration);
+builder.Services.AddJwtAuthentication(builder.Configuration);
 
 // Authorization services (required for [Authorize])
 builder.Services.AddAuthorization();

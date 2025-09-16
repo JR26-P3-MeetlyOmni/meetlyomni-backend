@@ -18,6 +18,8 @@ namespace MeetlyOmni.Api.Service.AuthService;
 
 public class SignUpService : ISignUpService
 {
+    private const int _baseSlugMaxLength = 22;
+    private const int _maxAttempts = 10;
     private readonly UserManager<Member> _userManager;
     private readonly RoleManager<ApplicationRole> _roleManager;
     private readonly IOrganizationRepository _organizationRepository;
@@ -129,13 +131,13 @@ public class SignUpService : ISignUpService
             .Replace(' ', '-');
 
         // Truncate to max 22 chars to leave room for 8-char suffix (22 + 1 + 7 = 30)
-        if (baseSlug.Length > 22)
+        if (baseSlug.Length > _baseSlugMaxLength)
         {
-            baseSlug = baseSlug.Substring(0, 22);
+            baseSlug = baseSlug.Substring(0, _baseSlugMaxLength);
         }
 
         // Try up to 10 times to find unique code
-        for (int i = 0; i < 10; i++)
+        for (int i = 0; i < _maxAttempts; i++)
         {
             var suffix = Guid.NewGuid().ToString("N")[..7]; // 7 random chars
             var orgCode = $"{baseSlug}-{suffix}";

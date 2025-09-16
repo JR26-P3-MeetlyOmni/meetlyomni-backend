@@ -148,6 +148,7 @@ public class AuthController : ControllerBase
     /// <response code="409">Email already exists.</response>
     /// <returns>A <see cref="Task"/> Id and email of the new user.</returns>
     [HttpPost("signup")]
+    [AllowAnonymous]
     [ProducesResponseType(typeof(Models.Member.MemberDto), 201)]
     [ProducesResponseType(typeof(object), 400)]
     [ProducesResponseType(typeof(object), 409)]
