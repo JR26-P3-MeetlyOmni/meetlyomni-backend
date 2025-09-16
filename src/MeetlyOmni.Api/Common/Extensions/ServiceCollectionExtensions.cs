@@ -88,7 +88,7 @@ public static class ServiceCollectionExtensions
                     }
 
                     // 2) backup: cookie (for browser auto-carry)
-                    if (context.Request.Cookies.TryGetValue("access_token", out var cookieToken) &&
+                    if (context.Request.Cookies.TryGetValue(AuthCookieExtensions.CookieNames.AccessToken, out var cookieToken) &&
                         !string.IsNullOrWhiteSpace(cookieToken))
                     {
                         context.Token = cookieToken;
@@ -199,10 +199,10 @@ public static class ServiceCollectionExtensions
 
             // Apply both JWT and CSRF security requirements
             options.AddSecurityRequirement(new OpenApiSecurityRequirement
-            {
+                        {
                 { bearerScheme, Array.Empty<string>() },
                 { csrfScheme, Array.Empty<string>() },
-            });
+                        });
         });
 
         services.AddTransient<IConfigureOptions<SwaggerGenOptions>>(

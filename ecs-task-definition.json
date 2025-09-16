@@ -1,0 +1,47 @@
+{
+  "family": "meetly-omni-backend-task",
+  "networkMode": "awsvpc",
+  "executionRoleArn": "arn:aws:iam::351889159066:role/meetly-omni-backend-ecs-task-execution",
+  "containerDefinitions": [
+    {
+      "name": "meetly-omni-backend",
+      "image": "351889159066.dkr.ecr.ap-southeast-2.amazonaws.com/meetly-omni-backend-dev:latest",
+      "portMappings": [
+        {
+          "containerPort": 80,
+          "hostPort": 80,
+          "protocol": "tcp"
+        }
+      ],
+      "essential": true,
+      "environment": [
+        {
+          "name": "ASPNETCORE_ENVIRONMENT",
+          "value": "Development"
+        },
+        {
+          "name": "ASPNETCORE_URLS",
+          "value": "http://0.0.0.0:80"
+        },
+        {
+          "name": "ConnectionStrings__MeetlyOmniDb",
+          "value": "Host=pg-161cfda4-meetlyomini-dev.c.aivencloud.com;Port=28623;Database=meetlyomni_dev;Username=avnadmin;Password=AVNS_I6rJ2zD4wgYhg6nCRiz"
+        }
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/meetly-omni-backend-task",
+          "awslogs-region": "ap-southeast-2",
+          "awslogs-stream-prefix": "ecs"
+        }
+      }
+    }
+  ],
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "512",
+  "memory": "1024",
+  "runtimePlatform": {
+    "operatingSystemFamily": "LINUX"
+  }
+}

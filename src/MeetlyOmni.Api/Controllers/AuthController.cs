@@ -126,6 +126,10 @@ public class AuthController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     public IActionResult GetCurrentUser()
     {
+        var userId = User.FindFirst("sub")?.Value;
+        var email = User.FindFirst("email")?.Value;
+        var orgId = User.FindFirst("org_id")?.Value;
+
         return Ok(new
         {
             userId = User.FindFirstValue(JwtClaimTypes.Subject),
@@ -141,6 +145,7 @@ public class AuthController : ControllerBase
     /// <returns>A <see cref="Task{IActionResult}"/> representing the asynchronous operation.</returns>
     [HttpPost("logout")]
     [Authorize]
+    [SkipAntiforgery]
     [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> LogoutAsync(CancellationToken ct)
