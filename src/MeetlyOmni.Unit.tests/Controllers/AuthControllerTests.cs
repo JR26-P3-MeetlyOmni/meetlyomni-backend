@@ -11,6 +11,7 @@ using MeetlyOmni.Api.Common.Extensions;
 using MeetlyOmni.Api.Controllers;
 using MeetlyOmni.Api.Filters;
 using MeetlyOmni.Api.Models.Auth;
+using MeetlyOmni.Api.Models.Member;
 using MeetlyOmni.Api.Service.AuthService.Interfaces;
 using MeetlyOmni.Api.Service.Common.Interfaces;
 using MeetlyOmni.Unit.tests.Helpers;
@@ -40,6 +41,7 @@ public class AuthControllerTests
     private readonly Mock<IClientInfoService> _mockClientInfoService;
     private readonly Mock<IAntiforgery> _mockAntiforgery;
     private readonly Mock<ILogger<AuthController>> _mockLogger;
+    private readonly Mock<ISignUpService> _mockSignUpService;
 
     public AuthControllerTests()
     {
@@ -48,13 +50,15 @@ public class AuthControllerTests
         _mockClientInfoService = new Mock<IClientInfoService>();
         _mockAntiforgery = new Mock<IAntiforgery>();
         _mockLogger = new Mock<ILogger<AuthController>>();
+        _mockSignUpService = new Mock<ISignUpService>();
 
         _authController = new AuthController(
             _mockLoginService.Object,
             _mockTokenService.Object,
             _mockClientInfoService.Object,
             _mockAntiforgery.Object,
-            _mockLogger.Object);
+            _mockLogger.Object,
+            _mockSignUpService.Object);
 
         SetupHttpContext();
     }
@@ -413,5 +417,35 @@ public class AuthControllerTests
         {
             HttpContext = httpContext
         };
+    }
+
+    [Fact]
+    public async Task SignUp_WithValidRequest_ShouldReturnCreated()
+    {
+        var signupRequest = new AdminSignupRequest
+        {
+            UserName = "Test User",
+            Email = "testuser@example.com",
+            Password = "TestPassword123!",
+            OrganizationName = "Test Org",
+            PhoneNumber = "1234567890"
+        };
+
+        var expectedMember = new MemberDto
+        {
+            Id = Guid.NewGuid(),
+            Email = signupRequest.Email
+        };
+
+        _mockSignUpService
+            .Setup(x => x.SignUpAdminAsync(signupRequest))
+            .ReturnsAsync(expectedMember);
+
+        var result = await _authController.SignUp(signupRequest);
+
+        result.Should().BeOfType<ObjectResult>();
+        var objectResult = result as ObjectResult;
+        objectResult!.StatusCode.Should().Be(StatusCodes.Status201Created);
+        objectResult.Value.Should().BeEquivalentTo(expectedMember);
     }
 }
