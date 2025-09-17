@@ -1,11 +1,11 @@
 {
   "family": "meetly-omni-backend-task",
   "networkMode": "awsvpc",
-  "executionRoleArn": "arn:aws:iam::351889159066:role/meetly-omni-backend-ecs-task-execution",
+  "executionRoleArn": "arn:aws:iam::739287608007:role/ecsTaskExecutionRole",
   "containerDefinitions": [
     {
       "name": "meetly-omni-backend",
-      "image": "351889159066.dkr.ecr.ap-southeast-2.amazonaws.com/meetly-omni-backend-dev:latest",
+      "image": "739287608007.dkr.ecr.ap-southeast-2.amazonaws.com/meetly-omni-backend-dev:latest",
       "portMappings": [
         {
           "containerPort": 80,
