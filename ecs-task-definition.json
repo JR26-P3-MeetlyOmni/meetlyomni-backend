@@ -17,7 +17,7 @@
       "environment": [
         {
           "name": "ASPNETCORE_ENVIRONMENT",
-          "value": "Development"
+          "value": "UAT"
         },
         {
           "name": "ASPNETCORE_URLS",

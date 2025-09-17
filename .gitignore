@@ -402,3 +402,25 @@ FodyWeavers.xsd
 # JetBrains Rider
 *.sln.iml
 .env
+
+# Terraform files
+.terraform/
+.terraform.lock.hcl
+terraform.tfstate
+terraform.tfstate.backup
+*.tfstate
+*.tfstate.*
+*.tfvars
+*.tfvars.json
+.crds
+
+# Backend config files (if they contain env-specific or sensitive info)
+backend-*.hcl
+*-backend.hcl
+secrets.hcl
+
+# Ignore .tfvars except base ones
+# (Allow base files, ignore environment-specific or filled-in ones)
+!terraform.tfvars
+!*.auto.tfvars
+*.auto.tfvars
