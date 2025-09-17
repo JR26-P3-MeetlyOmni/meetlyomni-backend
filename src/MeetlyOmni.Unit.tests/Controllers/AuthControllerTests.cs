@@ -240,9 +240,11 @@ public class AuthControllerTests
         // Arrange
         var claims = new List<Claim>
         {
-            new(JwtClaimTypes.Subject, "test-user-id"),
-            new(JwtClaimTypes.Email, "test@example.com"),
-            new(JwtClaimTypes.OrganizationId, "test-org-id")
+            new("sub", "12345678-1234-1234-1234-123456789012"),
+            new("email", "test@example.com"),
+            new("name", "Test User"),
+            new("role", "User"),
+            new("org_id", "test-org-id")
         };
 
         _authController.HttpContext.User = new ClaimsPrincipal(new ClaimsIdentity(claims, "Bearer"));
@@ -251,28 +253,26 @@ public class AuthControllerTests
         var result = _authController.GetCurrentUser();
 
         // Assert
-        result.Should().BeOfType<OkObjectResult>();
-        var okResult = result as OkObjectResult;
-        var response = okResult!.Value;
+        result.Result.Should().BeOfType<OkObjectResult>();
+        var okResult = result.Result as OkObjectResult;
+        var response = okResult!.Value as CurrentUserResponse;
 
-        // Use reflection to access the anonymous type properties
-        var userId = response.GetType().GetProperty("userId")?.GetValue(response);
-        var email = response.GetType().GetProperty("email")?.GetValue(response);
-        var orgId = response.GetType().GetProperty("orgId")?.GetValue(response);
-
-        userId.Should().Be("test-user-id");
-        email.Should().Be("test@example.com");
-        orgId.Should().Be("test-org-id");
+        response.Should().NotBeNull();
+        response!.Id.Should().Be(Guid.Parse("12345678-1234-1234-1234-123456789012"));
+        response.Email.Should().Be("test@example.com");
+        response.UserName.Should().Be("Test User");
+        response.Role.Should().Be("User");
+        response.OrgId.Should().Be("test-org-id");
     }
 
     [Fact]
-    public void GetCurrentUser_WithMissingClaims_ShouldReturnOkWithNullValues()
+    public void GetCurrentUser_WithMissingClaims_ShouldReturnOkWithDefaultValues()
     {
         // Arrange
         var claims = new List<Claim>
         {
-            new(JwtClaimTypes.Subject, "test-user-id")
-            // Missing email and orgId claims
+            new("sub", "12345678-1234-1234-1234-123456789012")
+            // Missing email, name, role, and orgId claims
         };
 
         _authController.HttpContext.User = new ClaimsPrincipal(new ClaimsIdentity(claims, "Bearer"));
@@ -281,22 +281,20 @@ public class AuthControllerTests
         var result = _authController.GetCurrentUser();
 
         // Assert
-        result.Should().BeOfType<OkObjectResult>();
-        var okResult = result as OkObjectResult;
-        var response = okResult!.Value;
+        result.Result.Should().BeOfType<OkObjectResult>();
+        var okResult = result.Result as OkObjectResult;
+        var response = okResult!.Value as CurrentUserResponse;
 
-        // Use reflection to access the anonymous type properties
-        var userId = response.GetType().GetProperty("userId")?.GetValue(response);
-        var email = response.GetType().GetProperty("email")?.GetValue(response);
-        var orgId = response.GetType().GetProperty("orgId")?.GetValue(response);
-
-        userId.Should().Be("test-user-id");
-        email.Should().BeNull();
-        orgId.Should().BeNull();
+        response.Should().NotBeNull();
+        response!.Id.Should().Be(Guid.Parse("12345678-1234-1234-1234-123456789012"));
+        response.Email.Should().Be(string.Empty);
+        response.UserName.Should().Be(string.Empty);
+        response.Role.Should().Be(string.Empty);
+        response.OrgId.Should().Be(string.Empty);
     }
 
     [Fact]
-    public void GetCurrentUser_WithNoUser_ShouldReturnOkWithNullValues()
+    public void GetCurrentUser_WithUnauthenticatedUser_ShouldReturnUnauthorized()
     {
         // Arrange
         _authController.HttpContext.User = new ClaimsPrincipal(new ClaimsIdentity());
@@ -305,18 +303,11 @@ public class AuthControllerTests
         var result = _authController.GetCurrentUser();
 
         // Assert
-        result.Should().BeOfType<OkObjectResult>();
-        var okResult = result as OkObjectResult;
-        var response = okResult!.Value;
-
-        // Use reflection to access the anonymous type properties
-        var userId = response.GetType().GetProperty("userId")?.GetValue(response);
-        var email = response.GetType().GetProperty("email")?.GetValue(response);
-        var orgId = response.GetType().GetProperty("orgId")?.GetValue(response);
-
-        userId.Should().BeNull();
-        email.Should().BeNull();
-        orgId.Should().BeNull();
+        result.Result.Should().BeOfType<UnauthorizedObjectResult>();
+        var unauthorizedResult = result.Result as UnauthorizedObjectResult;
+        unauthorizedResult!.Value.Should().BeOfType<ObjectResult>();
+        var objectResult = unauthorizedResult.Value as ObjectResult;
+        objectResult!.Value.Should().BeOfType<ProblemDetails>();
     }
 
     [Fact]

@@ -40,7 +40,6 @@
 
   <ItemGroup>
     <Folder Include="Controllers\" />
-    <Folder Include="Models\" />
     <Folder Include="Common\Constants\" />
     <Folder Include="Middlewares\" />
     <Folder Include="Filters\" />
