@@ -119,14 +119,18 @@ public class AuthController : ControllerBase
     /// <returns>Current user information.</returns>
     [HttpGet("me")]
     [Authorize]
-    [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(CurrentUserResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     public ActionResult<CurrentUserResponse> GetCurrentUser()
     {
         var dto = User.ToCurrentUserResponse();
         if (dto is null)
         {
-            return Unauthorized(Problem(title: "Unauthorized", detail: "User is not authenticated."));
+            return Unauthorized(new ProblemDetails
+            {
+                Title = "Unauthorized",
+                Detail = "User is not authenticated.",
+            });
         }
 
         return Ok(dto);
