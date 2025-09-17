@@ -305,9 +305,7 @@ public class AuthControllerTests
         // Assert
         result.Result.Should().BeOfType<UnauthorizedObjectResult>();
         var unauthorizedResult = result.Result as UnauthorizedObjectResult;
-        unauthorizedResult!.Value.Should().BeOfType<ObjectResult>();
-        var objectResult = unauthorizedResult.Value as ObjectResult;
-        objectResult!.Value.Should().BeOfType<ProblemDetails>();
+        unauthorizedResult!.Value.Should().BeOfType<ProblemDetails>();
     }
 
     [Fact]
