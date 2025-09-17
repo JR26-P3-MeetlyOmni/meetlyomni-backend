@@ -74,6 +74,10 @@ builder.Services.AddOptions<JwtOptions>()
 
 // Identity Services
 builder.Services.AddApplicationIdentity();
+builder.Services.Configure<IdentityOptions>(options =>
+{
+    options.User.AllowedUserNameCharacters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 -._@+";
+});
 
 // JWT Key Provider
 builder.Services.AddSingleton<IJwtKeyProvider, JwtKeyProvider>();
@@ -87,10 +91,12 @@ builder.Services.AddAuthorization();
 // ---- Repositories ----
 builder.Services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
+builder.Services.AddScoped<IOrganizationRepository, OrganizationRepository>();
 
 // ---- Application Services ----
 builder.Services.AddScoped<ILoginService, LoginService>();
 builder.Services.AddScoped<ITokenService, TokenService>();
+builder.Services.AddScoped<ISignUpService, SignUpService>();
 
 // ---- Common Services ----
 builder.Services.AddScoped<IClientInfoService, ClientInfoService>();

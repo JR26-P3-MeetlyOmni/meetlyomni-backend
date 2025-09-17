@@ -32,19 +32,22 @@ public class AuthController : ControllerBase
     private readonly IClientInfoService _clientInfoService;
     private readonly IAntiforgery _antiforgery;
     private readonly ILogger<AuthController> _logger;
+    private readonly ISignUpService _signUpService;
 
     public AuthController(
         ILoginService loginService,
         ITokenService tokenService,
         IClientInfoService clientInfoService,
         IAntiforgery antiforgery,
-        ILogger<AuthController> logger)
+        ILogger<AuthController> logger,
+        ISignUpService signUpService)
     {
         _loginService = loginService;
         _tokenService = tokenService;
         _clientInfoService = clientInfoService;
         _antiforgery = antiforgery;
         _logger = logger;
+        _signUpService = signUpService;
     }
 
     /// <summary>
@@ -134,5 +137,25 @@ public class AuthController : ControllerBase
             orgId = User.FindFirstValue(JwtClaimTypes.OrganizationId),
             message = "Authentication via cookie is working!",
         });
+    }
+
+    /// <summary>
+    /// Registers a new admin user.
+    /// </summary>
+    /// <param name="request">Signup request model.</param>
+    /// <response code="201">Successfully created the user.</response>
+    /// <response code="400">Invalid request data.</response>
+    /// <response code="409">Email already exists.</response>
+    /// <returns>A <see cref="Task"/> Id and email of the new user.</returns>
+    [HttpPost("signup")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(Models.Member.MemberDto), 201)]
+    [ProducesResponseType(typeof(object), 400)]
+    [ProducesResponseType(typeof(object), 409)]
+    public async Task<IActionResult> SignUp([FromBody] AdminSignupRequest request)
+    {
+        var memberDto = await this._signUpService.SignUpAdminAsync(request);
+
+        return StatusCode(StatusCodes.Status201Created, memberDto);
     }
 }
