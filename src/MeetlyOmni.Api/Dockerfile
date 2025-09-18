@@ -1,5 +1,5 @@
 # Build stage
-FROM mcr.microsoft.com/dotnet/sdk:8.0.315 AS build
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 
 # Set working directory to root
 WORKDIR /app
@@ -34,7 +34,7 @@ RUN echo "=== Starting publish ==="
 RUN dotnet publish "src/MeetlyOmni.Api/MeetlyOmni.Api.csproj" -c Release -o /app/publish
 
 # Runtime stage
-FROM mcr.microsoft.com/dotnet/aspnet:8.0.315 AS runtime
+FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
 WORKDIR /app
 
 ENV ASPNETCORE_URLS=http://+:80
