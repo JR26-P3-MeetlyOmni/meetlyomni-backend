@@ -1,7 +1,8 @@
 name: Build and Deploy to ECS
 on:
- push:
-  branches: [ dev, devops-uat ]
+  push:
+    branches: [dev, devops-uat]
+
 env:
   AWS_REGION: ${{ vars.AWS_REGION }}
   ECR_REPOSITORY: ${{ vars.ECR_REPOSITORY }}
@@ -19,6 +20,7 @@ jobs:
   build-and-deploy:
     name: Build, Push, and Deploy
     runs-on: ubuntu-latest
+    environment: dev
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -61,3 +63,22 @@ jobs:
           service: ${{ env.ECS_SERVICE }}
           cluster: ${{ env.ECS_CLUSTER }}
           wait-for-service-stability: true
+
+      - name: Notify Slack on Deploy Success
+        if: success()
+        uses: slackapi/slack-github-action@v1.26.0
+        with:
+          channel-id: ${{ vars.SLACK_CHANNEL }}
+          slack-message: ":white_check_mark: Dev BE Deployment completed successfully"
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+
+      - name: Notify Slack on Deploy Failure
+        if: failure()
+        uses: slackapi/slack-github-action@v1.26.0
+        with:
+          channel-id: ${{ vars.SLACK_CHANNEL }}
+          slack-message: ":x: Dev BE Deployment failed"
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+
