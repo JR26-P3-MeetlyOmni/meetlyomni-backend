@@ -43,3 +43,5 @@ EXPOSE 80
 
 COPY --from=build /app/publish .
 ENTRYPOINT ["dotnet", "MeetlyOmni.Api.dll"]
+
+#change ecr path
