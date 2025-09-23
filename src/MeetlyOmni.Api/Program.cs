@@ -20,6 +20,8 @@ using MeetlyOmni.Api.Service.AuthService;
 using MeetlyOmni.Api.Service.AuthService.Interfaces;
 using MeetlyOmni.Api.Service.Common;
 using MeetlyOmni.Api.Service.Common.Interfaces;
+using MeetlyOmni.Api.Service.Email;
+using MeetlyOmni.Api.Service.Email.Interfaces;
 
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -101,6 +103,12 @@ builder.Services.AddScoped<ISignUpService, SignUpService>();
 
 // ---- Common Services ----
 builder.Services.AddScoped<IClientInfoService, ClientInfoService>();
+
+// Email Services
+builder.Services.AddSingleton<IEmailTemplateService, EmailTemplateService>();
+builder.Services.AddSingleton<IEmailSender, AwsSesEmailSender>();
+builder.Services.AddScoped<IEmailLinkService, EmailLinkService>();
+builder.Services.AddScoped<AccountMailer>();
 
 // Global exception handling is now handled by middleware
 
