@@ -8,13 +8,17 @@ using Asp.Versioning;
 
 using MeetlyOmni.Api.Common.Constants;
 using MeetlyOmni.Api.Common.Extensions;
+using MeetlyOmni.Api.Data.Entities;
 using MeetlyOmni.Api.Middlewares.Antiforgery;
 using MeetlyOmni.Api.Models.Auth;
 using MeetlyOmni.Api.Service.AuthService.Interfaces;
 using MeetlyOmni.Api.Service.Common.Interfaces;
+using MeetlyOmni.Api.Service.Email;
+using MeetlyOmni.Api.Service.Email.Interfaces;
 
 using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 
 namespace MeetlyOmni.Api.Controllers;
@@ -33,6 +37,9 @@ public class AuthController : ControllerBase
     private readonly IAntiforgery _antiforgery;
     private readonly ILogger<AuthController> _logger;
     private readonly ISignUpService _signUpService;
+    private readonly IEmailLinkService _emailLinkService;
+    private readonly AccountMailer _accountMailer;
+    private readonly UserManager<Member> _userManager;
 
     public AuthController(
         ILoginService loginService,
@@ -40,7 +47,10 @@ public class AuthController : ControllerBase
         IClientInfoService clientInfoService,
         IAntiforgery antiforgery,
         ILogger<AuthController> logger,
-        ISignUpService signUpService)
+        ISignUpService signUpService,
+        IEmailLinkService emailLinkService,
+        AccountMailer accountMailer,
+        UserManager<Member> userManager)
     {
         _loginService = loginService;
         _tokenService = tokenService;
@@ -48,6 +58,9 @@ public class AuthController : ControllerBase
         _antiforgery = antiforgery;
         _logger = logger;
         _signUpService = signUpService;
+        _emailLinkService = emailLinkService;
+        _accountMailer = accountMailer;
+        _userManager = userManager;
     }
 
     /// <summary>
@@ -157,5 +170,100 @@ public class AuthController : ControllerBase
         var memberDto = await this._signUpService.SignUpAdminAsync(request);
 
         return StatusCode(StatusCodes.Status201Created, memberDto);
+    }
+
+    /// <summary>
+    /// Verify user's email address using the token from verification email.
+    /// </summary>
+    /// <param name="request">Email verification request containing email and token.</param>
+    /// <response code="200">Email successfully verified.</response>
+    /// <response code="400">Invalid request data or verification failed.</response>
+    /// <returns>A <see cref="Task{IActionResult}"/> representing the verification result.</returns>
+    [HttpPost("verify-email")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> VerifyEmail([FromBody] VerifyEmailRequest request, CancellationToken ct)
+    {
+        var isVerified = await _emailLinkService.ValidateAndConfirmEmailAsync(request.Email, request.Token, ct);
+
+        if (!isVerified)
+        {
+            _logger.LogWarning("Email verification failed for {Email}", request.Email);
+            return BadRequest(new { message = "Email verification failed. The token may be invalid or expired." });
+        }
+
+        _logger.LogInformation("Email successfully verified for {Email}", request.Email);
+
+        return Ok(new
+        {
+            message = "Email successfully verified. You can now log in to your account.",
+            email = request.Email,
+            verified = true,
+        });
+    }
+
+    /// <summary>
+    /// Request password reset email for a user.
+    /// </summary>
+    /// <param name="request">Forgot password request containing email.</param>
+    /// <response code="200">Password reset email sent (if email exists).</response>
+    /// <response code="400">Invalid request data.</response>
+    /// <returns>A <see cref="Task{IActionResult}"/> representing the operation result.</returns>
+    [HttpPost("forgot-password")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request, CancellationToken ct)
+    {
+        var user = await _userManager.FindByEmailAsync(request.Email);
+
+        if (user != null && user.EmailConfirmed)
+        {
+            await _accountMailer.SendResetPasswordAsync(user, ct);
+            _logger.LogInformation("Password reset email sent to {Email}", request.Email);
+        }
+        else
+        {
+            _logger.LogWarning("Password reset requested for non-existent or unconfirmed email: {Email}", request.Email);
+        }
+
+        // Always return success to prevent user enumeration
+        return Ok(new
+        {
+            message = "If the email address exists and is verified, a password reset link has been sent.",
+            email = request.Email,
+        });
+    }
+
+    /// <summary>
+    /// Reset user password using token from password reset email.
+    /// </summary>
+    /// <param name="request">Password reset request containing email, token, and new password.</param>
+    /// <response code="200">Password successfully reset.</response>
+    /// <response code="400">Invalid request data or password reset failed.</response>
+    /// <returns>A <see cref="Task{IActionResult}"/> representing the reset result.</returns>
+    [HttpPost("reset-password")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request, CancellationToken ct)
+    {
+        var isReset = await _emailLinkService.ResetPasswordAsync(request.Email, request.Token, request.NewPassword, ct);
+
+        if (!isReset)
+        {
+            _logger.LogWarning("Password reset failed for {Email}", request.Email);
+            return BadRequest(new { message = "Password reset failed. The token may be invalid or expired." });
+        }
+
+        _logger.LogInformation("Password successfully reset for {Email}", request.Email);
+
+        return Ok(new
+        {
+            message = "Password has been successfully reset. You can now log in with your new password.",
+            email = request.Email,
+            reset = true,
+        });
     }
 }
