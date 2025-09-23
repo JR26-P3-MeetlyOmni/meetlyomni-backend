@@ -25,6 +25,8 @@ using MeetlyOmni.Api.Service.Common;
 using MeetlyOmni.Api.Service.Common.Interfaces;
 using MeetlyOmni.Api.Service.Email;
 using MeetlyOmni.Api.Service.Email.Interfaces;
+using MeetlyOmni.Api.Service.EventService;
+using MeetlyOmni.Api.Service.EventService.Interfaces;
 
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -95,6 +97,7 @@ builder.Services.AddAuthorization();
 
 // ---- Repositories ----
 builder.Services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
+builder.Services.AddScoped<IEventRepository, EventRepository>();
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddScoped<IOrganizationRepository, OrganizationRepository>();
 
@@ -104,6 +107,7 @@ builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<ILogoutService, LogoutService>();
 builder.Services.AddScoped<ISignUpService, SignUpService>();
 builder.Services.AddScoped<IResetPasswordService, ResetPasswordService>();
+builder.Services.AddScoped<IEventService, EventService>();
 
 // ---- Common Services ----
 builder.Services.AddScoped<IClientInfoService, ClientInfoService>();
