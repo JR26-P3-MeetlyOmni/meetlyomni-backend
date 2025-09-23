@@ -35,24 +35,27 @@ public class LogoutService : ILogoutService
 
         try
         {
-            if (httpContext.Request.Cookies.TryGetValue(AuthCookieExtensions.CookieNames.RefreshToken, out var refreshToken) &&
-                !string.IsNullOrWhiteSpace(refreshToken))
+            if (!httpContext.Request.Cookies.TryGetValue(AuthCookieExtensions.CookieNames.RefreshToken, out var refreshToken) ||
+                string.IsNullOrWhiteSpace(refreshToken))
             {
-                var tokenHash = ComputeHash(refreshToken);
-                var storedToken = await _unitOfWork.RefreshTokens.FindByHashAsync(tokenHash, ct);
-
-                if (storedToken != null)
-                {
-                    var revokedCount = await _unitOfWork.RefreshTokens.MarkTokenFamilyAsRevokedAsync(storedToken.FamilyId, ct);
-                    await _unitOfWork.SaveChangesAsync(ct);
-
-                    _logger.LogInformation(
-                        "User {UserId} logged out. Revoked {Count} tokens in family {FamilyId}",
-                        storedToken.UserId,
-                        revokedCount,
-                        storedToken.FamilyId);
-                }
+                return;
             }
+
+            var tokenHash = ComputeHash(refreshToken);
+            var storedToken = await _unitOfWork.RefreshTokens.FindByHashAsync(tokenHash, ct);
+            if (storedToken == null)
+            {
+                return;
+            }
+
+            var revokedCount = await _unitOfWork.RefreshTokens.MarkTokenFamilyAsRevokedAsync(storedToken.FamilyId, ct);
+            await _unitOfWork.SaveChangesAsync(ct);
+
+            _logger.LogInformation(
+                "User {UserId} logged out. Revoked {Count} tokens in family {FamilyId}",
+                storedToken.UserId,
+                revokedCount,
+                storedToken.FamilyId);
         }
         catch (Exception ex)
         {
