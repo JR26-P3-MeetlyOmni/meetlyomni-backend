@@ -35,14 +35,13 @@ public class AuthController : ControllerBase
     private readonly ILogoutService _logoutService;
     private readonly ISignUpService _signUpService;
 
-
     public AuthController(
         ILoginService loginService,
         ITokenService tokenService,
         IClientInfoService clientInfoService,
         IAntiforgery antiforgery,
         ILogger<AuthController> logger,
-        ILogoutService logoutService)
+        ILogoutService logoutService,
         ISignUpService signUpService)
     {
         _loginService = loginService;
@@ -159,9 +158,10 @@ public class AuthController : ControllerBase
         _logger.LogInformation("User logged out successfully.");
 
         return Ok(new { message = "Logged out successfully" });
+    }
 
+    /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns><summary>
     /// Registers a new admin user.
-    /// </summary>
     /// <param name="request">Signup request model.</param>
     /// <response code="201">Successfully created the user.</response>
     /// <response code="400">Invalid request data.</response>

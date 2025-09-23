@@ -143,7 +143,9 @@ public class SignUpService : ISignUpService
             var orgCode = $"{baseSlug}-{suffix}";
 
             if (!await _organizationRepository.OrganizationCodeExistsAsync(orgCode))
+            {
                 return orgCode;
+            }
         }
 
         // Fallback: use timestamp suffix (should be very rare)

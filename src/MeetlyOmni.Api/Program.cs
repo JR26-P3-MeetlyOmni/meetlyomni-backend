@@ -99,7 +99,6 @@ builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<ILogoutService, LogoutService>();
 builder.Services.AddScoped<ISignUpService, SignUpService>();
 
-
 // ---- Common Services ----
 builder.Services.AddScoped<IClientInfoService, ClientInfoService>();
 
