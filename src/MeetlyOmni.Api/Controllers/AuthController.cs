@@ -125,21 +125,21 @@ public class AuthController : ControllerBase
     /// <returns>Current user information.</returns>
     [HttpGet("me")]
     [Authorize]
-    [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(CurrentUserResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
-    public IActionResult GetCurrentUser()
+    public ActionResult<CurrentUserResponse> GetCurrentUser()
     {
-        var userId = User.FindFirst("sub")?.Value;
-        var email = User.FindFirst("email")?.Value;
-        var orgId = User.FindFirst("org_id")?.Value;
-
-        return Ok(new
+        var dto = User.ToCurrentUserResponse();
+        if (dto is null)
         {
-            userId = User.FindFirstValue(JwtClaimTypes.Subject),
-            email = User.FindFirstValue(JwtClaimTypes.Email),
-            orgId = User.FindFirstValue(JwtClaimTypes.OrganizationId),
-            message = "Authentication via cookie is working!",
-        });
+            return Unauthorized(new ProblemDetails
+            {
+                Title = "Unauthorized",
+                Detail = "User is not authenticated.",
+            });
+        }
+
+        return Ok(dto);
     }
 
     /// <summary>
