@@ -17,6 +17,8 @@ public class ApplicationDbContext : IdentityDbContext<Member, ApplicationRole, G
 
     public DbSet<Organization> Organizations { get; set; }
 
+    public DbSet<Event> Events { get; set; }
+
     public DbSet<RaffleTicket> RaffleTickets { get; set; }
 
     public DbSet<MemberActivityLog> MemberActivityLogs { get; set; }
