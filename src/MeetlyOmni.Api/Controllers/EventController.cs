@@ -46,8 +46,11 @@ public class EventController : ControllerBase
             return Unauthorized(new ProblemDetails { Title = "Missing subject (sub) claim" });
         }
 
-        var result = await _eventService.CreateEventAsync(request, userId, ct);
-        return CreatedAtAction(nameof(CreateAsync), new { id = result.EventId, version = "1.0" }, result);
+        // Get user name from JWT claims
+        var userName = User.FindFirst("name")?.Value ?? User.FindFirst("email")?.Value ?? "System User";
+
+        var result = await _eventService.CreateEventAsync(request, userId, userName, ct);
+        return StatusCode(StatusCodes.Status201Created, result);
     }
 }
 

@@ -30,6 +30,7 @@ public class EventService : IEventService
     public async Task<CreateEventResponse> CreateEventAsync(
         CreateEventRequest request,
         Guid creatorId,
+        string creatorName,
         CancellationToken cancellationToken = default)
     {
         // Validate organization exists
@@ -42,8 +43,7 @@ public class EventService : IEventService
         // Validate business rules
         ValidateEventBusinessRules(request);
 
-        // Get creator name from JWT claims or user service
-        var creatorName = "System User"; // TODO: Get actual user name from JWT claims
+        // Use the creator name passed from controller
 
         // Create event entity
         var eventEntity = new Event
@@ -56,7 +56,6 @@ public class EventService : IEventService
             Location = request.Location?.Trim(),
             Language = request.Language?.Trim() ?? "en",
             Status = request.Status,
-            CreatedByName = creatorName,
             CreatedAt = DateTimeOffset.UtcNow,
             UpdatedAt = DateTimeOffset.UtcNow,
         };
@@ -78,7 +77,7 @@ public class EventService : IEventService
             Location = createdEvent.Location,
             Language = createdEvent.Language,
             Status = createdEvent.Status,
-            CreatedByName = createdEvent.CreatedByName,
+            CreatedByName = creatorName,
             CreatedByAvatar = null, // TODO: Add avatar URL when available
             CreatedAt = createdEvent.CreatedAt,
             UpdatedAt = createdEvent.UpdatedAt,

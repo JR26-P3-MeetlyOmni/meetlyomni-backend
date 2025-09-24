@@ -16,9 +16,10 @@ public interface IEventService
     /// </summary>
     /// <param name="request">Create request payload.</param>
     /// <param name="creatorId">Authenticated user id.</param>
+    /// <param name="creatorName">Authenticated user name.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>Create response DTO.</returns>
-    Task<CreateEventResponse> CreateEventAsync(CreateEventRequest request, Guid creatorId, CancellationToken cancellationToken = default);
+    Task<CreateEventResponse> CreateEventAsync(CreateEventRequest request, Guid creatorId, string creatorName, CancellationToken cancellationToken = default);
 }
 
 
