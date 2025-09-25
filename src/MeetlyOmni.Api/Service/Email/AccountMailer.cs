@@ -24,7 +24,7 @@ public sealed class AccountMailer
     /// <summary>
     /// Send password reset email with secure token-based link.
     /// </summary>
-    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous operation.</placeholder></returns>
+    /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
     public async Task<string> SendResetPasswordAsync(Member user, CancellationToken ct = default)
     {
         var resetLink = await _linkService.GeneratePasswordResetLinkAsync(user, ct);
@@ -38,7 +38,7 @@ public sealed class AccountMailer
     /// <summary>
     /// Send email verification with secure token-based link.
     /// </summary>
-    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous operation.</placeholder></returns>
+    /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
     public async Task<string> SendVerifyEmailAsync(Member user, CancellationToken ct = default)
     {
         var verifyLink = await _linkService.GenerateEmailVerificationLinkAsync(user, ct);

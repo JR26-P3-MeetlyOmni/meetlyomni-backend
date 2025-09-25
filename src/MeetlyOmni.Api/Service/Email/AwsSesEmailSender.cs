@@ -23,7 +23,7 @@ public sealed class AwsSesEmailSender : IEmailSender
         _fromEmail = cfg["Ses:FromEmail"] ?? throw new ArgumentNullException("Ses:FromEmail");
         _fromName = cfg["Ses:FromName"] ?? "MeetlyOmni";
 
-        // local variable/IAM role credentials
+        // local variable/IAM role credentials - uses default credential chain
         var region = RegionEndpoint.GetBySystemName(cfg["Ses:Region"] ?? "ap-southeast-2");
         _ses = new AmazonSimpleEmailServiceV2Client(region);
     }
@@ -50,18 +50,23 @@ public sealed class AwsSesEmailSender : IEmailSender
 
         try
         {
+            _logger.LogInformation(
+                "Attempting to send email. From={From} To={To} Region={Region}",
+                req.FromEmailAddress, message.To, _ses.Config.RegionEndpoint?.DisplayName);
+
             var res = await _ses.SendEmailAsync(req, ct);
-            _logger.LogInformation("SES email sent. MessageId={MessageId} To={To}", res.MessageId, message.To);
+            _logger.LogInformation("SES email sent successfully. MessageId={MessageId} To={To}", res.MessageId, message.To);
             return res.MessageId;
         }
         catch (MessageRejectedException ex)
         {
-            _logger.LogError(ex, "SES rejected email. To={To}", message.To);
+            _logger.LogError(ex, "SES rejected email. From={From} To={To} Error={ErrorMessage}",
+                req.FromEmailAddress, message.To, ex.Message);
             throw;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "SES send failed. To={To}", message.To);
+            _logger.LogError(ex, "SES send failed. From={From} To={To}", req.FromEmailAddress, message.To);
             throw;
         }
     }
