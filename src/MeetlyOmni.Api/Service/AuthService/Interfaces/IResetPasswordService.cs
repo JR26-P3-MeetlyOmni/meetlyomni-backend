@@ -2,6 +2,8 @@
 // Copyright (c) MeetlyOmni. All rights reserved.
 // </copyright>
 
+using Microsoft.AspNetCore.Identity;
+
 namespace MeetlyOmni.Api.Service.AuthService.Interfaces;
 
 public interface IResetPasswordService
@@ -13,6 +15,6 @@ public interface IResetPasswordService
     /// <param name="token">Password reset token.</param>
     /// <param name="newPassword">New password.</param>
     /// <param name="ct">Cancellation token.</param>
-    /// <returns>True if password was successfully reset, false otherwise.</returns>
-    Task<bool> ResetPasswordAsync(string email, string token, string newPassword, CancellationToken ct = default);
+    /// <returns>IdentityResult containing success status and any error descriptions.</returns>
+    Task<IdentityResult> ResetPasswordAsync(string email, string token, string newPassword, CancellationToken ct = default);
 }
