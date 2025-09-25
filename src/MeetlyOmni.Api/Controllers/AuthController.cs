@@ -41,6 +41,7 @@ public class AuthController : ControllerBase
     private readonly IEmailLinkService _emailLinkService;
     private readonly AccountMailer _accountMailer;
     private readonly UserManager<Member> _userManager;
+    private readonly IResetPasswordService _resetPasswordService;
 
     public AuthController(
         ILoginService loginService,
@@ -52,18 +53,19 @@ public class AuthController : ControllerBase
         ISignUpService signUpService,
         IEmailLinkService emailLinkService,
         AccountMailer accountMailer,
-        UserManager<Member> userManager)
+        UserManager<Member> userManager,
+        IResetPasswordService resetPasswordService)
     {
         _loginService = loginService;
         _tokenService = tokenService;
         _clientInfoService = clientInfoService;
         _antiforgery = antiforgery;
         _logger = logger;
-        _logoutService = logoutService;
         _signUpService = signUpService;
         _emailLinkService = emailLinkService;
         _accountMailer = accountMailer;
         _userManager = userManager;
+        _resetPasswordService = resetPasswordService;
     }
 
     /// <summary>
@@ -193,6 +195,31 @@ public class AuthController : ControllerBase
     }
 
     /// <summary>
+    /// Validate email verification token without confirming the email.
+    /// </summary>
+    /// <param name="request">Email verification request containing email and token.</param>
+    /// <response code="200">Token is valid.</response>
+    /// <response code="400">Token is invalid or expired.</response>
+    /// <returns>A <see cref="Task{IActionResult}"/> representing the validation result.</returns>
+    [HttpPost("validate-email-token")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(TokenValidationResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(TokenValidationResponse), StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> ValidateEmailToken([FromBody] VerifyEmailRequest request, CancellationToken ct)
+    {
+        var isValid = await _emailLinkService.ValidateEmailVerificationTokenAsync(request.Email, request.Token, ct);
+
+        var response = new TokenValidationResponse
+        {
+            IsValid = isValid,
+            Message = isValid ? "Valid" : "Invalid",
+            Email = request.Email,
+        };
+
+        return isValid ? Ok(response) : BadRequest(response);
+    }
+
+    /// <summary>
     /// Verify user's email address using the token from verification email.
     /// </summary>
     /// <param name="request">Email verification request containing email and token.</param>
@@ -209,18 +236,10 @@ public class AuthController : ControllerBase
 
         if (!isVerified)
         {
-            _logger.LogWarning("Email verification failed for {Email}", request.Email);
-            return BadRequest(new { message = "Email verification failed. The token may be invalid or expired." });
+            return BadRequest(new { message = "Invalid or expired token" });
         }
 
-        _logger.LogInformation("Email successfully verified for {Email}", request.Email);
-
-        return Ok(new
-        {
-            message = "Email successfully verified. You can now log in to your account.",
-            email = request.Email,
-            verified = true,
-        });
+        return Ok(new { message = "Email verified", verified = true });
     }
 
     /// <summary>
@@ -241,19 +260,35 @@ public class AuthController : ControllerBase
         if (user != null && user.EmailConfirmed)
         {
             await _accountMailer.SendResetPasswordAsync(user, ct);
-            _logger.LogInformation("Password reset email sent to {Email}", request.Email);
-        }
-        else
-        {
-            _logger.LogWarning("Password reset requested for non-existent or unconfirmed email: {Email}", request.Email);
         }
 
         // Always return success to prevent user enumeration
-        return Ok(new
+        return Ok(new { message = "Reset link sent if email exists" });
+    }
+
+    /// <summary>
+    /// Validate password reset token without resetting the password.
+    /// </summary>
+    /// <param name="request">Verify email request containing email and token.</param>
+    /// <response code="200">Token is valid.</response>
+    /// <response code="400">Token is invalid or expired.</response>
+    /// <returns>A <see cref="Task{IActionResult}"/> representing the validation result.</returns>
+    [HttpPost("validate-reset-token")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(TokenValidationResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(TokenValidationResponse), StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> ValidateResetToken([FromBody] VerifyEmailRequest request, CancellationToken ct)
+    {
+        var isValid = await _emailLinkService.ValidatePasswordResetTokenAsync(request.Email, request.Token, ct);
+
+        var response = new TokenValidationResponse
         {
-            message = "If the email address exists and is verified, a password reset link has been sent.",
-            email = request.Email,
-        });
+            IsValid = isValid,
+            Message = isValid ? "Valid" : "Invalid",
+            Email = request.Email,
+        };
+
+        return isValid ? Ok(response) : BadRequest(response);
     }
 
     /// <summary>
@@ -269,21 +304,13 @@ public class AuthController : ControllerBase
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request, CancellationToken ct)
     {
-        var isReset = await _emailLinkService.ResetPasswordAsync(request.Email, request.Token, request.NewPassword, ct);
+        var isReset = await _resetPasswordService.ResetPasswordAsync(request.Email, request.Token, request.NewPassword, ct);
 
         if (!isReset)
         {
-            _logger.LogWarning("Password reset failed for {Email}", request.Email);
-            return BadRequest(new { message = "Password reset failed. The token may be invalid or expired." });
+            return BadRequest(new { message = "Invalid or expired token" });
         }
 
-        _logger.LogInformation("Password successfully reset for {Email}", request.Email);
-
-        return Ok(new
-        {
-            message = "Password has been successfully reset. You can now log in with your new password.",
-            email = request.Email,
-            reset = true,
-        });
+        return Ok(new { message = "Password reset", reset = true });
     }
 }

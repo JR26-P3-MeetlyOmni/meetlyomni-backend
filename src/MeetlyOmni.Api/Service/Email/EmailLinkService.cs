@@ -31,139 +31,83 @@ public sealed class EmailLinkService : IEmailLinkService
 
     public async Task<string> GeneratePasswordResetLinkAsync(Member user, CancellationToken ct = default)
     {
-        // Generate secure token using ASP.NET Core Identity
         var token = await _userManager.GeneratePasswordResetTokenAsync(user);
-
-        var encodedToken = HttpUtility.UrlEncode(token);
-        var encodedEmail = HttpUtility.UrlEncode(user.Email ?? string.Empty);
-
-        var frontendUrl = _configuration["Frontend:BaseUrl"] ?? "http://localhost:3000";
-
-        var resetLink = $"{frontendUrl}/auth/reset-password?token={encodedToken}&email={encodedEmail}";
-
-        _logger.LogInformation("Generated password reset link for user {UserId}", user.Id);
-
-        return resetLink;
+        var link = GenerateLink(token, user.Email, "/auth/reset-password");
+        return link;
     }
 
     public async Task<string> GenerateEmailVerificationLinkAsync(Member user, CancellationToken ct = default)
     {
-        // Generate secure token using ASP.NET Core Identity
         var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
-
-        var encodedToken = HttpUtility.UrlEncode(token);
-        var encodedEmail = HttpUtility.UrlEncode(user.Email ?? string.Empty);
-
-        var frontendUrl = _configuration["Frontend:BaseUrl"] ?? "http://localhost:3000";
-
-        var verifyLink = $"{frontendUrl}/auth/verify-email?token={encodedToken}&email={encodedEmail}";
-
-        _logger.LogInformation("Generated email verification link for user {UserId}", user.Id);
-
-        return verifyLink;
+        var link = GenerateLink(token, user.Email, "/auth/verify-email");
+        return link;
     }
 
     public async Task<bool> ValidatePasswordResetTokenAsync(string email, string token, CancellationToken ct = default)
     {
-        try
-        {
-            _logger.LogInformation("Validating password reset token for {Email}", email);
+        return await ValidateTokenAsync(
+            email,
+            token,
+            _userManager.Options.Tokens.PasswordResetTokenProvider,
+            "ResetPassword",
+            "password reset");
+    }
 
-            var user = await _userManager.FindByEmailAsync(email);
-            if (user == null)
-            {
-                _logger.LogWarning("Password reset validation failed: user not found for {Email}", email);
-                return false;
-            }
-
-            var isValid = await _userManager.VerifyUserTokenAsync(
-                user,
-                _userManager.Options.Tokens.PasswordResetTokenProvider,
-                "ResetPassword",
-                token);
-
-            _logger.LogInformation("Password reset token validation result for {Email}: {IsValid}", email, isValid);
-            return isValid;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error validating password reset token for {Email}", email);
-            return false;
-        }
+    public async Task<bool> ValidateEmailVerificationTokenAsync(string email, string token, CancellationToken ct = default)
+    {
+        return await ValidateTokenAsync(
+            email,
+            token,
+            _userManager.Options.Tokens.EmailConfirmationTokenProvider,
+            "EmailConfirmation",
+            "email verification");
     }
 
     public async Task<bool> ValidateAndConfirmEmailAsync(string email, string token, CancellationToken ct = default)
     {
-        try
+        var user = await _userManager.FindByEmailAsync(email);
+        if (user == null)
         {
-            _logger.LogInformation("Validating and confirming email for {Email}", email);
-
-            var user = await _userManager.FindByEmailAsync(email);
-            if (user == null)
-            {
-                _logger.LogWarning("Email verification failed: user not found for {Email}", email);
-                return false;
-            }
-
-            if (user.EmailConfirmed)
-            {
-                _logger.LogInformation("Email already confirmed for {Email}", email);
-                return true; // Already confirmed, consider it success
-            }
-
-            var result = await _userManager.ConfirmEmailAsync(user, token);
-
-            if (result.Succeeded)
-            {
-                _logger.LogInformation("Email successfully confirmed for {Email}", email);
-                return true;
-            }
-            else
-            {
-                var errors = string.Join("; ", result.Errors.Select(e => e.Description));
-                _logger.LogWarning("Email confirmation failed for {Email}: {Errors}", email, errors);
-                return false;
-            }
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error validating email verification token for {Email}", email);
             return false;
         }
+
+        if (user.EmailConfirmed)
+        {
+            return true; // Already confirmed, consider it success
+        }
+
+        var normalizedToken = HttpUtility.UrlDecode(token) ?? token;
+        var result = await _userManager.ConfirmEmailAsync(user, normalizedToken);
+
+        return result.Succeeded;
     }
 
-    public async Task<bool> ResetPasswordAsync(string email, string token, string newPassword, CancellationToken ct = default)
+    /// <summary>
+    /// Generates a link with encoded token and email parameters.
+    /// </summary>
+    private string GenerateLink(string token, string? email, string path)
     {
-        try
+        var encodedToken = HttpUtility.UrlEncode(token);
+        var encodedEmail = HttpUtility.UrlEncode(email ?? string.Empty);
+        var frontendUrl = _configuration["Frontend:BaseUrl"] ?? "http://localhost:3000";
+
+        return $"{frontendUrl}{path}?token={encodedToken}&email={encodedEmail}";
+    }
+
+    /// <summary>
+    /// Common method to validate user tokens.
+    /// </summary>
+    private async Task<bool> ValidateTokenAsync(string email, string token, string tokenProvider, string purpose, string operationType)
+    {
+        var user = await _userManager.FindByEmailAsync(email);
+        if (user == null)
         {
-            _logger.LogInformation("Attempting password reset for {Email}", email);
-
-            var user = await _userManager.FindByEmailAsync(email);
-            if (user == null)
-            {
-                _logger.LogWarning("Password reset failed: user not found for {Email}", email);
-                return false;
-            }
-
-            // Reset the password using the token
-            var result = await _userManager.ResetPasswordAsync(user, token, newPassword);
-
-            if (result.Succeeded)
-            {
-                _logger.LogInformation("Password successfully reset for {Email}", email);
-                return true;
-            }
-            else
-            {
-                var errors = string.Join("; ", result.Errors.Select(e => e.Description));
-                _logger.LogWarning("Password reset failed for {Email}: {Errors}", email, errors);
-                return false;
-            }
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error resetting password for {Email}", email);
             return false;
         }
+
+        var normalizedToken = HttpUtility.UrlDecode(token) ?? token;
+        var isValid = await _userManager.VerifyUserTokenAsync(user, tokenProvider, purpose, normalizedToken);
+
+        return isValid;
     }
 }

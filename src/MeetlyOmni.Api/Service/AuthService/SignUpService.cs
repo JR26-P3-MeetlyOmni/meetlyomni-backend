@@ -112,9 +112,16 @@ public class SignUpService : ISignUpService
             await this._dbContext.SaveChangesAsync();
             await transaction.CommitAsync();
 
-            // Send email verification after successful user creation
-            await this._accountMailer.SendVerifyEmailAsync(memberEntity);
-            _logger.LogInformation("Verification email sent to {Email}", memberEntity.Email);
+            // Send email verification after successful user creation (non-blocking for UX)
+            try
+            {
+                await this._accountMailer.SendVerifyEmailAsync(memberEntity);
+                _logger.LogInformation("Verification email sent to {Email}", memberEntity.Email);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Signup succeeded but verification email failed to send to {Email}", memberEntity.Email);
+            }
 
             var dto = new MemberDto
             {
