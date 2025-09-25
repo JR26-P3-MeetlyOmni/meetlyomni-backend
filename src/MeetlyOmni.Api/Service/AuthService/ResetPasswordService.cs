@@ -25,19 +25,27 @@ public sealed class ResetPasswordService : IResetPasswordService
         _logger = logger;
     }
 
-    public async Task<bool> ResetPasswordAsync(string email, string token, string newPassword, CancellationToken ct = default)
+    public async Task<IdentityResult> ResetPasswordAsync(string email, string token, string newPassword, CancellationToken ct = default)
     {
         if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(token) || string.IsNullOrWhiteSpace(newPassword))
         {
             _logger.LogWarning("ResetPassword: invalid input (email/token/password missing)");
-            return false;
+            return IdentityResult.Failed(new IdentityError
+            {
+                Code = "InvalidResetRequest",
+                Description = "Invalid or expired token.",
+            });
         }
 
         ct.ThrowIfCancellationRequested();
         var user = await _userManager.FindByEmailAsync(email);
         if (user == null)
         {
-            return false;
+            return IdentityResult.Failed(new IdentityError
+            {
+                Code = "InvalidResetRequest",
+                Description = "Invalid or expired token.",
+            });
         }
 
         var normalizedToken = HttpUtility.UrlDecode(token) ?? token;
@@ -46,13 +54,13 @@ public sealed class ResetPasswordService : IResetPasswordService
         if (result.Succeeded)
         {
             _logger.LogInformation("Password successfully reset for user {UserId}", user.Id);
-            return true;
+            return result;
         }
 
         _logger.LogWarning(
             "Password reset failed for user {UserId}: {Errors}",
             user.Id,
             string.Join(", ", result.Errors.Select(e => e.Description)));
-        return false;
+        return result;
     }
 }

@@ -2,6 +2,7 @@
 // Copyright (c) MeetlyOmni. All rights reserved.
 // </copyright>
 
+using System.Linq;
 using System.Security.Claims;
 
 using Asp.Versioning;
@@ -305,11 +306,14 @@ public class AuthController : ControllerBase
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request, CancellationToken ct)
     {
-        var isReset = await _resetPasswordService.ResetPasswordAsync(request.Email, request.Token, request.NewPassword, ct);
+        var resetResult = await _resetPasswordService.ResetPasswordAsync(request.Email, request.Token, request.NewPassword, ct);
 
-        if (!isReset)
+        if (!resetResult.Succeeded)
         {
-            return BadRequest(new { message = "Invalid or expired token" });
+            var message = resetResult.Errors.Any()
+                ? string.Join(", ", resetResult.Errors.Select(e => e.Description))
+                : "Invalid or expired token.";
+            return BadRequest(new { message });
         }
 
         return Ok(new { message = "Password reset", reset = true });
