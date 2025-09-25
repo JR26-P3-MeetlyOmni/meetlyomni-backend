@@ -100,6 +100,7 @@ builder.Services.AddScoped<ILoginService, LoginService>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<ILogoutService, LogoutService>();
 builder.Services.AddScoped<ISignUpService, SignUpService>();
+builder.Services.AddScoped<IResetPasswordService, ResetPasswordService>();
 
 // ---- Common Services ----
 builder.Services.AddScoped<IClientInfoService, ClientInfoService>();

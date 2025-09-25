@@ -14,7 +14,7 @@ public interface IEmailLinkService
 
     Task<bool> ValidatePasswordResetTokenAsync(string email, string token, CancellationToken ct = default);
 
-    Task<bool> ValidateAndConfirmEmailAsync(string email, string token, CancellationToken ct = default);
+    Task<bool> ValidateEmailVerificationTokenAsync(string email, string token, CancellationToken ct = default);
 
-    Task<bool> ResetPasswordAsync(string email, string token, string newPassword, CancellationToken ct = default);
+    Task<bool> ValidateAndConfirmEmailAsync(string email, string token, CancellationToken ct = default);
 }

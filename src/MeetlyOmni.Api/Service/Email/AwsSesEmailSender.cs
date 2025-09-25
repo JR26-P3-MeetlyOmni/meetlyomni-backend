@@ -30,6 +30,11 @@ public sealed class AwsSesEmailSender : IEmailSender
 
     public async Task<string> SendAsync(EmailMessage message, CancellationToken ct = default)
     {
+        if (string.IsNullOrWhiteSpace(message.To))
+        {
+            throw new ArgumentException("Recipient (To) must not be empty.", nameof(message));
+        }
+
         var req = new SendEmailRequest
         {
             FromEmailAddress = $"{_fromName} <{_fromEmail}>",
@@ -50,19 +55,13 @@ public sealed class AwsSesEmailSender : IEmailSender
 
         try
         {
-            _logger.LogInformation(
-                "Attempting to send email. From={From} To={To} Region={Region}",
-                req.FromEmailAddress,
-                message.To,
-                _ses.Config.RegionEndpoint?.DisplayName);
-
             var res = await _ses.SendEmailAsync(req, ct);
-            _logger.LogInformation("SES email sent successfully. MessageId={MessageId} To={To}", res.MessageId, message.To);
+            _logger.LogDebug("SES email sent successfully. MessageId={MessageId}", res.MessageId);
             return res.MessageId;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "SES send failed. From={From} To={To}", req.FromEmailAddress, message.To);
+            _logger.LogError(ex, "SES send failed. From={From}", req.FromEmailAddress);
             throw;
         }
     }

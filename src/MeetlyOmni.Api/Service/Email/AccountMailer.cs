@@ -25,27 +25,46 @@ public sealed class AccountMailer
     /// Send password reset email with secure token-based link.
     /// </summary>
     /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
-    public async Task<string> SendResetPasswordAsync(Member user, CancellationToken ct = default)
-    {
-        var resetLink = await _linkService.GeneratePasswordResetLinkAsync(user, ct);
-        var msg = _tpl.Build(
+    public async Task<string> SendResetPasswordAsync(Member user, CancellationToken ct = default) =>
+        await SendEmailWithLinkAsync(
+            user,
             EmailType.ResetPassword,
-            user.Email ?? string.Empty,
-            new Dictionary<string, string> { ["resetLink"] = resetLink });
-        return await _sender.SendAsync(msg, ct);
-    }
+            "resetLink",
+            user => _linkService.GeneratePasswordResetLinkAsync(user, ct),
+            ct);
 
     /// <summary>
     /// Send email verification with secure token-based link.
     /// </summary>
     /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
-    public async Task<string> SendVerifyEmailAsync(Member user, CancellationToken ct = default)
-    {
-        var verifyLink = await _linkService.GenerateEmailVerificationLinkAsync(user, ct);
-        var msg = _tpl.Build(
+    public async Task<string> SendVerifyEmailAsync(Member user, CancellationToken ct = default) =>
+        await SendEmailWithLinkAsync(
+            user,
             EmailType.VerifyEmail,
-            user.Email ?? string.Empty,
-            new Dictionary<string, string> { ["verifyLink"] = verifyLink });
+            "verifyLink",
+            user => _linkService.GenerateEmailVerificationLinkAsync(user, ct),
+            ct);
+
+    /// <summary>
+    /// Send email with token-based link using common pattern.
+    /// </summary>
+    private async Task<string> SendEmailWithLinkAsync(
+        Member user,
+        EmailType emailType,
+        string linkKey,
+        Func<Member, Task<string>> linkGenerator,
+        CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(user.Email))
+        {
+            throw new InvalidOperationException("User email is required to send email.");
+        }
+
+        var link = await linkGenerator(user);
+        var msg = _tpl.Build(
+            emailType,
+            user.Email,
+            new Dictionary<string, string> { [linkKey] = link });
         return await _sender.SendAsync(msg, ct);
     }
 }

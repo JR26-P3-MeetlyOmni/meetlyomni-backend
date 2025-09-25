@@ -52,6 +52,7 @@ public class AuthControllerTests
     private readonly Mock<UserManager<Member>> _mockUserManager;
     private readonly Mock<IEmailTemplateService> _mockEmailTemplateService;
     private readonly Mock<IEmailSender> _mockEmailSender;
+    private readonly Mock<IResetPasswordService> _mockResetPasswordService;
 
     public AuthControllerTests()
     {
@@ -65,6 +66,7 @@ public class AuthControllerTests
         _mockEmailLinkService = new Mock<IEmailLinkService>();
         _mockEmailTemplateService = new Mock<IEmailTemplateService>();
         _mockEmailSender = new Mock<IEmailSender>();
+        _mockResetPasswordService = new Mock<IResetPasswordService>();
 
         // Create AccountMailer real instance with mocked dependencies
         _accountMailer = new AccountMailer(
@@ -86,8 +88,9 @@ public class AuthControllerTests
             _mockSignUpService.Object,
             _mockEmailLinkService.Object,
             _accountMailer,
-            _mockUserManager.Object);
-            _mockLogoutService.Object);
+            _mockUserManager.Object,
+            _mockResetPasswordService.Object);
+
         SetupHttpContext();
     }
 
