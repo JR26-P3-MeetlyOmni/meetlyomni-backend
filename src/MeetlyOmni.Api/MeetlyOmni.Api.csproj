@@ -43,6 +43,7 @@
   <ItemGroup>
     <Folder Include="Controllers\" />
     <Folder Include="Common\Constants\" />
+    <Folder Include="Data\Repository\" />
     <Folder Include="Middlewares\" />
     <Folder Include="Filters\" />
   </ItemGroup>
