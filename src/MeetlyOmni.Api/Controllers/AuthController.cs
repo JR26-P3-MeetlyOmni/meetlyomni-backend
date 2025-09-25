@@ -49,6 +49,7 @@ public class AuthController : ControllerBase
         IClientInfoService clientInfoService,
         IAntiforgery antiforgery,
         ILogger<AuthController> logger,
+        ILogoutService logoutService,
         ISignUpService signUpService,
         IEmailLinkService emailLinkService,
         AccountMailer accountMailer,
@@ -60,6 +61,7 @@ public class AuthController : ControllerBase
         _clientInfoService = clientInfoService;
         _antiforgery = antiforgery;
         _logger = logger;
+        _logoutService = logoutService;
         _signUpService = signUpService;
         _emailLinkService = emailLinkService;
         _accountMailer = accountMailer;

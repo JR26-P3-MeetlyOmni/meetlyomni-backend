@@ -55,9 +55,14 @@ public sealed class AccountMailer
         Func<Member, Task<string>> linkGenerator,
         CancellationToken ct)
     {
+        if (user is null)
+        {
+            throw new ArgumentNullException(nameof(user));
+        }
+
         if (string.IsNullOrWhiteSpace(user.Email))
         {
-            throw new InvalidOperationException("User email is required to send email.");
+            throw new ArgumentException("User email is required to send email.", nameof(user));
         }
 
         var link = await linkGenerator(user);

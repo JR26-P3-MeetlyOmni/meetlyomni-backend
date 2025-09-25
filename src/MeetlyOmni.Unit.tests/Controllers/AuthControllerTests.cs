@@ -85,6 +85,7 @@ public class AuthControllerTests
             _mockClientInfoService.Object,
             _mockAntiforgery.Object,
             _mockLogger.Object,
+            _mockLogoutService.Object,
             _mockSignUpService.Object,
             _mockEmailLinkService.Object,
             _accountMailer,
