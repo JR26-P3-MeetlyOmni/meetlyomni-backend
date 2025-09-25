@@ -52,17 +52,13 @@ public sealed class AwsSesEmailSender : IEmailSender
         {
             _logger.LogInformation(
                 "Attempting to send email. From={From} To={To} Region={Region}",
-                req.FromEmailAddress, message.To, _ses.Config.RegionEndpoint?.DisplayName);
+                req.FromEmailAddress,
+                message.To,
+                _ses.Config.RegionEndpoint?.DisplayName);
 
             var res = await _ses.SendEmailAsync(req, ct);
             _logger.LogInformation("SES email sent successfully. MessageId={MessageId} To={To}", res.MessageId, message.To);
             return res.MessageId;
-        }
-        catch (MessageRejectedException ex)
-        {
-            _logger.LogError(ex, "SES rejected email. From={From} To={To} Error={ErrorMessage}",
-                req.FromEmailAddress, message.To, ex.Message);
-            throw;
         }
         catch (Exception ex)
         {
