@@ -27,6 +27,13 @@ public sealed class ResetPasswordService : IResetPasswordService
 
     public async Task<bool> ResetPasswordAsync(string email, string token, string newPassword, CancellationToken ct = default)
     {
+        if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(token) || string.IsNullOrWhiteSpace(newPassword))
+        {
+            _logger.LogWarning("ResetPassword: invalid input (email/token/password missing)");
+            return false;
+        }
+
+        ct.ThrowIfCancellationRequested();
         var user = await _userManager.FindByEmailAsync(email);
         if (user == null)
         {

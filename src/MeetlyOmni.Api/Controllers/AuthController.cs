@@ -61,6 +61,7 @@ public class AuthController : ControllerBase
         _clientInfoService = clientInfoService;
         _antiforgery = antiforgery;
         _logger = logger;
+        _logoutService = logoutService;
         _signUpService = signUpService;
         _emailLinkService = emailLinkService;
         _accountMailer = accountMailer;
