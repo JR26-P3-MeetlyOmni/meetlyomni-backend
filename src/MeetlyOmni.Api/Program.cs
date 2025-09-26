@@ -96,6 +96,7 @@ builder.Services.AddScoped<IOrganizationRepository, OrganizationRepository>();
 // ---- Application Services ----
 builder.Services.AddScoped<ILoginService, LoginService>();
 builder.Services.AddScoped<ITokenService, TokenService>();
+builder.Services.AddScoped<ILogoutService, LogoutService>();
 builder.Services.AddScoped<ISignUpService, SignUpService>();
 
 // ---- Common Services ----

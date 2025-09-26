@@ -32,6 +32,7 @@ public class AuthController : ControllerBase
     private readonly IClientInfoService _clientInfoService;
     private readonly IAntiforgery _antiforgery;
     private readonly ILogger<AuthController> _logger;
+    private readonly ILogoutService _logoutService;
     private readonly ISignUpService _signUpService;
 
     public AuthController(
@@ -40,6 +41,7 @@ public class AuthController : ControllerBase
         IClientInfoService clientInfoService,
         IAntiforgery antiforgery,
         ILogger<AuthController> logger,
+        ILogoutService logoutService,
         ISignUpService signUpService)
     {
         _loginService = loginService;
@@ -47,6 +49,7 @@ public class AuthController : ControllerBase
         _clientInfoService = clientInfoService;
         _antiforgery = antiforgery;
         _logger = logger;
+        _logoutService = logoutService;
         _signUpService = signUpService;
     }
 
@@ -122,26 +125,43 @@ public class AuthController : ControllerBase
     /// <returns>Current user information.</returns>
     [HttpGet("me")]
     [Authorize]
-    [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(CurrentUserResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
-    public IActionResult GetCurrentUser()
+    public ActionResult<CurrentUserResponse> GetCurrentUser()
     {
-        var userId = User.FindFirst("sub")?.Value;
-        var email = User.FindFirst("email")?.Value;
-        var orgId = User.FindFirst("org_id")?.Value;
-
-        return Ok(new
+        var dto = User.ToCurrentUserResponse();
+        if (dto is null)
         {
-            userId = User.FindFirstValue(JwtClaimTypes.Subject),
-            email = User.FindFirstValue(JwtClaimTypes.Email),
-            orgId = User.FindFirstValue(JwtClaimTypes.OrganizationId),
-            message = "Authentication via cookie is working!",
-        });
+            return Unauthorized(new ProblemDetails
+            {
+                Title = "Unauthorized",
+                Detail = "User is not authenticated.",
+            });
+        }
+
+        return Ok(dto);
     }
 
     /// <summary>
-    /// Registers a new admin user.
+    /// User logout endpoint.
     /// </summary>
+    /// <returns>A <see cref="Task{IActionResult}"/> representing the asynchronous operation.</returns>
+    [HttpPost("logout")]
+    [Authorize]
+    [SkipAntiforgery]
+    [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> LogoutAsync(CancellationToken ct)
+    {
+        await _logoutService.LogoutAsync(HttpContext, ct);
+
+        _logger.LogInformation("User logged out successfully.");
+
+        return Ok(new { message = "Logged out successfully" });
+    }
+
+    /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns><summary>
+    /// Registers a new admin user.
     /// <param name="request">Signup request model.</param>
     /// <response code="201">Successfully created the user.</response>
     /// <response code="400">Invalid request data.</response>
