@@ -5,7 +5,7 @@
   "taskRoleArn": "arn:aws:iam::351889159066:role/meetlyomni-dev-ecs-task-role",
   "containerDefinitions": [
     {
-      "name": "backend",
+      "name": "meetly-omni-backend",
       "image": "351889159066.dkr.ecr.ap-southeast-2.amazonaws.com/meetly-omni-backend-dev:d9d537ef6de9bad7fdb097a74f0b66ead0f76481",
       "portMappings": [
         {
