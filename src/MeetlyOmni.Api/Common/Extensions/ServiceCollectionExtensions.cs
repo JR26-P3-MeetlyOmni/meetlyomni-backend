@@ -142,6 +142,7 @@ public static class ServiceCollectionExtensions
             "https://localhost:3000", // React dev server with HTTPS
             "http://localhost:5173", // Vite dev server
             "https://localhost:5173", // Vite dev server with HTTPS
+            "https://uat-02.meetlyomni.com/" // AWS dev server with HTTPS
         };
 
         services.AddCors(options =>
