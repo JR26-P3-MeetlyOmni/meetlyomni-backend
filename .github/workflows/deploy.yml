@@ -1,16 +1,7 @@
 name: Build and Deploy to ECS
 on:
  push:
-  branches: [ dev, devops-uat ]
-env:
-  AWS_REGION: ${{ vars.AWS_REGION }}
-  ECR_REPOSITORY: ${{ vars.ECR_REPOSITORY }}
-  ECS_CLUSTER: ${{ vars.ECS_CLUSTER }}
-  ECS_SERVICE: ${{ vars.ECS_SERVICE }}
-  AWS_OIDC_PROVIDER_ARN: ${{ vars.AWS_OIDC_PROVIDER_ARN }}
-  AWS_ROLE_ARN: ${{ vars.AWS_ROLE_ARN }}
-  IMAGE_TAG: ${{ github.sha }}
-
+  branches: [ main, main-biaojin ]
 permissions:
   contents: read
   id-token: write
@@ -19,6 +10,16 @@ jobs:
   build-and-deploy:
     name: Build, Push, and Deploy
     runs-on: ubuntu-latest
+    environment:
+      name: prod
+    env:
+      AWS_REGION: ${{ vars.AWS_REGION }}
+      ECR_REPOSITORY: ${{ vars.ECR_REPOSITORY }}
+      ECS_CLUSTER: ${{ vars.ECS_CLUSTER }}
+      ECS_SERVICE: ${{ vars.ECS_SERVICE }}
+      AWS_OIDC_PROVIDER_ARN: ${{ vars.AWS_OIDC_PROVIDER_ARN }}
+      AWS_ROLE_ARN: ${{ vars.AWS_ROLE_ARN }}
+      IMAGE_TAG: ${{ github.sha }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
