@@ -2,12 +2,12 @@
 // Copyright (c) MeetlyOmni. All rights reserved.
 // </copyright>
 
-using System.Buffers.Text;
 using System.IdentityModel.Tokens.Jwt;
 
+using Amazon.Runtime;
+using Amazon.S3;
 using Asp.Versioning;
 using Asp.Versioning.ApiExplorer;
-
 using MeetlyOmni.Api.Common.Extensions;
 using MeetlyOmni.Api.Common.Options;
 using MeetlyOmni.Api.Data;
@@ -20,10 +20,8 @@ using MeetlyOmni.Api.Service.AuthService;
 using MeetlyOmni.Api.Service.AuthService.Interfaces;
 using MeetlyOmni.Api.Service.Common;
 using MeetlyOmni.Api.Service.Common.Interfaces;
-
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-
 using Npgsql;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -147,6 +145,15 @@ builder.Services.AddAutoMapper(typeof(MappingProfile));
 // Antiforgery options binding (must be registered before building the app)
 builder.Services.Configure<AntiforgeryProtectionOptions>(
     builder.Configuration.GetSection("AntiforgeryProtection"));
+
+// Amazon S3 Configuration
+var awsOptions = builder.Configuration.GetSection("AWS").Get<AWSOptions>();
+builder.Services.Configure<AWSOptions>(builder.Configuration.GetSection("AWS"));
+builder.Services.AddSingleton<IAmazonS3>(sp =>
+{
+    var options = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<AWSOptions>>().Value;
+    return new AmazonS3Client(options.Credentials, options.Region);
+});
 
 var app = builder.Build();
 
