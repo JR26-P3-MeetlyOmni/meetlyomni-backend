@@ -4,6 +4,7 @@
 
 using System.Linq;
 using System.Security.Claims;
+using System.Text;
 
 using Asp.Versioning;
 
@@ -21,6 +22,7 @@ using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.WebUtilities;
 
 namespace MeetlyOmni.Api.Controllers;
 
@@ -43,6 +45,7 @@ public class AuthController : ControllerBase
     private readonly AccountMailer _accountMailer;
     private readonly UserManager<Member> _userManager;
     private readonly IResetPasswordService _resetPasswordService;
+    private readonly IConfiguration _cfg;
 
     public AuthController(
         ILoginService loginService,
@@ -55,7 +58,8 @@ public class AuthController : ControllerBase
         IEmailLinkService emailLinkService,
         AccountMailer accountMailer,
         UserManager<Member> userManager,
-        IResetPasswordService resetPasswordService)
+        IResetPasswordService resetPasswordService,
+        IConfiguration configuration)
     {
         _loginService = loginService;
         _tokenService = tokenService;
@@ -68,6 +72,7 @@ public class AuthController : ControllerBase
         _accountMailer = accountMailer;
         _userManager = userManager;
         _resetPasswordService = resetPasswordService;
+        _cfg = configuration;
     }
 
     /// <summary>
@@ -221,27 +226,26 @@ public class AuthController : ControllerBase
         return isValid ? Ok(response) : BadRequest(response);
     }
 
-    /// <summary>
-    /// Verify user's email address using the token from verification email.
-    /// </summary>
-    /// <param name="request">Email verification request containing email and token.</param>
-    /// <response code="200">Email successfully verified.</response>
-    /// <response code="400">Invalid request data or verification failed.</response>
-    /// <returns>A <see cref="Task{IActionResult}"/> representing the verification result.</returns>
-    [HttpPost("verify-email")]
+    [HttpGet("verify-email")]
     [AllowAnonymous]
-    [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> VerifyEmail([FromBody] VerifyEmailRequest request, CancellationToken ct)
+    public async Task<IActionResult> VerifyEmail([FromQuery] string userId, [FromQuery] string token, CancellationToken ct)
     {
-        var isVerified = await _emailLinkService.ValidateAndConfirmEmailAsync(request.Email, request.Token, ct);
-
-        if (!isVerified)
+        var user = await _userManager.FindByIdAsync(userId);
+        if (user is null)
         {
-            return BadRequest(new { message = "Invalid or expired token" });
+            return Redirect($"{_cfg["Frontend:BaseUrl"]}/verify-email?status=not_found");
         }
 
-        return Ok(new { message = "Email verified", verified = true });
+        if (user.EmailConfirmed)
+        {
+            return Redirect($"{_cfg["Frontend:BaseUrl"]}/verify-email?status=already_confirmed&email={Uri.EscapeDataString(user.Email!)}");
+        }
+
+        var decoded = Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(token));
+        var result = await _userManager.ConfirmEmailAsync(user, decoded);
+
+        var status = result.Succeeded ? "success" : "failed";
+        return Redirect($"{_cfg["Frontend:BaseUrl"]}/verify-email?status={status}&email={Uri.EscapeDataString(user.Email!)}");
     }
 
     /// <summary>

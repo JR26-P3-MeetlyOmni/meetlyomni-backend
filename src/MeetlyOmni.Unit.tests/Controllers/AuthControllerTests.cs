@@ -24,6 +24,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -53,6 +54,7 @@ public class AuthControllerTests
     private readonly Mock<IEmailTemplateService> _mockEmailTemplateService;
     private readonly Mock<IEmailSender> _mockEmailSender;
     private readonly Mock<IResetPasswordService> _mockResetPasswordService;
+    private readonly Mock<IConfiguration> _mockConfiguration;
 
     public AuthControllerTests()
     {
@@ -67,6 +69,7 @@ public class AuthControllerTests
         _mockEmailTemplateService = new Mock<IEmailTemplateService>();
         _mockEmailSender = new Mock<IEmailSender>();
         _mockResetPasswordService = new Mock<IResetPasswordService>();
+        _mockConfiguration = new Mock<IConfiguration>();
 
         // Create AccountMailer real instance with mocked dependencies
         _accountMailer = new AccountMailer(
@@ -90,7 +93,8 @@ public class AuthControllerTests
             _mockEmailLinkService.Object,
             _accountMailer,
             _mockUserManager.Object,
-            _mockResetPasswordService.Object);
+            _mockResetPasswordService.Object,
+            _mockConfiguration.Object);
 
         SetupHttpContext();
     }
