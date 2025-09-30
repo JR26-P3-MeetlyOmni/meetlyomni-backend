@@ -33,10 +33,6 @@
           "value": "https://www.meetlyomni.com"
         },
         {
-          "name": "JWT_SIGNING_KEY",
-          "value": ""
-        },
-        {
           "name": "NODE_ENV",
           "value": "prod"
         }
@@ -47,7 +43,7 @@
           "valueFrom": "arn:aws:ssm:ap-southeast-2:120456573741:parameter/meetlyomni/prod/backend/DB_CONNECTION_STRING"
         },
         {
-          "name": "backend_jwt_signing_key",
+          "name": "JWT_SIGNING_KEY",
           "valueFrom": "arn:aws:ssm:ap-southeast-2:120456573741:parameter/meetlyomni/prod/backend/JWT_SIGNING_KEY"
         }
       ],
