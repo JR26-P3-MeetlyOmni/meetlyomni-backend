@@ -11,7 +11,7 @@ namespace MeetlyOmni.Api.Common.Extensions;
 /// </summary>
 public static class AuthCookieExtensions
 {
-    private static CookieOptions CreateDeletionCookieOptions()
+    public static CookieOptions CreateDeletionCookieOptions()
         => new()
         {
             HttpOnly = true,
