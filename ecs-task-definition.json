@@ -2,6 +2,7 @@
   "family": "meetlyomni-prod-backend",
   "networkMode": "awsvpc",
   "executionRoleArn": "arn:aws:iam::120456573741:role/meetlyomni-prod-ecs-execution-role",
+  "taskRoleArn":"arn:aws:iam::120456573741:role/meetlyomni-prod-ecs-task-role",
   "containerDefinitions": [
     {
       "name": "meetly-omni-backend",
