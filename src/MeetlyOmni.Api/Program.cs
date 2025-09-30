@@ -21,6 +21,7 @@ using MeetlyOmni.Api.Service.AuthService.Interfaces;
 using MeetlyOmni.Api.Service.Common;
 using MeetlyOmni.Api.Service.Common.Interfaces;
 
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
@@ -88,6 +89,13 @@ builder.Services.AddJwtAuthentication(builder.Configuration);
 // Authorization services (required for [Authorize])
 builder.Services.AddAuthorization();
 
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    options.KnownNetworks.Clear();
+    options.KnownProxies.Clear();
+});
+
 // ---- Repositories ----
 builder.Services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
@@ -109,7 +117,9 @@ builder.Services.AddHealthChecks()
     .AddNpgSql(connectionString);
 
 // CORS Configuration for cookie support
-builder.Services.AddCorsWithCookieSupport();
+var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>();
+
+builder.Services.AddCorsWithCookieSupport(allowedOrigins);
 
 // Antiforgery Configuration for CSRF protection
 builder.Services.AddAntiforgery(options =>
@@ -154,6 +164,8 @@ var app = builder.Build();
 await app.InitializeDatabaseAsync();
 
 // Global exception handling middleware (placed early in pipeline to catch all exceptions)
+app.UseForwardedHeaders();
+
 app.UseGlobalExceptionHandler();
 
 // Swagger
@@ -191,3 +203,5 @@ app.MapControllers();
 app.MapHealthChecks("/health");
 
 app.Run();
+
+
