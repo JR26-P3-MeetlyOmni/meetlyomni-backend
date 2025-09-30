@@ -10,6 +10,7 @@ using MeetlyOmni.Api.Data.Entities;
 using MeetlyOmni.Api.Service.Email.Interfaces;
 
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.WebUtilities;
 
 namespace MeetlyOmni.Api.Service.Email;
 
@@ -39,7 +40,18 @@ public sealed class EmailLinkService : IEmailLinkService
     public async Task<string> GenerateEmailVerificationLinkAsync(Member user, CancellationToken ct = default)
     {
         var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
-        var link = GenerateLink(token, user.Email, "/auth/verify-email");
+        var encodedToken = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
+
+        var apiBase = _configuration["Backend:ApiBaseUrl"];
+        var userId = user.Id.ToString();
+        var email = user.Email ?? string.Empty;
+
+        var link =
+            $"{apiBase}/auth/verify-email" +
+            $"?userId={Uri.EscapeDataString(userId)}" +
+            $"&token={encodedToken}" +
+            $"&email={Uri.EscapeDataString(email)}";
+
         return link;
     }
 
