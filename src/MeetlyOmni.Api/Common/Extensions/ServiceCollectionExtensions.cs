@@ -132,16 +132,34 @@ public static class ServiceCollectionExtensions
     /// Configures CORS with cookie support for specified origins.
     /// </summary>
     /// <param name="services">The service collection.</param>
-    /// <param name="allowedOrigins">Array of allowed origins. If null, uses default development origins.</param>
+    /// <param name="configuration">The configuration to read CORS origins from.</param>
+    /// <param name="allowedOrigins">Array of allowed origins. If null, uses configuration or default development origins.</param>
     /// <returns>The service collection for chaining.</returns>
-    public static IServiceCollection AddCorsWithCookieSupport(this IServiceCollection services, string[]? allowedOrigins = null)
+    public static IServiceCollection AddCorsWithCookieSupport(this IServiceCollection services, IConfiguration? configuration = null, string[]? allowedOrigins = null)
     {
-        var origins = allowedOrigins ?? new[]
+        var origins = allowedOrigins;
+
+        // Try to get origins from configuration first
+        if (origins == null && configuration != null)
+        {
+            var corsSection = configuration.GetSection("Cors:AllowedOrigins");
+            if (corsSection.Exists())
+            {
+                origins = corsSection.Get<string[]>();
+            }
+        }
+
+        // Fallback to default development origins
+        origins ??= new[]
         {
             "http://localhost:3000", // React dev server
             "https://localhost:3000", // React dev server with HTTPS
             "http://localhost:5173", // Vite dev server
             "https://localhost:5173", // Vite dev server with HTTPS
+            "http://localhost:3001", // Alternative React port
+            "https://localhost:3001", // Alternative React port with HTTPS
+            "http://localhost:8080", // Alternative dev server
+            "https://localhost:8080", // Alternative dev server with HTTPS
         };
 
         services.AddCors(options =>
