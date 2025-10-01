@@ -109,7 +109,16 @@ builder.Services.AddHealthChecks()
     .AddNpgSql(connectionString);
 
 // CORS Configuration for cookie support
-builder.Services.AddCorsWithCookieSupport();
+builder.Services.AddCorsWithCookieSupport(builder.Configuration);
+
+// ForwardedHeaders configuration for ALB HTTPS termination
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedFor |
+                               Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedProto;
+    options.KnownNetworks.Clear();
+    options.KnownProxies.Clear();
+});
 
 // Antiforgery Configuration for CSRF protection
 builder.Services.AddAntiforgery(options =>
@@ -153,7 +162,8 @@ var app = builder.Build();
 // Database initialization
 await app.InitializeDatabaseAsync();
 
-// Global exception handling middleware (placed early in pipeline to catch all exceptions)
+// Early pipeline: ForwardedHeaders -> GlobalException
+app.UseForwardedHeaders();
 app.UseGlobalExceptionHandler();
 
 // Swagger
@@ -162,18 +172,37 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerWithApiVersioning();
 }
 
-app.UseHttpsRedirection();
+// HTTPS redirection with health check exemption for ALB
+app.Use(async (context, next) =>
+{
+    // Skip HTTPS redirection for health checks (ALB uses HTTP)
+    if (context.Request.Path.StartsWithSegments("/health"))
+    {
+        await next();
+        return;
+    }
+
+    // For all other requests, use standard HTTPS redirection
+    if (!context.Request.IsHttps && !context.Request.Headers.ContainsKey("X-Forwarded-Proto"))
+    {
+        var httpsUrl = $"https://{context.Request.Host}{context.Request.Path}{context.Request.QueryString}";
+        context.Response.Redirect(httpsUrl, permanent: true);
+        return;
+    }
+
+    await next();
+});
 
 // No-cache middleware for authentication endpoints
 app.UseNoCache();
 
-// Enable CORS
+// Routing must come before CORS/Auth
+app.UseRouting();
+
+// CORS before Auth/Authorization
 app.UseCors();
 
-// Antiforgery protection (must be before authentication)
-app.UseAntiforgeryProtection();
-
-// security headers
+// Security headers (after routing, before auth)
 app.Use(async (context, next) =>
 {
     context.Response.Headers["X-Content-Type-Options"] = "nosniff";
@@ -186,6 +215,9 @@ app.Use(async (context, next) =>
 // Authentication & Authorization
 app.UseAuthentication();
 app.UseAuthorization();
+
+// Antiforgery protection (after auth, before endpoints)
+app.UseAntiforgeryProtection();
 
 app.MapControllers();
 app.MapHealthChecks("/health");
