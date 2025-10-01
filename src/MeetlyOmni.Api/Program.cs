@@ -5,6 +5,9 @@
 using System.Buffers.Text;
 using System.IdentityModel.Tokens.Jwt;
 
+using Amazon;
+using Amazon.SimpleEmailV2;
+
 using Asp.Versioning;
 using Asp.Versioning.ApiExplorer;
 
@@ -110,6 +113,8 @@ builder.Services.AddSingleton<IEmailTemplateService, EmailTemplateService>();
 builder.Services.AddSingleton<IEmailSender, AwsSesEmailSender>();
 builder.Services.AddScoped<IEmailLinkService, EmailLinkService>();
 builder.Services.AddScoped<AccountMailer>();
+builder.Services.AddSingleton<IAmazonSimpleEmailServiceV2>(sp =>
+    new AmazonSimpleEmailServiceV2Client(RegionEndpoint.APSoutheast2));
 
 // Global exception handling is now handled by middleware
 
