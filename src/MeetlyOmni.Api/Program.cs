@@ -115,7 +115,8 @@ builder.Services.AddCorsWithCookieSupport(builder.Configuration);
 builder.Services.Configure<ForwardedHeadersOptions>(options =>
 {
     options.ForwardedHeaders = Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedFor |
-                               Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedProto;
+                               Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedProto |
+                               Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedHost;
     options.KnownNetworks.Clear();
     options.KnownProxies.Clear();
 });
@@ -172,26 +173,8 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerWithApiVersioning();
 }
 
-// HTTPS redirection with health check exemption for ALB
-app.Use(async (context, next) =>
-{
-    // Skip HTTPS redirection for health checks (ALB uses HTTP)
-    if (context.Request.Path.StartsWithSegments("/health"))
-    {
-        await next();
-        return;
-    }
-
-    // For all other requests, use standard HTTPS redirection
-    if (!context.Request.IsHttps && !context.Request.Headers.ContainsKey("X-Forwarded-Proto"))
-    {
-        var httpsUrl = $"https://{context.Request.Host}{context.Request.Path}{context.Request.QueryString}";
-        context.Response.Redirect(httpsUrl, permanent: true);
-        return;
-    }
-
-    await next();
-});
+// Use framework built-in HTTPS redirection (works correctly with UseForwardedHeaders)
+app.UseHttpsRedirection();
 
 // No-cache middleware for authentication endpoints
 app.UseNoCache();
