@@ -2,12 +2,14 @@
 // Copyright (c) MeetlyOmni. All rights reserved.
 // </copyright>
 
+using System.Text;
 using System.Web;
 
 using MeetlyOmni.Api.Data.Entities;
 using MeetlyOmni.Api.Service.AuthService.Interfaces;
 
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Logging;
 
 namespace MeetlyOmni.Api.Service.AuthService;
@@ -48,7 +50,7 @@ public sealed class ResetPasswordService : IResetPasswordService
             });
         }
 
-        var normalizedToken = HttpUtility.UrlDecode(token) ?? token;
+        var normalizedToken = Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(token));
         var result = await _userManager.ResetPasswordAsync(user, normalizedToken, newPassword);
 
         if (result.Succeeded)

@@ -33,7 +33,18 @@ public sealed class EmailLinkService : IEmailLinkService
     public async Task<string> GeneratePasswordResetLinkAsync(Member user, CancellationToken ct = default)
     {
         var token = await _userManager.GeneratePasswordResetTokenAsync(user);
-        var link = GenerateLink(token, user.Email, "/auth/reset-password");
+        var encodedToken = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
+
+        var apiBase = _configuration["Backend:ApiBaseUrl"];
+        var userId = user.Id.ToString();
+        var email = user.Email ?? string.Empty;
+
+        var link =
+            $"{apiBase}/auth/direct2-reset" +
+            $"?userId={Uri.EscapeDataString(userId)}" +
+            $"&token={encodedToken}" +
+            $"&email={Uri.EscapeDataString(email)}";
+
         return link;
     }
 
@@ -95,18 +106,6 @@ public sealed class EmailLinkService : IEmailLinkService
     }
 
     /// <summary>
-    /// Generates a link with encoded token and email parameters.
-    /// </summary>
-    private string GenerateLink(string token, string? email, string path)
-    {
-        var encodedToken = HttpUtility.UrlEncode(token);
-        var encodedEmail = HttpUtility.UrlEncode(email ?? string.Empty);
-        var frontendUrl = _configuration["Frontend:BaseUrl"] ?? "http://localhost:3000";
-
-        return $"{frontendUrl}{path}?token={encodedToken}&email={encodedEmail}";
-    }
-
-    /// <summary>
     /// Common method to validate user tokens.
     /// </summary>
     private async Task<bool> ValidateTokenAsync(string email, string token, string tokenProvider, string purpose, string operationType)
@@ -117,7 +116,7 @@ public sealed class EmailLinkService : IEmailLinkService
             return false;
         }
 
-        var normalizedToken = HttpUtility.UrlDecode(token) ?? token;
+        var normalizedToken = Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(token));
         var isValid = await _userManager.VerifyUserTokenAsync(user, tokenProvider, purpose, normalizedToken);
 
         return isValid;
