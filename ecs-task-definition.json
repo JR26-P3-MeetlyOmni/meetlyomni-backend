@@ -30,7 +30,7 @@
         },
         {
           "name": "Jwt__Audience",
-          "value": "https://www.meetlyomni.com"
+          "value": "https://api.meetlyomni.com"
         },
         {
           "name": "NODE_ENV",
