@@ -1,4 +1,4 @@
-﻿// <copyright file="SignUpService.cs" company="MeetlyOmni">
+// <copyright file="SignUpService.cs" company="MeetlyOmni">
 // Copyright (c) MeetlyOmni. All rights reserved.
 // </copyright>
 
