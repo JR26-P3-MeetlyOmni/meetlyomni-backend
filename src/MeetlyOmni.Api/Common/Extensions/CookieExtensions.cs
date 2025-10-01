@@ -11,6 +11,19 @@ namespace MeetlyOmni.Api.Common.Extensions;
 /// </summary>
 public static class AuthCookieExtensions
 {
+    public static CookieOptions CreateDeletionCookieOptions()
+        => new()
+        {
+            HttpOnly = true,
+            Secure = true,
+            SameSite = SameSiteMode.None,
+            Path = CookiePaths.Root,
+            Expires = DateTimeOffset.UnixEpoch,
+            IsEssential = true,
+
+            // Domain = ".your-domain.com"   // production; localhost should not be set
+        };
+
     public static CookieOptions CreateRefreshTokenCookieOptions(DateTimeOffset expiresAt)
         => new()
         {
@@ -57,10 +70,10 @@ public static class AuthCookieExtensions
         => resp.Cookies.Append(CookieNames.CsrfToken, csrfToken, CreateCsrfTokenCookieOptions());
 
     public static void DeleteRefreshTokenCookie(this HttpResponse resp)
-        => resp.Cookies.Delete(CookieNames.RefreshToken, new CookieOptions { Path = CookiePaths.Root });
+        => resp.Cookies.Delete(CookieNames.RefreshToken, CreateDeletionCookieOptions());
 
     public static void DeleteAccessTokenCookie(this HttpResponse resp)
-        => resp.Cookies.Delete(CookieNames.AccessToken, new CookieOptions { Path = CookiePaths.Root });
+        => resp.Cookies.Delete(CookieNames.AccessToken, CreateDeletionCookieOptions());
 
     public static class CookieNames
     {

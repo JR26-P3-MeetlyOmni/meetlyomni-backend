@@ -5,6 +5,9 @@
 using System.Buffers.Text;
 using System.IdentityModel.Tokens.Jwt;
 
+using Amazon;
+using Amazon.SimpleEmailV2;
+
 using Asp.Versioning;
 using Asp.Versioning.ApiExplorer;
 
@@ -20,6 +23,8 @@ using MeetlyOmni.Api.Service.AuthService;
 using MeetlyOmni.Api.Service.AuthService.Interfaces;
 using MeetlyOmni.Api.Service.Common;
 using MeetlyOmni.Api.Service.Common.Interfaces;
+using MeetlyOmni.Api.Service.Email;
+using MeetlyOmni.Api.Service.Email.Interfaces;
 
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -98,9 +103,18 @@ builder.Services.AddScoped<ILoginService, LoginService>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<ILogoutService, LogoutService>();
 builder.Services.AddScoped<ISignUpService, SignUpService>();
+builder.Services.AddScoped<IResetPasswordService, ResetPasswordService>();
 
 // ---- Common Services ----
 builder.Services.AddScoped<IClientInfoService, ClientInfoService>();
+
+// Email Services
+builder.Services.AddSingleton<IEmailTemplateService, EmailTemplateService>();
+builder.Services.AddSingleton<IEmailSender, AwsSesEmailSender>();
+builder.Services.AddScoped<IEmailLinkService, EmailLinkService>();
+builder.Services.AddScoped<AccountMailer>();
+builder.Services.AddSingleton<IAmazonSimpleEmailServiceV2>(sp =>
+    new AmazonSimpleEmailServiceV2Client(RegionEndpoint.APSoutheast2));
 
 // Global exception handling is now handled by middleware
 

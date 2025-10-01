@@ -9,17 +9,22 @@ using FluentAssertions;
 using MeetlyOmni.Api.Common.Constants;
 using MeetlyOmni.Api.Common.Extensions;
 using MeetlyOmni.Api.Controllers;
+using MeetlyOmni.Api.Data.Entities;
 using MeetlyOmni.Api.Filters;
 using MeetlyOmni.Api.Models.Auth;
 using MeetlyOmni.Api.Models.Member;
 using MeetlyOmni.Api.Service.AuthService.Interfaces;
 using MeetlyOmni.Api.Service.Common.Interfaces;
+using MeetlyOmni.Api.Service.Email;
+using MeetlyOmni.Api.Service.Email.Interfaces;
 using MeetlyOmni.Unit.tests.Helpers;
 
 using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -43,6 +48,13 @@ public class AuthControllerTests
     private readonly Mock<ILogoutService> _mockLogoutService;
     private readonly Mock<ILogger<AuthController>> _mockLogger;
     private readonly Mock<ISignUpService> _mockSignUpService;
+    private readonly Mock<IEmailLinkService> _mockEmailLinkService;
+    private readonly AccountMailer _accountMailer;
+    private readonly Mock<UserManager<Member>> _mockUserManager;
+    private readonly Mock<IEmailTemplateService> _mockEmailTemplateService;
+    private readonly Mock<IEmailSender> _mockEmailSender;
+    private readonly Mock<IResetPasswordService> _mockResetPasswordService;
+    private readonly Mock<IConfiguration> _mockConfiguration;
 
     public AuthControllerTests()
     {
@@ -53,6 +65,22 @@ public class AuthControllerTests
         _mockLogoutService = new Mock<ILogoutService>();
         _mockLogger = new Mock<ILogger<AuthController>>();
         _mockSignUpService = new Mock<ISignUpService>();
+        _mockEmailLinkService = new Mock<IEmailLinkService>();
+        _mockEmailTemplateService = new Mock<IEmailTemplateService>();
+        _mockEmailSender = new Mock<IEmailSender>();
+        _mockResetPasswordService = new Mock<IResetPasswordService>();
+        _mockConfiguration = new Mock<IConfiguration>();
+
+        // Create AccountMailer real instance with mocked dependencies
+        _accountMailer = new AccountMailer(
+            _mockEmailTemplateService.Object,
+            _mockEmailSender.Object,
+            _mockEmailLinkService.Object);
+
+        // Create UserManager mock - requires specific setup
+        var mockUserStore = new Mock<IUserStore<Member>>();
+        _mockUserManager = new Mock<UserManager<Member>>(
+            mockUserStore.Object, null, null, null, null, null, null, null, null);
 
         _authController = new AuthController(
             _mockLoginService.Object,
@@ -61,7 +89,12 @@ public class AuthControllerTests
             _mockAntiforgery.Object,
             _mockLogger.Object,
             _mockLogoutService.Object,
-            _mockSignUpService.Object);
+            _mockSignUpService.Object,
+            _mockEmailLinkService.Object,
+            _accountMailer,
+            _mockUserManager.Object,
+            _mockResetPasswordService.Object,
+            _mockConfiguration.Object);
 
         SetupHttpContext();
     }
