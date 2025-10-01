@@ -241,11 +241,35 @@ public class AuthController : ControllerBase
             return Redirect($"{_cfg["Frontend:BaseUrl"]}/verify-email?status=already_confirmed&email={Uri.EscapeDataString(user.Email!)}");
         }
 
+        var isVaild = await _emailLinkService.ValidateEmailVerificationTokenAsync(user!.Email!, token, ct);
         var decoded = Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(token));
-        var result = await _userManager.ConfirmEmailAsync(user, decoded);
+
+        IdentityResult result;
+        if (isVaild)
+        {
+            result = await _userManager.ConfirmEmailAsync(user, decoded);
+        }
+        else
+        {
+            result = IdentityResult.Failed(new IdentityError { Description = "Invalid token" });
+        }
 
         var status = result.Succeeded ? "success" : "failed";
         return Redirect($"{_cfg["Frontend:BaseUrl"]}/verify-email?status={status}&email={Uri.EscapeDataString(user.Email!)}");
+    }
+
+    [HttpGet("direct2-reset")]
+    [AllowAnonymous]
+    public async Task<IActionResult> DirectToReset([FromQuery] string userId, [FromQuery] string token, CancellationToken ct)
+    {
+        var user = await _userManager.FindByIdAsync(userId);
+        var isValid = await _emailLinkService.ValidatePasswordResetTokenAsync(user!.Email!, token, ct);
+        if (!isValid)
+        {
+            return Redirect($"{_cfg["Frontend:BaseUrl"]}/reset-password?invalid");
+        }
+
+        return Redirect($"{_cfg["Frontend:BaseUrl"]}/reset-password?email={Uri.EscapeDataString(user.Email!)}&token={Uri.EscapeDataString(token)}");
     }
 
     /// <summary>
@@ -270,31 +294,6 @@ public class AuthController : ControllerBase
 
         // Always return success to prevent user enumeration
         return Ok(new { message = "Reset link sent if email exists" });
-    }
-
-    /// <summary>
-    /// Validate password reset token without resetting the password.
-    /// </summary>
-    /// <param name="request">Verify email request containing email and token.</param>
-    /// <response code="200">Token is valid.</response>
-    /// <response code="400">Token is invalid or expired.</response>
-    /// <returns>A <see cref="Task{IActionResult}"/> representing the validation result.</returns>
-    [HttpPost("validate-reset-token")]
-    [AllowAnonymous]
-    [ProducesResponseType(typeof(TokenValidationResponse), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(TokenValidationResponse), StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> ValidateResetToken([FromBody] VerifyEmailRequest request, CancellationToken ct)
-    {
-        var isValid = await _emailLinkService.ValidatePasswordResetTokenAsync(request.Email, request.Token, ct);
-
-        var response = new TokenValidationResponse
-        {
-            IsValid = isValid,
-            Message = isValid ? "Valid" : "Invalid",
-            Email = request.Email,
-        };
-
-        return isValid ? Ok(response) : BadRequest(response);
     }
 
     /// <summary>
