@@ -8,6 +8,14 @@
         "dotnet-coverage"
       ],
       "rollForward": false
+    },
+    "dotnet-ef": {
+      "version": "8.0.10",
+      "commands": [
+        "dotnet-ef"
+      ],
+      "rollForward": false
     }
   }
 }
+
