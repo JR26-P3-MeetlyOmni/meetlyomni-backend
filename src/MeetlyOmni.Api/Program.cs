@@ -4,8 +4,9 @@
 
 using System.IdentityModel.Tokens.Jwt;
 
-using Amazon.Runtime;
 using Amazon.S3;
+using Amazon.Runtime;
+using Amazon.Runtime.CredentialManagement;
 using Asp.Versioning;
 using Asp.Versioning.ApiExplorer;
 using MeetlyOmni.Api.Common.Extensions;
@@ -147,13 +148,27 @@ builder.Services.Configure<AntiforgeryProtectionOptions>(
     builder.Configuration.GetSection("AntiforgeryProtection"));
 
 // Amazon S3 Configuration
-var awsOptions = builder.Configuration.GetSection("AWS").Get<AWSOptions>();
-builder.Services.Configure<AWSOptions>(builder.Configuration.GetSection("AWS"));
+var awsSection = builder.Configuration.GetSection("AWS");
+var profileName = awsSection["Profile"];
+var region = awsSection["Region"];
+var bucketName = awsSection["BucketName"];
+
+Console.WriteLine($"AWS Profile: {profileName}");
+Console.WriteLine($"AWS Region: {region}");
+Console.WriteLine($"AWS Bucket: {bucketName}");
+
+// Initialize AWSOptions using the profile
+var awsOptions = AWSOptions.FromProfile(profileName, region, bucketName);
+
+// Register AWSOptions and S3 client in DI
+builder.Services.AddSingleton(awsOptions);
 builder.Services.AddSingleton<IAmazonS3>(sp =>
 {
-    var options = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<AWSOptions>>().Value;
+    var options = sp.GetRequiredService<AWSOptions>();
     return new AmazonS3Client(options.Credentials, options.Region);
 });
+
+builder.Services.AddControllers();
 
 var app = builder.Build();
 

@@ -12,9 +12,9 @@ using MeetlyOmni.Api;
 using Microsoft.VisualStudio.TestPlatform.TestHost;
 using System.Net.Http.Json;
 using System.Text;
-using MeetlyOmni.Api.Models.Media; // Fixes Program reference (ensure your Program class is in this namespace)
+using MeetlyOmni.Api.Models.Media;
 
-namespace MeetlyOmni.IntegrationTests;
+namespace MeetlyOmni.IntegrationTests.Controllers;
 
 public class MediaUploadIntegrationTests : IClassFixture<WebApplicationFactory<Program>>
 {
