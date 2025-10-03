@@ -152,7 +152,7 @@ public class MediaController : ControllerBase
     public async Task<IActionResult> Reupload([FromForm] ReuploadMediaRequest request)
     {
         var file = request.File;
-        var key = request.Key;
+        var key = request.Key;      // the original key to be replaced
         var orgId = request.OrgId;
 
         if (file == null || file.Length == 0)
@@ -166,36 +166,39 @@ public class MediaController : ControllerBase
         if (!_allowedMimeTypes.Contains(file.ContentType))
             return StatusCode(415, "Unsupported media type.");
 
-        // Optional: Validate image dimensions
-        try
-        {
-            using var img = await Image.LoadAsync(file.OpenReadStream());
-            if (img.Width > 6000 || img.Height > 6000)
-                return BadRequest("Image dimensions too large.");
-            // Optional: Strip EXIF metadata
-            img.Metadata.ExifProfile = null;
-        }
-        catch (Exception)
-        {
-            return BadRequest("Invalid image file.");
-        }
+        // file content validation
+        using var img = await Image.LoadAsync(file.OpenReadStream());
+        if (img.Width > 6000 || img.Height > 6000)
+            return BadRequest("Image dimensions too large.");
+        img.Metadata.ExifProfile = null;
 
-        // Authorization: Ensure key belongs to orgId
+        // authorization: ensure the key belongs to the specified org
         var envName = _env.EnvironmentName.ToLowerInvariant();
         var orgKeyPrefix = $"{envName}/{orgId}/";
         if (!key.StartsWith(orgKeyPrefix, StringComparison.OrdinalIgnoreCase))
             return Forbid("Key does not belong to the specified org.");
 
-        // Check if object exists
+        // delete the old file if exists
         try
         {
-            var exists = await _s3.GetObjectMetadataAsync(_awsOptions.BucketName, key);
+            await _s3.DeleteObjectAsync(_awsOptions.BucketName, key);
         }
         catch (AmazonS3Exception ex) when (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
         {
-            return NotFound("Key not found.");
+            // file not found, can ignore
         }
 
+        // generate new key with same directory path
+        var directoryPath = Path.GetDirectoryName(key)?.Replace("\\", "/"); // get directory path
+        var safeFileName = Path.GetFileNameWithoutExtension(file.FileName)
+            .Replace(" ", "_")
+            .Replace("\"", string.Empty)
+            .Replace("'", string.Empty);
+        var ext = Path.GetExtension(file.FileName).ToLowerInvariant();
+        var uuid = Guid.NewGuid();
+        key = $"{directoryPath}/{uuid}_{safeFileName}{ext}";
+
+        // upload the new file
         var putRequest = new PutObjectRequest
         {
             BucketName = _awsOptions.BucketName,
@@ -205,14 +208,14 @@ public class MediaController : ControllerBase
             CannedACL = S3CannedACL.Private,
             ServerSideEncryptionMethod = ServerSideEncryptionMethod.AES256,
             TagSet = new List<Tag>
-            {
-                new Tag { Key = "app", Value = "meetly" },
-                new Tag { Key = "type", Value = "image" },
-            },
+        {
+            new Tag { Key = "app", Value = "meetly" },
+            new Tag { Key = "type", Value = "image" },
+        },
             Headers =
-            {
-                CacheControl = "public, max-age=31536000",
-            },
+        {
+            CacheControl = "public, max-age=31536000",
+        },
         };
         putRequest.Metadata.Add("uploaded-by", User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "unknown");
 
@@ -227,7 +230,7 @@ public class MediaController : ControllerBase
             return StatusCode(500, "Reupload failed.");
         }
 
-        // Generate a fresh signed URL after overwriting the image
+        // generate signed URL (valid for 10 min)
         var urlReq = new GetPreSignedUrlRequest
         {
             BucketName = _awsOptions.BucketName,
@@ -237,7 +240,7 @@ public class MediaController : ControllerBase
         };
         var signedUrl = _s3.GetPreSignedURL(urlReq);
 
-        // Audit log
+        // detailed audit log
         _logger.LogInformation(
             "Image reuploaded: user={UserId}, org={OrgId}, key={Key}, etag={ETag}, size={Size}, ip={IP}, ua={UA}",
             User.FindFirstValue(ClaimTypes.NameIdentifier),
@@ -247,15 +250,15 @@ public class MediaController : ControllerBase
             file.Length,
             HttpContext.Connection.RemoteIpAddress,
             Request.Headers["User-Agent"].ToString()
-    );
+        );
 
-    return Ok(new
-    {
-        key,
-        url = signedUrl,
-        etag = response.ETag,
-        contentType = file.ContentType,
-        size = file.Length,
-    });
-}
+        return Ok(new
+        {
+            key,
+            url = signedUrl,
+            etag = response.ETag,
+            contentType = file.ContentType,
+            size = file.Length,
+        });
+    }
 }
