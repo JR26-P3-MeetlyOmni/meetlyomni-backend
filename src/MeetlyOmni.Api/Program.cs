@@ -197,10 +197,7 @@ app.UseForwardedHeaders();
 app.UseGlobalExceptionHandler();
 
 // Swagger
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwaggerWithApiVersioning();
-}
+app.UseSwaggerWithApiVersioning();
 
 // Use framework built-in HTTPS redirection (works correctly with UseForwardedHeaders)
 app.UseHttpsRedirection();
