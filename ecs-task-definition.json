@@ -18,7 +18,7 @@
       "environment": [
         {
           "name": "ASPNETCORE_ENVIRONMENT",
-          "value": "prod"
+          "value": "Production"
         },
         {
           "name": "ASPNETCORE_URLS",
