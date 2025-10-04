@@ -6,13 +6,39 @@ using Microsoft.AspNetCore.Http;
 
 namespace MeetlyOmni.Api.Common.Extensions;
 
-/// <summary>
-/// Extension methods for cookie configuration.
-/// </summary>
 public static class AuthCookieExtensions
 {
+    // ".meetlyomni.com"
+    private static string? _prodDomain;
+
+    public static void ConfigureCookieDomain(string? domain)
+    {
+        _prodDomain = string.IsNullOrWhiteSpace(domain) ? null : domain;
+    }
+
+    private static CookieOptions WithDomain(CookieOptions options)
+    {
+        if (!string.IsNullOrWhiteSpace(_prodDomain))
+        {
+            options.Domain = _prodDomain;
+        }
+
+        return options;
+    }
+
+    public static CookieOptions CreateDeletionCookieOptions()
+        => WithDomain(new CookieOptions
+        {
+            HttpOnly = true,
+            Secure = true,
+            SameSite = SameSiteMode.None,
+            Path = CookiePaths.Root,
+            Expires = DateTimeOffset.UnixEpoch,
+            IsEssential = true,
+        });
+
     public static CookieOptions CreateRefreshTokenCookieOptions(DateTimeOffset expiresAt)
-        => new()
+        => WithDomain(new CookieOptions
         {
             HttpOnly = true,
             Secure = true,
@@ -20,12 +46,10 @@ public static class AuthCookieExtensions
             Path = CookiePaths.Root,
             Expires = expiresAt,
             IsEssential = true,
-
-            // Domain = ".your-domain.com"   // production; localhost should not be set
-        };
+        });
 
     public static CookieOptions CreateAccessTokenCookieOptions(DateTimeOffset expiresAt)
-        => new()
+        => WithDomain(new CookieOptions
         {
             HttpOnly = true,
             Secure = true,
@@ -33,19 +57,17 @@ public static class AuthCookieExtensions
             Path = CookiePaths.Root,
             Expires = expiresAt,
             IsEssential = true,
-
-            // Domain = ".your-domain.com"   // production; localhost should not be set
-        };
+        });
 
     public static CookieOptions CreateCsrfTokenCookieOptions()
-        => new()
+        => WithDomain(new CookieOptions
         {
             HttpOnly = false,
             Secure = true,
             SameSite = SameSiteMode.None,
             Path = CookiePaths.Root,
             IsEssential = true,
-        };
+        });
 
     public static void SetRefreshTokenCookie(this HttpResponse resp, string token, DateTimeOffset expiresAt)
         => resp.Cookies.Append(CookieNames.RefreshToken, token, CreateRefreshTokenCookieOptions(expiresAt));
@@ -57,10 +79,10 @@ public static class AuthCookieExtensions
         => resp.Cookies.Append(CookieNames.CsrfToken, csrfToken, CreateCsrfTokenCookieOptions());
 
     public static void DeleteRefreshTokenCookie(this HttpResponse resp)
-        => resp.Cookies.Delete(CookieNames.RefreshToken, new CookieOptions { Path = CookiePaths.Root });
+        => resp.Cookies.Delete(CookieNames.RefreshToken, CreateDeletionCookieOptions());
 
     public static void DeleteAccessTokenCookie(this HttpResponse resp)
-        => resp.Cookies.Delete(CookieNames.AccessToken, new CookieOptions { Path = CookiePaths.Root });
+        => resp.Cookies.Delete(CookieNames.AccessToken, CreateDeletionCookieOptions());
 
     public static class CookieNames
     {
