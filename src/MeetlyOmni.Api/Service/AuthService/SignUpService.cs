@@ -1,4 +1,4 @@
-﻿// <copyright file="SignUpService.cs" company="MeetlyOmni">
+// <copyright file="SignUpService.cs" company="MeetlyOmni">
 // Copyright (c) MeetlyOmni. All rights reserved.
 // </copyright>
 
@@ -11,6 +11,7 @@ using MeetlyOmni.Api.Filters;
 using MeetlyOmni.Api.Models.Auth;
 using MeetlyOmni.Api.Models.Member;
 using MeetlyOmni.Api.Service.AuthService.Interfaces;
+using MeetlyOmni.Api.Service.Email;
 
 using Microsoft.AspNetCore.Identity;
 
@@ -25,19 +26,22 @@ public class SignUpService : ISignUpService
     private readonly IOrganizationRepository _organizationRepository;
     private readonly ApplicationDbContext _dbContext;
     private readonly ILogger<SignUpService> _logger;
+    private readonly AccountMailer _accountMailer;
 
     public SignUpService(
         UserManager<Member> userManager,
         RoleManager<ApplicationRole> roleManager,
         IOrganizationRepository organizationRepository,
         ApplicationDbContext dbContext,
-        ILogger<SignUpService> logger)
+        ILogger<SignUpService> logger,
+        AccountMailer accountMailer)
     {
         this._userManager = userManager;
         this._roleManager = roleManager;
         this._organizationRepository = organizationRepository;
         this._dbContext = dbContext;
         this._logger = logger;
+        this._accountMailer = accountMailer;
     }
 
     public async Task<MemberDto> SignUpAdminAsync(AdminSignupRequest request)
@@ -107,6 +111,17 @@ public class SignUpService : ISignUpService
 
             await this._dbContext.SaveChangesAsync();
             await transaction.CommitAsync();
+
+            // Send email verification after successful user creation (non-blocking for UX)
+            try
+            {
+                await this._accountMailer.SendVerifyEmailAsync(memberEntity);
+                _logger.LogInformation("Verification email sent to {Email}", memberEntity.Email);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Signup succeeded but verification email failed to send to {Email}", memberEntity.Email);
+            }
 
             var dto = new MemberDto
             {
