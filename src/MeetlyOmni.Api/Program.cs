@@ -122,7 +122,6 @@ builder.Services.AddSingleton<IAmazonSimpleEmailServiceV2>(sp =>
 builder.Services.AddHealthChecks()
     .AddNpgSql(connectionString);
 
-// CORS Configuration for cookie support
 builder.Services.AddCorsWithCookieSupport(builder.Configuration);
 
 // ForwardedHeaders configuration for ALB HTTPS termination
@@ -143,7 +142,23 @@ builder.Services.AddAntiforgery(options =>
     options.Cookie.SameSite = SameSiteMode.None;
     options.Cookie.IsEssential = true;
     options.Cookie.Path = AuthCookieExtensions.CookiePaths.Root;
+
+    if (builder.Environment.IsProduction())
+    {
+        options.Cookie.Domain = ".meetlyomni.com";
+    }
 });
+
+if (builder.Environment.IsProduction())
+{
+    MeetlyOmni.Api.Common.Extensions.AuthCookieExtensions
+        .ConfigureCookieDomain(".meetlyomni.com");
+}
+else
+{
+    MeetlyOmni.Api.Common.Extensions.AuthCookieExtensions
+        .ConfigureCookieDomain(null);
+}
 
 // API Versioning Configuration
 builder.Services.AddApiVersioning(options =>
@@ -182,10 +197,7 @@ app.UseForwardedHeaders();
 app.UseGlobalExceptionHandler();
 
 // Swagger
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwaggerWithApiVersioning();
-}
+app.UseSwaggerWithApiVersioning();
 
 // Use framework built-in HTTPS redirection (works correctly with UseForwardedHeaders)
 app.UseHttpsRedirection();
