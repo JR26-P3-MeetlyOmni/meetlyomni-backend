@@ -1,7 +1,9 @@
 name: Build and Deploy to ECS
 on:
- push:
-  branches: [ dev, dev-biaojin ]
+  pull_request:
+    branches: ["dev"]
+  push:
+    branches: ["dev", "dev-biaojin"]
 permissions:
   contents: read
   id-token: write
@@ -11,7 +13,7 @@ jobs:
     name: Build, Push, and Deploy
     runs-on: ubuntu-latest
     environment:
-      name: biaojin
+      name: prod
     env:
       AWS_REGION: ${{ vars.AWS_REGION }}
       ECR_REPOSITORY: ${{ vars.ECR_REPOSITORY }}
@@ -23,6 +25,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+  
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4.3.1
@@ -55,6 +59,7 @@ jobs:
           container-name: meetly-omni-backend
           image: ${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}
 
+
       - name: Deploy Amazon ECS task definition
         uses: aws-actions/amazon-ecs-deploy-task-definition@v2.3.4
         with:
@@ -62,4 +67,3 @@ jobs:
           service: ${{ env.ECS_SERVICE }}
           cluster: ${{ env.ECS_CLUSTER }}
           wait-for-service-stability: true
-
