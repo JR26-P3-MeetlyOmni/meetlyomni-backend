@@ -4,6 +4,9 @@
 
 using System.IdentityModel.Tokens.Jwt;
 
+using Amazon;
+using Amazon.SimpleEmailV2;
+
 using Amazon.S3;
 using Amazon.Runtime;
 using Amazon.Runtime.CredentialManagement;
@@ -21,6 +24,11 @@ using MeetlyOmni.Api.Service.AuthService;
 using MeetlyOmni.Api.Service.AuthService.Interfaces;
 using MeetlyOmni.Api.Service.Common;
 using MeetlyOmni.Api.Service.Common.Interfaces;
+using MeetlyOmni.Api.Service.Email;
+using MeetlyOmni.Api.Service.Email.Interfaces;
+using MeetlyOmni.Api.Service.EventService;
+using MeetlyOmni.Api.Service.EventService.Interfaces;
+
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
@@ -89,6 +97,7 @@ builder.Services.AddAuthorization();
 
 // ---- Repositories ----
 builder.Services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
+builder.Services.AddScoped<IEventRepository, EventRepository>();
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddScoped<IOrganizationRepository, OrganizationRepository>();
 
@@ -97,9 +106,19 @@ builder.Services.AddScoped<ILoginService, LoginService>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<ILogoutService, LogoutService>();
 builder.Services.AddScoped<ISignUpService, SignUpService>();
+builder.Services.AddScoped<IResetPasswordService, ResetPasswordService>();
+builder.Services.AddScoped<IEventService, EventService>();
 
 // ---- Common Services ----
 builder.Services.AddScoped<IClientInfoService, ClientInfoService>();
+
+// Email Services
+builder.Services.AddSingleton<IEmailTemplateService, EmailTemplateService>();
+builder.Services.AddSingleton<IEmailSender, AwsSesEmailSender>();
+builder.Services.AddScoped<IEmailLinkService, EmailLinkService>();
+builder.Services.AddScoped<AccountMailer>();
+builder.Services.AddSingleton<IAmazonSimpleEmailServiceV2>(sp =>
+    new AmazonSimpleEmailServiceV2Client(RegionEndpoint.APSoutheast2));
 
 // Global exception handling is now handled by middleware
 
@@ -107,8 +126,17 @@ builder.Services.AddScoped<IClientInfoService, ClientInfoService>();
 builder.Services.AddHealthChecks()
     .AddNpgSql(connectionString);
 
-// CORS Configuration for cookie support
-builder.Services.AddCorsWithCookieSupport();
+builder.Services.AddCorsWithCookieSupport(builder.Configuration);
+
+// ForwardedHeaders configuration for ALB HTTPS termination
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedFor |
+                               Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedProto |
+                               Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedHost;
+    options.KnownNetworks.Clear();
+    options.KnownProxies.Clear();
+});
 
 // Antiforgery Configuration for CSRF protection
 builder.Services.AddAntiforgery(options =>
@@ -118,7 +146,23 @@ builder.Services.AddAntiforgery(options =>
     options.Cookie.SameSite = SameSiteMode.None;
     options.Cookie.IsEssential = true;
     options.Cookie.Path = AuthCookieExtensions.CookiePaths.Root;
+
+    if (builder.Environment.IsProduction())
+    {
+        options.Cookie.Domain = ".meetlyomni.com";
+    }
 });
+
+if (builder.Environment.IsProduction())
+{
+    MeetlyOmni.Api.Common.Extensions.AuthCookieExtensions
+        .ConfigureCookieDomain(".meetlyomni.com");
+}
+else
+{
+    MeetlyOmni.Api.Common.Extensions.AuthCookieExtensions
+        .ConfigureCookieDomain(null);
+}
 
 // API Versioning Configuration
 builder.Services.AddApiVersioning(options =>
@@ -175,27 +219,26 @@ var app = builder.Build();
 // Database initialization
 await app.InitializeDatabaseAsync();
 
-// Global exception handling middleware (placed early in pipeline to catch all exceptions)
+// Early pipeline: ForwardedHeaders -> GlobalException
+app.UseForwardedHeaders();
 app.UseGlobalExceptionHandler();
 
 // Swagger
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwaggerWithApiVersioning();
-}
+app.UseSwaggerWithApiVersioning();
 
+// Use framework built-in HTTPS redirection (works correctly with UseForwardedHeaders)
 app.UseHttpsRedirection();
 
 // No-cache middleware for authentication endpoints
 app.UseNoCache();
 
-// Enable CORS
+// Routing must come before CORS/Auth
+app.UseRouting();
+
+// CORS before Auth/Authorization
 app.UseCors();
 
-// Antiforgery protection (must be before authentication)
-app.UseAntiforgeryProtection();
-
-// security headers
+// Security headers (after routing, before auth)
 app.Use(async (context, next) =>
 {
     context.Response.Headers["X-Content-Type-Options"] = "nosniff";
@@ -208,6 +251,9 @@ app.Use(async (context, next) =>
 // Authentication & Authorization
 app.UseAuthentication();
 app.UseAuthorization();
+
+// Antiforgery protection (after auth, before endpoints)
+app.UseAntiforgeryProtection();
 
 app.MapControllers();
 app.MapHealthChecks("/health");

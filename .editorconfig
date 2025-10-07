@@ -104,3 +104,4 @@ dotnet_diagnostic.SA1101.severity = none   # Prefix local calls with 'this'
 dotnet_diagnostic.IDE0003.severity = none  # Remove 'this' qualification
 dotnet_diagnostic.SA1018.severity = none
 dotnet_diagnostic.SA1011.severity = none
+dotnet_diagnostic.SA1206.severity = none # remove required should before public
