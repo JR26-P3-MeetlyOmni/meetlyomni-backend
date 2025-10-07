@@ -83,10 +83,10 @@ jobs:
           echo "task-definition-arn=${NEW_TD_ARN}" >> "$GITHUB_OUTPUT"
 
 
-      - name: Deploy Amazon ECS task definition
-        uses: aws-actions/amazon-ecs-deploy-task-definition@v2.3.4
-        with:
-          task-definition: ${{ steps.register-task.outputs.task-definition-arn }}
-          service: ${{ env.ECS_SERVICE }}
-          cluster: ${{ env.ECS_CLUSTER }}
-          wait-for-service-stability: true
+      - name: Deploy new task definition
+        run: |
+          aws ecs update-service \
+            --cluster "${ECS_CLUSTER}" \
+            --service "${ECS_SERVICE}" \
+            --task-definition "${{ steps.register-task.outputs.task-definition-arn }}" \
+            --force-new-deployment
