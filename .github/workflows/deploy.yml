@@ -17,6 +17,8 @@ jobs:
       ECR_REPOSITORY: ${{ vars.ECR_REPOSITORY }}
       ECS_CLUSTER: ${{ vars.ECS_CLUSTER }}
       ECS_SERVICE: ${{ vars.ECS_SERVICE }}
+      ECS_TASK_FAMILY: ${{ vars.ECS_TASK_FAMILY }}
+      ECS_CONTAINER_NAME: ${{ vars.ECS_CONTAINER_NAME }}
       AWS_OIDC_PROVIDER_ARN: ${{ vars.AWS_OIDC_PROVIDER_ARN }}
       AWS_ROLE_ARN: ${{ vars.AWS_ROLE_ARN }}
       IMAGE_TAG: ${{ github.sha }}
@@ -49,19 +51,42 @@ jobs:
             ${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}
             ${{ env.ECR_REPOSITORY }}:latest
 
-      - name: Fill in the new image ID in the Amazon ECS task definition
-        id: task-def
-        uses: aws-actions/amazon-ecs-render-task-definition@v1.8.0
-        with:
-          task-definition: ecs-task-definition.json
-          container-name: meetly-omni-backend
-          image: ${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}
+      - name: Fetch current task definition
+        run: |
+          aws ecs describe-task-definition \
+            --task-definition "${ECS_TASK_FAMILY}" \
+            --query 'taskDefinition' \
+            --output json > task-def.json
+
+      - name: Update image in task definition
+        run: |
+          jq --arg IMAGE "${ECR_REPOSITORY}:${IMAGE_TAG}" --arg CONTAINER "${ECS_CONTAINER_NAME}" '
+            (.containerDefinitions[] | select(.name == $CONTAINER) | .image) |= $IMAGE
+            | del(.taskDefinitionArn,
+                  .revision,
+                  .status,
+                  .requiresAttributes,
+                  .compatibilities,
+                  .registeredAt,
+                  .registeredBy,
+                  .deregisteredAt,
+                  .deregisteredBy)
+          ' task-def.json > task-def-updated.json
+
+      - name: Register new task definition
+        id: register-task
+        run: |
+          NEW_TD_ARN=$(aws ecs register-task-definition \
+            --cli-input-json file://task-def-updated.json \
+            --query 'taskDefinition.taskDefinitionArn' \
+            --output text)
+          echo "task-definition-arn=${NEW_TD_ARN}" >> "$GITHUB_OUTPUT"
 
 
       - name: Deploy Amazon ECS task definition
         uses: aws-actions/amazon-ecs-deploy-task-definition@v2.3.4
         with:
-          task-definition: ${{ steps.task-def.outputs.task-definition }}
+          task-definition: ${{ steps.register-task.outputs.task-definition-arn }}
           service: ${{ env.ECS_SERVICE }}
           cluster: ${{ env.ECS_CLUSTER }}
           wait-for-service-stability: true
