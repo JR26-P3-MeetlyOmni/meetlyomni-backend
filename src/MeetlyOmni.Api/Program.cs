@@ -3,13 +3,11 @@
 // </copyright>
 
 using System.IdentityModel.Tokens.Jwt;
-
 using Amazon;
-using Amazon.SimpleEmailV2;
-
-using Amazon.S3;
 using Amazon.Runtime;
 using Amazon.Runtime.CredentialManagement;
+using Amazon.S3;
+using Amazon.SimpleEmailV2;
 using Asp.Versioning;
 using Asp.Versioning.ApiExplorer;
 using MeetlyOmni.Api.Common.Extensions;
@@ -28,12 +26,37 @@ using MeetlyOmni.Api.Service.Email;
 using MeetlyOmni.Api.Service.Email.Interfaces;
 using MeetlyOmni.Api.Service.EventService;
 using MeetlyOmni.Api.Service.EventService.Interfaces;
-
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
 
-var builder = WebApplication.CreateBuilder(args);
+var builder = default(WebApplicationBuilder);
+
+try
+{
+    // Wrap CreateBuilder to provide clearer diagnostics when configuration files contain invalid JSON.
+    builder = WebApplication.CreateBuilder(args);
+}
+catch (InvalidDataException ex)
+{
+    Console.Error.WriteLine();
+    Console.Error.WriteLine("ERROR: Failed to load configuration files during application startup.");
+    Console.Error.WriteLine("Reason: " + ex.Message);
+
+    // Print inner exception details (often contains JSON parsing errors)
+    if (ex.InnerException is not null)
+    {
+        Console.Error.WriteLine();
+        Console.Error.WriteLine("Inner exception details:");
+        Console.Error.WriteLine(ex.InnerException.ToString());
+    }
+
+    Console.Error.WriteLine();
+    Console.Error.WriteLine("Please fix the JSON syntax in your appsettings*.json files (see stack trace above).");
+    Console.Error.WriteLine("Exiting with code 1.");
+    Environment.Exit(1);
+    throw; // unreachable, but keeps compiler happy
+}
 
 // Clear default JWT claim mappings to use standard claim names
 JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear();
@@ -193,9 +216,9 @@ builder.Services.Configure<AntiforgeryProtectionOptions>(
 
 // Amazon S3 Configuration
 var awsSection = builder.Configuration.GetSection("AWS");
-var profileName = awsSection["Profile"];
-var region = awsSection["Region"];
-var bucketName = awsSection["BucketName"];
+var profileName = awsSection["Profile"] ?? throw new InvalidOperationException("AWS:Profile is not configured.");
+var region = awsSection["Region"] ?? throw new InvalidOperationException("AWS:Region is not configured.");
+var bucketName = awsSection["BucketName"] ?? throw new InvalidOperationException("AWS:BucketName is not configured.");
 
 Console.WriteLine($"AWS Profile: {profileName}");
 Console.WriteLine($"AWS Region: {region}");

@@ -23,7 +23,7 @@ public class MediaControllerTests
         var envMock = new Mock<IWebHostEnvironment>();
         envMock.Setup(e => e.EnvironmentName).Returns("Test");
 
-        var controller = new MediaController(s3Mock.Object, optionsMock.Object, loggerMock.Object, envMock.Object);
+        var controller = new MediaController(s3Mock.Object, awsOptions, loggerMock.Object, envMock.Object);
 
         var fileMock = new Mock<IFormFile>();
         fileMock.Setup(f => f.Length).Returns(1000);
