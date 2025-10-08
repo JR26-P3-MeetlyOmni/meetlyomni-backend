@@ -36,6 +36,20 @@ public interface IEventRepository
     Task<IEnumerable<Event>> GetByOrganizationIdAsync(Guid orgId, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Gets paginated events by organization ID.
+    /// </summary>
+    /// <param name="orgId">The organization ID.</param>
+    /// <param name="pageNumber">Page number (1-based).</param>
+    /// <param name="pageSize">Number of items per page.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>Tuple of events list and total count.</returns>
+    Task<(List<Event> Events, int TotalCount)> GetEventsByOrganizationWithPaginationAsync(
+        Guid orgId,
+        int pageNumber,
+        int pageSize,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Checks if an organization exists.
     /// </summary>
     /// <param name="orgId">The organization ID.</param>
