@@ -6,7 +6,6 @@ using Asp.Versioning;
 
 using MeetlyOmni.Api.Common.Constants;
 using MeetlyOmni.Api.Common.Extensions;
-using MeetlyOmni.Api.Common.Extensions;
 using MeetlyOmni.Api.Data.Entities;
 using MeetlyOmni.Api.Models.Invitation;
 using MeetlyOmni.Api.Service.AuthService.Interfaces;
