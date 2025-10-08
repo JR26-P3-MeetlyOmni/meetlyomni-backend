@@ -27,6 +27,77 @@ public class EventService : IEventService
     }
 
     /// <inheritdoc />
+    public async Task<GetEventListResponse> GetEventListAsync(
+        Guid orgId,
+        int pageNumber,
+        int pageSize,
+        CancellationToken cancellationToken = default)
+    {
+        // Validate organization exists
+        var organizationExists = await _eventRepository.OrganizationExistsAsync(orgId, cancellationToken);
+        if (!organizationExists)
+        {
+            throw new EntityNotFoundException("Organization", orgId.ToString(), $"Organization with ID {orgId} not found.");
+        }
+
+        // Validate pagination parameters
+        if (pageNumber < 1)
+        {
+            throw new DomainValidationException(
+                new Dictionary<string, string[]> { { "PageNumber", new[] { "Page number must be greater than 0." } } });
+        }
+
+        if (pageSize < 1 || pageSize > 100)
+        {
+            throw new DomainValidationException(
+                new Dictionary<string, string[]> { { "PageSize", new[] { "Page size must be between 1 and 100." } } });
+        }
+
+        // Get paginated events
+        var (events, totalCount) = await _eventRepository.GetEventsByOrganizationWithPaginationAsync(
+            orgId,
+            pageNumber,
+            pageSize,
+            cancellationToken);
+
+        // Calculate total pages
+        var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
+
+        // Map to response DTOs
+        var eventDtos = events.Select(e => new EventListItemDto
+        {
+            EventId = e.EventId,
+            OrgId = e.OrgId,
+            Title = e.Title!,
+            Description = e.Description,
+            CoverImageUrl = e.CoverImageUrl,
+            Location = e.Location,
+            Language = e.Language,
+            Status = e.Status,
+            StartTime = e.StartTime,
+            EndTime = e.EndTime,
+            CreatedAt = e.CreatedAt,
+            UpdatedAt = e.UpdatedAt,
+        }).ToList();
+
+        _logger.LogInformation(
+            "Retrieved {Count} events for organization {OrgId} (Page {PageNumber}/{TotalPages})",
+            eventDtos.Count,
+            orgId,
+            pageNumber,
+            totalPages);
+
+        return new GetEventListResponse
+        {
+            Events = eventDtos,
+            TotalCount = totalCount,
+            PageNumber = pageNumber,
+            PageSize = pageSize,
+            TotalPages = totalPages,
+        };
+    }
+
+    /// <inheritdoc />
     public async Task<CreateEventResponse> CreateEventAsync(
         CreateEventRequest request,
         Guid creatorId,
