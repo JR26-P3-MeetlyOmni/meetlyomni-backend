@@ -40,4 +40,26 @@ public static class ClaimsPrincipalExtensions
             OrgId = orgId,
         };
     }
+
+    public static Guid? GetUserId(this ClaimsPrincipal? user)
+    {
+        if (user?.Identity?.IsAuthenticated != true)
+        {
+            return null;
+        }
+
+        var userId = user.FindFirstValue("sub") ?? user.FindFirstValue(ClaimTypes.NameIdentifier);
+        return Guid.TryParse(userId, out var guid) ? guid : null;
+    }
+
+    public static Guid? GetOrgId(this ClaimsPrincipal? user)
+    {
+        if (user?.Identity?.IsAuthenticated != true)
+        {
+            return null;
+        }
+
+        var orgId = user.FindFirstValue("org_id");
+        return Guid.TryParse(orgId, out var guid) ? guid : null;
+    }
 }

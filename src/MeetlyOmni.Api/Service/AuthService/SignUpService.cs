@@ -62,6 +62,7 @@ public class SignUpService : ISignUpService
                 Email = request.Email,
                 UserName = request.UserName,
                 PhoneNumber = request.PhoneNumber,
+                LocalMemberNumber = 1, // first member in a new organization
                 CreatedAt = DateTimeOffset.UtcNow,
                 UpdatedAt = DateTimeOffset.UtcNow,
             };

@@ -23,5 +23,3 @@ public class DevBootstrapRequest
 
     public string? OrganizationCode { get; set; }
 }
-
-

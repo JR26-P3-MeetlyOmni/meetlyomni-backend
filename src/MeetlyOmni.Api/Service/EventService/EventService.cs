@@ -63,7 +63,8 @@ public class EventService : IEventService
         // Save to database
         var createdEvent = await _eventRepository.CreateAsync(eventEntity, cancellationToken);
 
-        _logger.LogInformation("Event {EventId} created successfully by user {CreatorId}",
+        _logger.LogInformation(
+            "Event {EventId} created successfully by user {CreatorId}",
             createdEvent.EventId, creatorId);
 
         // Map to response

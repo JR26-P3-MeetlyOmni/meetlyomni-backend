@@ -4,6 +4,7 @@
 
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.Json;
 using System.Web;
 
 using MeetlyOmni.Api.Data.Entities;
@@ -120,5 +121,127 @@ public sealed class EmailLinkService : IEmailLinkService
         var isValid = await _userManager.VerifyUserTokenAsync(user, tokenProvider, purpose, normalizedToken);
 
         return isValid;
+    }
+
+    public async Task<string> GenerateInvitationTokenAsync(string email, Guid orgId, CancellationToken ct = default)
+    {
+        // Create a custom token for invitation
+        var tokenData = new
+        {
+            Email = email,
+            OrgId = orgId,
+            ExpiresAt = DateTimeOffset.UtcNow.AddDays(7).ToUnixTimeSeconds(),
+            Type = "Invitation",
+        };
+
+        var jsonData = JsonSerializer.Serialize(tokenData);
+        var dataBytes = Encoding.UTF8.GetBytes(jsonData);
+
+        // Use HMAC for signing
+        var key = _configuration["Jwt:SecretKey"] ?? "default-secret-key";
+        var keyBytes = Encoding.UTF8.GetBytes(key);
+
+        using var hmac = new HMACSHA256(keyBytes);
+        var signature = hmac.ComputeHash(dataBytes);
+
+        var token = Convert.ToBase64String(dataBytes) + "." + Convert.ToBase64String(signature);
+        return WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token));
+    }
+
+    public async Task<bool> ValidateInvitationTokenAsync(string email, string token, CancellationToken ct = default)
+    {
+        try
+        {
+            var decodedToken = Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(token));
+            var parts = decodedToken.Split('.');
+
+            if (parts.Length != 2)
+            {
+                return false;
+            }
+
+            var dataBytes = Convert.FromBase64String(parts[0]);
+            var signature = Convert.FromBase64String(parts[1]);
+
+            // Verify signature
+            var key = _configuration["Jwt:SecretKey"] ?? "default-secret-key";
+            var keyBytes = Encoding.UTF8.GetBytes(key);
+
+            using var hmac = new HMACSHA256(keyBytes);
+            var expectedSignature = hmac.ComputeHash(dataBytes);
+
+            if (!signature.SequenceEqual(expectedSignature))
+            {
+                return false;
+            }
+
+            // Parse token data
+            var jsonData = Encoding.UTF8.GetString(dataBytes);
+            var tokenData = JsonSerializer.Deserialize<JsonElement>(jsonData);
+
+            // Check if token is for invitation
+            if (!tokenData.TryGetProperty("Type", out var type) || type.GetString() != "Invitation")
+            {
+                return false;
+            }
+
+            // Check email match
+            if (!tokenData.TryGetProperty("Email", out var tokenEmail) || tokenEmail.GetString() != email)
+            {
+                return false;
+            }
+
+            // Check expiration
+            if (tokenData.TryGetProperty("ExpiresAt", out var expiresAt))
+            {
+                var expirationTime = DateTimeOffset.FromUnixTimeSeconds(expiresAt.GetInt64());
+                if (expirationTime < DateTimeOffset.UtcNow)
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to validate invitation token for {Email}", email);
+            return false;
+        }
+    }
+
+    public async Task<Guid?> GetOrganizationIdFromInvitationTokenAsync(string token, CancellationToken ct = default)
+    {
+        try
+        {
+            var decodedToken = Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(token));
+            var parts = decodedToken.Split('.');
+
+            if (parts.Length != 2)
+            {
+                return null;
+            }
+
+            var dataBytes = Convert.FromBase64String(parts[0]);
+            var jsonData = Encoding.UTF8.GetString(dataBytes);
+            var tokenData = JsonSerializer.Deserialize<JsonElement>(jsonData);
+
+            if (tokenData.TryGetProperty("OrgId", out var orgId))
+            {
+                return Guid.Parse(orgId.GetString()!);
+            }
+
+            return null;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to get organization ID from invitation token");
+            return null;
+        }
+    }
+
+    public string GetBaseUrl()
+    {
+        return _configuration["Frontend:BaseUrl"] ?? "http://localhost:3000";
     }
 }

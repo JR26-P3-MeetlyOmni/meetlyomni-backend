@@ -12,47 +12,47 @@ namespace MeetlyOmni.Api.Models.Event;
 public class CreateEventResponse
 {
     /// <summary>
-    /// Unique identifier of the created event.
+    /// Gets or sets unique identifier of the created event.
     /// </summary>
     public Guid EventId { get; set; }
 
     /// <summary>
-    /// Organization ID that owns this event.
+    /// Gets or sets organization ID that owns this event.
     /// </summary>
     public Guid OrgId { get; set; }
 
     /// <summary>
-    /// Event title.
+    /// Gets or sets event title.
     /// </summary>
     public string Title { get; set; } = default!;
 
     /// <summary>
-    /// Event description.
+    /// Gets or sets event description.
     /// </summary>
     public string? Description { get; set; }
 
     /// <summary>
-    /// URL of the event cover image.
+    /// Gets or sets uRL of the event cover image.
     /// </summary>
     public string? CoverImageUrl { get; set; }
 
     /// <summary>
-    /// Event location.
+    /// Gets or sets event location.
     /// </summary>
     public string? Location { get; set; }
 
     /// <summary>
-    /// Event language preference.
+    /// Gets or sets event language preference.
     /// </summary>
     public string? Language { get; set; }
 
     /// <summary>
-    /// Current event status.
+    /// Gets or sets current event status.
     /// </summary>
     public EventStatus Status { get; set; }
 
     /// <summary>
-    /// Event start time. Hidden from create response per requirements.
+    /// Gets or sets event start time. Hidden from create response per requirements.
     /// </summary>
     // Removed from create response exposure
     // public DateTimeOffset? StartTime { get; set; }
@@ -69,18 +69,17 @@ public class CreateEventResponse
     public string? CreatedByName { get; set; }
 
     /// <summary>
-    /// Avatar URL of the user who created this event.
+    /// Gets or sets avatar URL of the user who created this event.
     /// </summary>
     public string? CreatedByAvatar { get; set; }
 
     /// <summary>
-    /// Timestamp when the event was created.
+    /// Gets or sets timestamp when the event was created.
     /// </summary>
     public DateTimeOffset CreatedAt { get; set; }
 
     /// <summary>
-    /// Timestamp when the event was last updated.
+    /// Gets or sets timestamp when the event was last updated.
     /// </summary>
     public DateTimeOffset UpdatedAt { get; set; }
 }
-

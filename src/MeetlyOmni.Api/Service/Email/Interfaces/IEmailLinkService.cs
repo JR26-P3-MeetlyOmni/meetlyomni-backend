@@ -17,4 +17,12 @@ public interface IEmailLinkService
     Task<bool> ValidateEmailVerificationTokenAsync(string email, string token, CancellationToken ct = default);
 
     Task<bool> ValidateAndConfirmEmailAsync(string email, string token, CancellationToken ct = default);
+
+    Task<string> GenerateInvitationTokenAsync(string email, Guid orgId, CancellationToken ct = default);
+
+    Task<bool> ValidateInvitationTokenAsync(string email, string token, CancellationToken ct = default);
+
+    Task<Guid?> GetOrganizationIdFromInvitationTokenAsync(string token, CancellationToken ct = default);
+
+    string GetBaseUrl();
 }

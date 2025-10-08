@@ -3,8 +3,10 @@
 // </copyright>
 
 using Asp.Versioning;
+
 using MeetlyOmni.Api.Models.Event;
 using MeetlyOmni.Api.Service.EventService.Interfaces;
+
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -53,5 +55,3 @@ public class EventController : ControllerBase
         return StatusCode(StatusCodes.Status201Created, result);
     }
 }
-
-
