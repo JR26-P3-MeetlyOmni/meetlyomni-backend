@@ -98,6 +98,38 @@ public class EventService : IEventService
     }
 
     /// <inheritdoc />
+    public async Task<GetEventByIdResponse> GetEventByIdAsync(
+        Guid eventId,
+        CancellationToken cancellationToken = default)
+    {
+        var eventEntity = await _eventRepository.GetByIdAsync(eventId, cancellationToken);
+
+        if (eventEntity == null)
+        {
+            throw new EntityNotFoundException("Event", eventId.ToString(), $"Event with ID {eventId} not found.");
+        }
+
+        _logger.LogInformation("Retrieved event {EventId}", eventId);
+
+        return new GetEventByIdResponse
+        {
+            EventId = eventEntity.EventId,
+            OrgId = eventEntity.OrgId,
+            OrganizationName = eventEntity.Organization?.OrganizationName,
+            Title = eventEntity.Title!,
+            Description = eventEntity.Description,
+            CoverImageUrl = eventEntity.CoverImageUrl,
+            Location = eventEntity.Location,
+            Language = eventEntity.Language,
+            Status = eventEntity.Status,
+            StartTime = eventEntity.StartTime,
+            EndTime = eventEntity.EndTime,
+            CreatedAt = eventEntity.CreatedAt,
+            UpdatedAt = eventEntity.UpdatedAt,
+        };
+    }
+
+    /// <inheritdoc />
     public async Task<CreateEventResponse> CreateEventAsync(
         CreateEventRequest request,
         Guid creatorId,
