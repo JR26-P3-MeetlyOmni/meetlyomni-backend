@@ -33,7 +33,7 @@
 		<CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
 	</PropertyGroup>
 
-	<Target Name="CopyApiRuntimeFiles" AfterTargets="Build">
+	<Target Name="CopyApiRuntimeFiles" BeforeTargets="Test">
 		<!-- Get key files in the API project build directory -->
 		<ItemGroup>
 			<ApiDeps Include="..\MeetlyOmni.Api\bin\$(Configuration)\net8.0\*.deps.json" />
