@@ -125,4 +125,28 @@ public class EventController : ControllerBase
         var result = await _eventService.UpdateEventAsync(eventId, request, userId, ct);
         return Ok(result);
     }
+
+    /// <summary>
+    /// Delete an event.
+    /// </summary>
+    /// <param name="eventId">Event ID to delete.</param>
+    /// <param name="ct">Cancellation token.</param>
+    /// <returns>No content on successful deletion.</returns>
+    [HttpDelete("{eventId}")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> DeleteAsync(Guid eventId, CancellationToken ct = default)
+    {
+        var sub = User.FindFirst("sub")?.Value;
+        if (string.IsNullOrWhiteSpace(sub) || !Guid.TryParse(sub, out var userId))
+        {
+            return Unauthorized(new ProblemDetails { Title = "Missing subject (sub) claim" });
+        }
+
+        await _eventService.DeleteEventAsync(eventId, userId, ct);
+        return NoContent();
+    }
 }
