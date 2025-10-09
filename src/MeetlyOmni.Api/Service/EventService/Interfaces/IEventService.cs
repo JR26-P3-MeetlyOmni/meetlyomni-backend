@@ -38,4 +38,14 @@ public interface IEventService
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>Event details.</returns>
     Task<GetEventByIdResponse> GetEventByIdAsync(Guid eventId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Update an existing event.
+    /// </summary>
+    /// <param name="eventId">Event ID to update.</param>
+    /// <param name="request">Update request payload.</param>
+    /// <param name="userId">Authenticated user ID.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>Update response DTO.</returns>
+    Task<UpdateEventResponse> UpdateEventAsync(Guid eventId, UpdateEventRequest request, Guid userId, CancellationToken cancellationToken = default);
 }

@@ -4,11 +4,14 @@
 
 using System.ComponentModel.DataAnnotations;
 
+using MeetlyOmni.Api.Data;
 using MeetlyOmni.Api.Data.Entities;
 using MeetlyOmni.Api.Data.Repository.Interfaces;
 using MeetlyOmni.Api.Filters;
 using MeetlyOmni.Api.Models.Event;
 using MeetlyOmni.Api.Service.EventService.Interfaces;
+
+using Microsoft.EntityFrameworkCore;
 
 namespace MeetlyOmni.Api.Service.EventService;
 
@@ -18,11 +21,16 @@ namespace MeetlyOmni.Api.Service.EventService;
 public class EventService : IEventService
 {
     private readonly IEventRepository _eventRepository;
+    private readonly ApplicationDbContext _context;
     private readonly ILogger<EventService> _logger;
 
-    public EventService(IEventRepository eventRepository, ILogger<EventService> logger)
+    public EventService(
+        IEventRepository eventRepository,
+        ApplicationDbContext context,
+        ILogger<EventService> logger)
     {
         _eventRepository = eventRepository;
+        _context = context;
         _logger = logger;
     }
 
@@ -193,9 +201,138 @@ public class EventService : IEventService
     /// </summary>
     /// <param name="request">The create event request.</param>
     /// <exception cref="ValidationAppException">Thrown when business rules are violated.</exception>
+    public async Task<UpdateEventResponse> UpdateEventAsync(
+        Guid eventId,
+        UpdateEventRequest request,
+        Guid userId,
+        CancellationToken cancellationToken = default)
+    {
+        // Get existing event
+        var existingEvent = await _eventRepository.GetByIdAsync(eventId, cancellationToken);
+
+        if (existingEvent == null)
+        {
+            throw new EntityNotFoundException("Event", eventId.ToString(), $"Event with ID {eventId} not found.");
+        }
+
+        // Validate user has permission to update this event (belongs to same organization)
+        var userOrgId = await GetUserOrganizationIdAsync(userId, cancellationToken);
+        if (existingEvent.OrgId != userOrgId)
+        {
+            throw new UnauthorizedAccessException("You do not have permission to update this event.");
+        }
+
+        // Validate business rules
+        ValidateUpdateEventBusinessRules(request);
+
+        // Apply partial updates (only update fields that are provided)
+        if (!string.IsNullOrWhiteSpace(request.Title))
+        {
+            existingEvent.Title = request.Title;
+        }
+
+        if (request.Description != null)
+        {
+            existingEvent.Description = request.Description;
+        }
+
+        if (request.CoverImageUrl != null)
+        {
+            existingEvent.CoverImageUrl = request.CoverImageUrl;
+        }
+
+        if (request.Location != null)
+        {
+            existingEvent.Location = request.Location;
+        }
+
+        if (request.Language != null)
+        {
+            existingEvent.Language = request.Language;
+        }
+
+        if (request.Status.HasValue)
+        {
+            existingEvent.Status = request.Status.Value;
+        }
+
+        if (request.StartTime.HasValue)
+        {
+            existingEvent.StartTime = request.StartTime.Value;
+        }
+
+        if (request.EndTime.HasValue)
+        {
+            existingEvent.EndTime = request.EndTime.Value;
+        }
+
+        // Update timestamp
+        existingEvent.UpdatedAt = DateTime.UtcNow;
+
+        // Save changes
+        var updatedEvent = await _eventRepository.UpdateAsync(existingEvent, cancellationToken);
+
+        _logger.LogInformation(
+            "Event {EventId} updated by user {UserId}",
+            eventId,
+            userId);
+
+        // Map to response DTO
+        return new UpdateEventResponse
+        {
+            EventId = updatedEvent.EventId,
+            OrgId = updatedEvent.OrgId,
+            Title = updatedEvent.Title!,
+            Description = updatedEvent.Description,
+            CoverImageUrl = updatedEvent.CoverImageUrl,
+            Location = updatedEvent.Location,
+            Language = updatedEvent.Language,
+            Status = updatedEvent.Status,
+            StartTime = updatedEvent.StartTime,
+            EndTime = updatedEvent.EndTime,
+            CreatedAt = updatedEvent.CreatedAt,
+            UpdatedAt = updatedEvent.UpdatedAt,
+        };
+    }
+
+    private async Task<Guid> GetUserOrganizationIdAsync(Guid userId, CancellationToken cancellationToken)
+    {
+        var user = await _context.Users
+            .Where(u => u.Id == userId)
+            .Select(u => new { u.OrgId })
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (user == null)
+        {
+            throw new EntityNotFoundException("User", userId.ToString(), $"User with ID {userId} not found.");
+        }
+
+        return user.OrgId;
+    }
+
     private static void ValidateEventBusinessRules(CreateEventRequest request)
     {
         // Time fields are intentionally hidden from create API; no time validation here
+
+        // Validate language code format (basic validation)
+        if (!string.IsNullOrEmpty(request.Language) && request.Language.Length > 10)
+        {
+            throw new DomainValidationException(
+                new Dictionary<string, string[]> { { "Language", new[] { "Language code cannot exceed 10 characters." } } });
+        }
+    }
+
+    private static void ValidateUpdateEventBusinessRules(UpdateEventRequest request)
+    {
+        // Validate time range if both are provided
+        if (request.StartTime.HasValue && request.EndTime.HasValue)
+        {
+            if (request.EndTime.Value <= request.StartTime.Value)
+            {
+                throw new DomainValidationException(
+                    new Dictionary<string, string[]> { { "EndTime", new[] { "End time must be after start time." } } });
+            }
+        }
 
         // Validate language code format (basic validation)
         if (!string.IsNullOrEmpty(request.Language) && request.Language.Length > 10)
