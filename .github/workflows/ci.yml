@@ -39,13 +39,15 @@ jobs:
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
-          # cache: true
 
       - name: Restore
         run: dotnet restore ${{ env.SOLUTION_PATH }}
 
-      - name: Build
-        run: dotnet build ${{ env.SOLUTION_PATH }} -c Release --no-restore
+      - name: Build API
+        run: dotnet build ${{ env.API_PROJECT }} -c Release --no-restore
+
+      - name: Build Integration Tests
+        run: dotnet build src/MeetlyOmni.IntegrationTests/MeetlyOmni.IntegrationTests.csproj -c Release --no-restore
 
       - name: Unit Test
         run: dotnet test src/MeetlyOmni.Unit.tests/MeetlyOmni.Unit.tests.csproj -c Release --no-build
@@ -73,7 +75,6 @@ jobs:
             sleep 1
           done
 
-
           if ! curl -fsS --max-time 2 http://127.0.0.1:7011/swagger/index.html > /dev/null; then
             echo "API failed to start. Dumping logs:"
             grep -E "Now listening on|Started|fail|error|warn" -i api.log || true
@@ -85,6 +86,9 @@ jobs:
         env:
           BASE_URL: http://localhost:7011
         run: |
-          dotnet test src/MeetlyOmni.IntegrationTests/MeetlyOmni.IntegrationTests.csproj -c Release
+          dotnet test src/MeetlyOmni.IntegrationTests/MeetlyOmni.IntegrationTests.csproj \
+            -c Release \
+            --no-restore \
+            --no-build \
+            --results-directory src/MeetlyOmni.IntegrationTests/bin/Release/net8.0
           kill $(cat api.pid) || true
-
