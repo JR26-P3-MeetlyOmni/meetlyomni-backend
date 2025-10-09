@@ -27,4 +27,22 @@
 		<Using Include="Xunit" />
 	</ItemGroup>
 
+	<PropertyGroup>
+		<!-- Ensure runtime dependency files are preserved and copyable -->
+		<PreserveCompilationContext>true</PreserveCompilationContext>
+		<CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+	</PropertyGroup>
+
+	<Target Name="CopyApiRuntimeFiles" AfterTargets="Build">
+		<!-- Get key files in the API project build directory -->
+		<ItemGroup>
+			<ApiDeps Include="..\MeetlyOmni.Api\bin\$(Configuration)\net8.0\*.deps.json" />
+			<ApiRuntime Include="..\MeetlyOmni.Api\bin\$(Configuration)\net8.0\*.runtimeconfig.json" />
+		</ItemGroup>
+
+		<!-- Copy to the output directory of the test project -->
+		<Copy SourceFiles="@(ApiDeps)" DestinationFolder="$(OutDir)" SkipUnchangedFiles="true" />
+		<Copy SourceFiles="@(ApiRuntime)" DestinationFolder="$(OutDir)" SkipUnchangedFiles="true" />
+	</Target>
+
 </Project>
