@@ -295,6 +295,32 @@ public class EventService : IEventService
         };
     }
 
+    public async Task DeleteEventAsync(Guid eventId, Guid userId, CancellationToken cancellationToken = default)
+    {
+        // Get existing event
+        var existingEvent = await _eventRepository.GetByIdAsync(eventId, cancellationToken);
+
+        if (existingEvent == null)
+        {
+            throw new EntityNotFoundException("Event", eventId.ToString(), $"Event with ID {eventId} not found.");
+        }
+
+        // Validate user has permission to delete this event (belongs to same organization)
+        var userOrgId = await GetUserOrganizationIdAsync(userId, cancellationToken);
+        if (existingEvent.OrgId != userOrgId)
+        {
+            throw new UnauthorizedAccessException("You do not have permission to delete this event.");
+        }
+
+        // Delete the event
+        await _eventRepository.DeleteAsync(existingEvent, cancellationToken);
+
+        _logger.LogInformation(
+            "Event {EventId} deleted by user {UserId}",
+            eventId,
+            userId);
+    }
+
     private async Task<Guid> GetUserOrganizationIdAsync(Guid userId, CancellationToken cancellationToken)
     {
         var user = await _context.Users
