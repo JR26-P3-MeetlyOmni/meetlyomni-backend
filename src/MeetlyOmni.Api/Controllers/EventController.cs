@@ -96,4 +96,33 @@ public class EventController : ControllerBase
         var result = await _eventService.CreateEventAsync(request, userId, userName, ct);
         return StatusCode(StatusCodes.Status201Created, result);
     }
+
+    /// <summary>
+    /// Update an existing event.
+    /// </summary>
+    /// <param name="eventId">Event ID to update.</param>
+    /// <param name="request">Update event payload.</param>
+    /// <param name="ct">Cancellation token.</param>
+    /// <returns>The updated event info.</returns>
+    [HttpPut("{eventId}")]
+    [Authorize]
+    [ProducesResponseType(typeof(UpdateEventResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> UpdateAsync(
+        Guid eventId,
+        [FromBody] UpdateEventRequest request,
+        CancellationToken ct = default)
+    {
+        var sub = User.FindFirst("sub")?.Value;
+        if (string.IsNullOrWhiteSpace(sub) || !Guid.TryParse(sub, out var userId))
+        {
+            return Unauthorized(new ProblemDetails { Title = "Missing subject (sub) claim" });
+        }
+
+        var result = await _eventService.UpdateEventAsync(eventId, request, userId, ct);
+        return Ok(result);
+    }
 }
