@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 
 using MeetlyOmni.Api;
 
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.VisualStudio.TestPlatform.TestHost;
 
@@ -19,10 +20,16 @@ namespace MeetlyOmni.IntegrationTests.Controllers
 
         public MediaControllerReuploadIntegrationTests(WebApplicationFactory<Program> factory)
         {
+            var configuredFactory = factory.WithWebHostBuilder(builder =>
+            {
+                // assume the API project is in a sibling directory named "MeetlyOmni.Api"
+                builder.UseContentRoot(Path.Combine(Directory.GetCurrentDirectory(), "../MeetlyOmni.Api"));
+            });
+
             // ?? BaseAddress??? Invalid request URI
             _client = factory.CreateClient(new WebApplicationFactoryClientOptions
             {
-                BaseAddress = new Uri("http://localhost")
+                BaseAddress = new Uri("http://localhost:7011")
             });
         }
 

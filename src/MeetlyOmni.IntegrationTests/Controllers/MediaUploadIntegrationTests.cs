@@ -13,6 +13,7 @@ using MeetlyOmni.Api;
 using MeetlyOmni.Api.Common.Options;
 using MeetlyOmni.Api.Models.Media;
 
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.VisualStudio.TestPlatform.TestHost;
@@ -32,6 +33,9 @@ namespace MeetlyOmni.IntegrationTests.Controllers
         {
             _factory = factory.WithWebHostBuilder(builder =>
             {
+                // assume the API project is in a sibling directory named "MeetlyOmni.Api"
+                builder.UseContentRoot(Path.Combine(Directory.GetCurrentDirectory(), "../MeetlyOmni.Api"));
+
                 builder.ConfigureServices(services =>
                 {
                     // Mock S3
@@ -49,7 +53,7 @@ namespace MeetlyOmni.IntegrationTests.Controllers
         {
             var client = _factory.CreateClient(new WebApplicationFactoryClientOptions
             {
-                BaseAddress = new Uri("http://localhost")
+                BaseAddress = new Uri("http://localhost:7011")
             });
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", "test-jwt-token");
             return client;
