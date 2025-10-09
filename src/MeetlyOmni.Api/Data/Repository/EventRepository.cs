@@ -81,4 +81,11 @@ public class EventRepository : IEventRepository
         await _context.SaveChangesAsync(cancellationToken);
         return eventEntity;
     }
+
+    /// <inheritdoc />
+    public async Task DeleteAsync(Event eventEntity, CancellationToken cancellationToken = default)
+    {
+        _context.Events.Remove(eventEntity);
+        await _context.SaveChangesAsync(cancellationToken);
+    }
 }

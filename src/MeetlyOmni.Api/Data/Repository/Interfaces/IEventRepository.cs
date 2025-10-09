@@ -64,4 +64,12 @@ public interface IEventRepository
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>The updated event entity.</returns>
     Task<Event> UpdateAsync(Event eventEntity, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Deletes an event from the database.
+    /// </summary>
+    /// <param name="eventEntity">The event entity to delete.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>Task representing the asynchronous operation.</returns>
+    Task DeleteAsync(Event eventEntity, CancellationToken cancellationToken = default);
 }
