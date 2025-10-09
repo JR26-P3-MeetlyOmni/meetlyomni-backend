@@ -56,4 +56,12 @@ public interface IEventRepository
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>True if organization exists, false otherwise.</returns>
     Task<bool> OrganizationExistsAsync(Guid orgId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Updates an existing event in the database.
+    /// </summary>
+    /// <param name="eventEntity">The event entity to update.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>The updated event entity.</returns>
+    Task<Event> UpdateAsync(Event eventEntity, CancellationToken cancellationToken = default);
 }

@@ -73,4 +73,12 @@ public class EventRepository : IEventRepository
         return await _context.Organizations
             .AnyAsync(o => o.OrgId == orgId, cancellationToken);
     }
+
+    /// <inheritdoc />
+    public async Task<Event> UpdateAsync(Event eventEntity, CancellationToken cancellationToken = default)
+    {
+        _context.Events.Update(eventEntity);
+        await _context.SaveChangesAsync(cancellationToken);
+        return eventEntity;
+    }
 }
