@@ -30,9 +30,34 @@ public class EventController : ControllerBase
     }
 
     /// <summary>
+    /// Get paginated list of events for an organization.
+    /// </summary>
+    /// <param name="orgId">Organization ID.</param>
+    /// <param name="pageNumber">Page number (default: 1).</param>
+    /// <param name="pageSize">Page size (default: 20, max: 100).</param>
+    /// <param name="ct">Cancellation token.</param>
+    /// <returns>Paginated event list.</returns>
+    [HttpGet]
+    [Authorize]
+    [ProducesResponseType(typeof(GetEventListResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetListAsync(
+        [FromQuery] Guid orgId,
+        [FromQuery] int pageNumber = 1,
+        [FromQuery] int pageSize = 20,
+        CancellationToken ct = default)
+    {
+        var result = await _eventService.GetEventListAsync(orgId, pageNumber, pageSize, ct);
+        return Ok(result);
+    }
+
+    /// <summary>
     /// Create a new event.
     /// </summary>
     /// <param name="request">Create event payload.</param>
+    /// <param name="ct">Cancellation token.</param>
     /// <returns>The created event info.</returns>
     [HttpPost]
     [Authorize]
