@@ -54,6 +54,23 @@ public class EventController : ControllerBase
     }
 
     /// <summary>
+    /// Get event by ID.
+    /// </summary>
+    /// <param name="eventId">Event ID.</param>
+    /// <param name="ct">Cancellation token.</param>
+    /// <returns>Event details.</returns>
+    [HttpGet("{eventId}")]
+    [Authorize]
+    [ProducesResponseType(typeof(GetEventByIdResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetByIdAsync(Guid eventId, CancellationToken ct = default)
+    {
+        var result = await _eventService.GetEventByIdAsync(eventId, ct);
+        return Ok(result);
+    }
+
+    /// <summary>
     /// Create a new event.
     /// </summary>
     /// <param name="request">Create event payload.</param>
