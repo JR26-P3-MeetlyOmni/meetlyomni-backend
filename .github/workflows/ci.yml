@@ -50,8 +50,8 @@ jobs:
         run: dotnet build src/MeetlyOmni.IntegrationTests/MeetlyOmni.IntegrationTests.csproj -c Release --no-restore
 
       - name: Unit Test
-        run: dotnet test src/MeetlyOmni.Unit.tests/MeetlyOmni.Unit.tests.csproj -c Release --no-build
-
+        run: dotnet test src/MeetlyOmni.Unit.tests/MeetlyOmni.Unit.tests.csproj -c Release --no-restore --no-build
+        
       - name: Wait Testdb ready
         run: |
           for i in {1..60}; do
