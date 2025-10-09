@@ -90,4 +90,3 @@ jobs:
           kill $(cat api.pid) || true
         continue-on-error: true
 
-
