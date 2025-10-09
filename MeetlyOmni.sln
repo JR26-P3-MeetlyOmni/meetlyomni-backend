@@ -7,6 +7,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MeetlyOmni.Api", "src\Meetl
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MeetlyOmni.Unit.tests", "src\MeetlyOmni.Unit.tests\MeetlyOmni.Unit.tests.csproj", "{79715CB9-9826-5597-CDDE-70BF1D63F5CB}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MeetlyOmni.IntegrationTests", "src\MeetlyOmni.IntegrationTests\MeetlyOmni.IntegrationTests.csproj", "{BCE033BF-83BA-CE5B-55A8-E54D2706A184}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +23,10 @@ Global
 		{79715CB9-9826-5597-CDDE-70BF1D63F5CB}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{79715CB9-9826-5597-CDDE-70BF1D63F5CB}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{79715CB9-9826-5597-CDDE-70BF1D63F5CB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BCE033BF-83BA-CE5B-55A8-E54D2706A184}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BCE033BF-83BA-CE5B-55A8-E54D2706A184}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BCE033BF-83BA-CE5B-55A8-E54D2706A184}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BCE033BF-83BA-CE5B-55A8-E54D2706A184}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

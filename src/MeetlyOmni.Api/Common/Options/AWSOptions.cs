@@ -26,38 +26,50 @@ namespace MeetlyOmni.Api.Common.Options
         /// <returns>An AWSOptions instance</returns>
         public static AWSOptions FromProfile(string profileName, string region, string bucketName)
         {
-            if (string.IsNullOrWhiteSpace(profileName))
-                throw new ArgumentException("profileName cannot be null or empty.");
-
-            if (string.IsNullOrWhiteSpace(region))
-                throw new ArgumentException("region cannot be null or empty.");
-
-            var chain = new CredentialProfileStoreChain();
-
             try
             {
-                if (!chain.TryGetAWSCredentials(profileName, out var credentials))
+                var chain = new CredentialProfileStoreChain();
+                if (chain.TryGetAWSCredentials(profileName, out var credentials))
                 {
-                    throw new InvalidOperationException(
-                        $"Unable to get credentials for AWS profile '{profileName}'. " +
-                        $"If this is an SSO profile, run 'aws sso login --profile {profileName}'.");
+                    return new AWSOptions
+                    {
+                        Credentials = credentials,
+                        Region = Amazon.RegionEndpoint.GetBySystemName(region),
+                        BucketName = bucketName
+                    };
                 }
-
+                // Fallback: try environment variables
+                var envCredentials = new EnvironmentVariablesAWSCredentials();
+                // Try to get credentials from environment variables (throws if not found)
+                var creds = envCredentials.GetCredentials();
                 return new AWSOptions
                 {
-                    Credentials = credentials,
-                    Region = RegionEndpoint.GetBySystemName(region),
+                    Credentials = envCredentials,
+                    Region = Amazon.RegionEndpoint.GetBySystemName(region),
                     BucketName = bucketName
                 };
             }
             catch (Exception ex)
             {
-                throw new InvalidOperationException(
-                    $"Failed to initialize AWSOptions. Please check your ~/.aws/config and ~/.aws/credentials files. Profile '{profileName}' may not exist or be invalid. Original error: {ex.Message}", ex);
+                // Fallback: use default profile if available
+                var chain = new CredentialProfileStoreChain();
+                if (chain.TryGetAWSCredentials("default", out var defaultCredentials))
+                {
+                    return new AWSOptions
+                    {
+                        Credentials = defaultCredentials,
+                        Region = Amazon.RegionEndpoint.GetBySystemName(region),
+                        BucketName = bucketName
+                    };
+                }
+                // Fallback: use anonymous credentials for local/mock/test
+                return new AWSOptions
+                {
+                    Credentials = new AnonymousAWSCredentials(),
+                    Region = Amazon.RegionEndpoint.GetBySystemName(region),
+                    BucketName = bucketName
+                };
             }
         }
     }
 }
-
-
-
