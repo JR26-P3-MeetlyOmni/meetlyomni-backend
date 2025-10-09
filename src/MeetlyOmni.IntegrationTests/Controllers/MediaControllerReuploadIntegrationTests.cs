@@ -29,7 +29,7 @@ namespace MeetlyOmni.IntegrationTests.Controllers
             // ?? BaseAddress??? Invalid request URI
             _client = factory.CreateClient(new WebApplicationFactoryClientOptions
             {
-                BaseAddress = new Uri("http://localhost:7011")
+                BaseAddress = new Uri("http://localhost")
             });
         }
 

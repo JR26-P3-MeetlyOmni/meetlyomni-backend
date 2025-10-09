@@ -53,7 +53,7 @@ namespace MeetlyOmni.IntegrationTests.Controllers
         {
             var client = _factory.CreateClient(new WebApplicationFactoryClientOptions
             {
-                BaseAddress = new Uri("http://localhost:7011")
+                BaseAddress = new Uri("http://localhost")
             });
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", "test-jwt-token");
             return client;
