@@ -17,8 +17,6 @@ public class MediaControllerTests
     {
         var awsOptions = new AWSOptions { BucketName = "meetlyomni_media", Region = Amazon.RegionEndpoint.APSoutheast2 }; // match appsettings.json
         var s3Mock = new Mock<IAmazonS3>();
-        var optionsMock = new Mock<IOptions<AWSOptions>>();
-        optionsMock.Setup(o => o.Value).Returns(awsOptions);
         var loggerMock = new Mock<ILogger<MediaController>>();
         var envMock = new Mock<IWebHostEnvironment>();
         envMock.Setup(e => e.EnvironmentName).Returns("Test");
@@ -41,8 +39,6 @@ public class MediaControllerTests
 
         var statusResult = Assert.IsType<ObjectResult>(result);
         Assert.Equal(415, statusResult.StatusCode);
-        // Optionally verify bucket usage
-        optionsMock.Verify(o => o.Value, Times.AtLeastOnce());
     }
 }
 

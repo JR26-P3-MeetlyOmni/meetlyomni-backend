@@ -27,4 +27,19 @@
 		<Using Include="Xunit" />
 	</ItemGroup>
 
+	<PropertyGroup>
+		<PreserveCompilationContext>true</PreserveCompilationContext>
+		<CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+	</PropertyGroup>
+
+	<Target Name="CopyTestHostDeps" BeforeTargets="Test">
+		<ItemGroup>
+			<TestDeps Include="$(OutputPath)*.deps.json" />
+			<TestRuntime Include="$(OutputPath)*.runtimeconfig.json" />
+		</ItemGroup>
+		<Copy SourceFiles="@(TestDeps)" DestinationFolder="$(OutDir)" SkipUnchangedFiles="true" />
+		<Copy SourceFiles="@(TestRuntime)" DestinationFolder="$(OutDir)" SkipUnchangedFiles="true" />
+	</Target>
+
+
 </Project>

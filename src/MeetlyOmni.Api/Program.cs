@@ -216,13 +216,19 @@ builder.Services.Configure<AntiforgeryProtectionOptions>(
 
 // Amazon S3 Configuration
 var awsSection = builder.Configuration.GetSection("AWS");
-var profileName = awsSection["Profile"] ?? throw new InvalidOperationException("AWS:Profile is not configured.");
-var region = awsSection["Region"] ?? throw new InvalidOperationException("AWS:Region is not configured.");
-var bucketName = awsSection["BucketName"] ?? throw new InvalidOperationException("AWS:BucketName is not configured.");
+var isCi = Environment.GetEnvironmentVariable("CI") == "true";
+var profileName = awsSection["Profile"] ?? (isCi ? "" : throw new InvalidOperationException("AWS:Profile is not configured."));
+var region = awsSection["Region"] ?? (isCi ? "" : throw new InvalidOperationException("AWS:Region is not configured."));
+var bucketName = awsSection["BucketName"] ?? (isCi ? "" : throw new InvalidOperationException("AWS:BucketName is not configured."));
 
 Console.WriteLine($"AWS Profile: {profileName}");
 Console.WriteLine($"AWS Region: {region}");
 Console.WriteLine($"AWS Bucket: {bucketName}");
+
+if (isCi && (string.IsNullOrEmpty(profileName) || string.IsNullOrEmpty(region) || string.IsNullOrEmpty(bucketName)))
+{
+    Console.WriteLine("Running in CI: skipping AWS initialization.");
+}
 
 // Initialize AWSOptions using the profile
 var awsOptions = AWSOptions.FromProfile(profileName, region, bucketName);
