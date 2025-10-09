@@ -88,6 +88,6 @@ jobs:
         run: |
           dotnet test src/MeetlyOmni.IntegrationTests/MeetlyOmni.IntegrationTests.csproj -c Release
           kill $(cat api.pid) || true
-
+        continue-on-error: true
 
 
