@@ -7,6 +7,10 @@
 	<UserSecretsId>MeetlyOmni-Api-Dev</UserSecretsId>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <PreserveCompilationContext>true</PreserveCompilationContext>
+  </PropertyGroup>
+
   <ItemGroup>
     <PackageReference Include="Asp.Versioning.Mvc" Version="8.1.0" />
     <PackageReference Include="Asp.Versioning.Mvc.ApiExplorer" Version="8.1.0" />
