@@ -50,11 +50,11 @@ public class UpdateEventRequest
     /// <summary>
     /// Event start time. Optional.
     /// </summary>
-    public DateTime? StartTime { get; set; }
+    public DateTimeOffset? StartTime { get; set; }
 
     /// <summary>
     /// Event end time. Optional.
     /// </summary>
-    public DateTime? EndTime { get; set; }
+    public DateTimeOffset? EndTime { get; set; }
 }
 

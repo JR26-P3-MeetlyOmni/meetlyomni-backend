@@ -54,21 +54,21 @@ public class UpdateEventResponse
     /// <summary>
     /// Event start time.
     /// </summary>
-    public DateTime? StartTime { get; set; }
+    public DateTimeOffset? StartTime { get; set; }
 
     /// <summary>
     /// Event end time.
     /// </summary>
-    public DateTime? EndTime { get; set; }
+    public DateTimeOffset? EndTime { get; set; }
 
     /// <summary>
     /// When the event was created.
     /// </summary>
-    public DateTime CreatedAt { get; set; }
+    public DateTimeOffset CreatedAt { get; set; }
 
     /// <summary>
     /// When the event was last updated.
     /// </summary>
-    public DateTime UpdatedAt { get; set; }
+    public DateTimeOffset UpdatedAt { get; set; }
 }
 

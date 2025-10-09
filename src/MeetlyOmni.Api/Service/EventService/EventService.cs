@@ -267,7 +267,7 @@ public class EventService : IEventService
         }
 
         // Update timestamp
-        existingEvent.UpdatedAt = DateTime.UtcNow;
+        existingEvent.UpdatedAt = DateTimeOffset.UtcNow;
 
         // Save changes
         var updatedEvent = await _eventRepository.UpdateAsync(existingEvent, cancellationToken);
