@@ -86,7 +86,7 @@ jobs:
           BASE_URL: http://localhost:7011
           CI: true
         run: |
-          dotnet test src/MeetlyOmni.IntegrationTests/MeetlyOmni.IntegrationTests.csproj -c Release --no-build --no-restore
+          dotnet test src/MeetlyOmni.IntegrationTests/MeetlyOmni.IntegrationTests.csproj -c Release
           kill $(cat api.pid) || true
 
 
