@@ -30,4 +30,12 @@ public interface IEventService
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>Paginated event list response.</returns>
     Task<GetEventListResponse> GetEventListAsync(Guid orgId, int pageNumber, int pageSize, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Get event by ID.
+    /// </summary>
+    /// <param name="eventId">Event ID.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>Event details.</returns>
+    Task<GetEventByIdResponse> GetEventByIdAsync(Guid eventId, CancellationToken cancellationToken = default);
 }
