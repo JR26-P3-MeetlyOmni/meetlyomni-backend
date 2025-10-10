@@ -2,6 +2,7 @@
 // Copyright (c) MeetlyOmni. All rights reserved.
 // </copyright>
 
+using MeetlyOmni.Api.Data.Entities;
 using MeetlyOmni.Api.Models.Event;
 
 namespace MeetlyOmni.Api.Service.EventService.Interfaces;
@@ -36,6 +37,14 @@ public interface IEventService
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>Event details.</returns>
     Task<GetEventByIdResponse> GetEventByIdAsync(Guid eventId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Get event entity by ID (for authorization checks).
+    /// </summary>
+    /// <param name="eventId">Event ID.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>Event entity.</returns>
+    Task<Event> GetEventEntityByIdAsync(Guid eventId, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Update an existing event.

@@ -27,7 +27,7 @@ public class SameOrganizationAuthorizationHandler<TResource> : AuthorizationHand
         TResource resource)
     {
         // Get user's organization ID from claims
-        var userOrgIdClaim = context.User.FindFirst("orgId")?.Value;
+        var userOrgIdClaim = context.User.FindFirst("org_id")?.Value;
 
         if (string.IsNullOrEmpty(userOrgIdClaim))
         {

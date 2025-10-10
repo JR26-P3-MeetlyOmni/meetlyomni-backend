@@ -128,6 +128,18 @@ public class EventService : IEventService
         };
     }
 
+    public async Task<Event> GetEventEntityByIdAsync(Guid eventId, CancellationToken cancellationToken = default)
+    {
+        var eventEntity = await _eventRepository.GetByIdAsync(eventId, cancellationToken);
+
+        if (eventEntity == null)
+        {
+            throw new EntityNotFoundException("Event", eventId.ToString(), $"Event with ID {eventId} not found.");
+        }
+
+        return eventEntity;
+    }
+
     /// <inheritdoc />
     public async Task<CreateEventResponse> CreateEventAsync(
         CreateEventRequest request,

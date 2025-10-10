@@ -117,8 +117,8 @@ public class EventController : ControllerBase
         [FromBody] UpdateEventRequest request,
         CancellationToken ct = default)
     {
-        // Get existing event first
-        var existingEvent = await _eventService.GetEventByIdAsync(eventId, ct);
+        // Get existing event entity for authorization check
+        var existingEvent = await _eventService.GetEventEntityByIdAsync(eventId, ct);
 
         // Check authorization using policy
         var authResult = await _authorizationService.AuthorizeAsync(
@@ -150,8 +150,8 @@ public class EventController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DeleteAsync(Guid eventId, CancellationToken ct = default)
     {
-        // Get existing event first
-        var existingEvent = await _eventService.GetEventByIdAsync(eventId, ct);
+        // Get existing event entity for authorization check
+        var existingEvent = await _eventService.GetEventEntityByIdAsync(eventId, ct);
 
         // Check authorization using policy
         var authResult = await _authorizationService.AuthorizeAsync(
