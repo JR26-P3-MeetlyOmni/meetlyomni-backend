@@ -4,6 +4,7 @@
 
 using System.ComponentModel.DataAnnotations;
 
+using AutoMapper;
 using MeetlyOmni.Api.Data;
 using MeetlyOmni.Api.Data.Entities;
 using MeetlyOmni.Api.Data.Repository.Interfaces;
@@ -22,15 +23,18 @@ public class EventService : IEventService
 {
     private readonly IEventRepository _eventRepository;
     private readonly ApplicationDbContext _context;
+    private readonly IMapper _mapper;
     private readonly ILogger<EventService> _logger;
 
     public EventService(
         IEventRepository eventRepository,
         ApplicationDbContext context,
+        IMapper mapper,
         ILogger<EventService> logger)
     {
         _eventRepository = eventRepository;
         _context = context;
+        _mapper = mapper;
         _logger = logger;
     }
 
@@ -225,46 +229,8 @@ public class EventService : IEventService
         // Validate business rules
         ValidateUpdateEventBusinessRules(request);
 
-        // Apply partial updates (only update fields that are provided)
-        if (!string.IsNullOrWhiteSpace(request.Title))
-        {
-            existingEvent.Title = request.Title;
-        }
-
-        if (request.Description != null)
-        {
-            existingEvent.Description = request.Description;
-        }
-
-        if (request.CoverImageUrl != null)
-        {
-            existingEvent.CoverImageUrl = request.CoverImageUrl;
-        }
-
-        if (request.Location != null)
-        {
-            existingEvent.Location = request.Location;
-        }
-
-        if (request.Language != null)
-        {
-            existingEvent.Language = request.Language;
-        }
-
-        if (request.Status.HasValue)
-        {
-            existingEvent.Status = request.Status.Value;
-        }
-
-        if (request.StartTime.HasValue)
-        {
-            existingEvent.StartTime = request.StartTime.Value;
-        }
-
-        if (request.EndTime.HasValue)
-        {
-            existingEvent.EndTime = request.EndTime.Value;
-        }
+        // Apply partial updates using AutoMapper (only non-null fields)
+        _mapper.Map(request, existingEvent);
 
         // Update timestamp
         existingEvent.UpdatedAt = DateTimeOffset.UtcNow;
