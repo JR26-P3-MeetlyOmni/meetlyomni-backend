@@ -3,7 +3,7 @@
 // </copyright>
 
 using Asp.Versioning;
-
+using MeetlyOmni.Api.Authorization.Requirements;
 using MeetlyOmni.Api.Models.Event;
 using MeetlyOmni.Api.Service.EventService.Interfaces;
 
@@ -21,11 +21,16 @@ namespace MeetlyOmni.Api.Controllers;
 public class EventController : ControllerBase
 {
     private readonly IEventService _eventService;
+    private readonly IAuthorizationService _authorizationService;
     private readonly ILogger<EventController> _logger;
 
-    public EventController(IEventService eventService, ILogger<EventController> logger)
+    public EventController(
+        IEventService eventService,
+        IAuthorizationService authorizationService,
+        ILogger<EventController> logger)
     {
         _eventService = eventService;
+        _authorizationService = authorizationService;
         _logger = logger;
     }
 
@@ -112,13 +117,22 @@ public class EventController : ControllerBase
         [FromBody] UpdateEventRequest request,
         CancellationToken ct = default)
     {
-        var sub = User.FindFirst("sub")?.Value;
-        if (string.IsNullOrWhiteSpace(sub) || !Guid.TryParse(sub, out var userId))
+        // Get existing event first
+        var existingEvent = await _eventService.GetEventByIdAsync(eventId, ct);
+
+        // Check authorization using policy
+        var authResult = await _authorizationService.AuthorizeAsync(
+            User,
+            existingEvent,
+            new SameOrganizationRequirement());
+
+        if (!authResult.Succeeded)
         {
-            return Unauthorized(new ProblemDetails { Title = "Missing subject (sub) claim" });
+            return Forbid();
         }
 
-        var result = await _eventService.UpdateEventAsync(eventId, request, userId, ct);
+        // Update event (no userId needed for permission check)
+        var result = await _eventService.UpdateEventAsync(eventId, request, ct);
         return Ok(result);
     }
 
@@ -136,13 +150,22 @@ public class EventController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DeleteAsync(Guid eventId, CancellationToken ct = default)
     {
-        var sub = User.FindFirst("sub")?.Value;
-        if (string.IsNullOrWhiteSpace(sub) || !Guid.TryParse(sub, out var userId))
+        // Get existing event first
+        var existingEvent = await _eventService.GetEventByIdAsync(eventId, ct);
+
+        // Check authorization using policy
+        var authResult = await _authorizationService.AuthorizeAsync(
+            User,
+            existingEvent,
+            new SameOrganizationRequirement());
+
+        if (!authResult.Succeeded)
         {
-            return Unauthorized(new ProblemDetails { Title = "Missing subject (sub) claim" });
+            return Forbid();
         }
 
-        await _eventService.DeleteEventAsync(eventId, userId, ct);
+        // Delete event (no userId needed for permission check)
+        await _eventService.DeleteEventAsync(eventId, ct);
         return NoContent();
     }
 }

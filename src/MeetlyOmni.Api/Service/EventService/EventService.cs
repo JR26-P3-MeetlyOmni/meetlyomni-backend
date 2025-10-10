@@ -195,7 +195,6 @@ public class EventService : IEventService
     public async Task<UpdateEventResponse> UpdateEventAsync(
         Guid eventId,
         UpdateEventRequest request,
-        Guid userId,
         CancellationToken cancellationToken = default)
     {
         // Get existing event
@@ -206,12 +205,7 @@ public class EventService : IEventService
             throw new EntityNotFoundException("Event", eventId.ToString(), $"Event with ID {eventId} not found.");
         }
 
-        // Validate user has permission to update this event (belongs to same organization)
-        var userOrgId = await GetUserOrganizationIdAsync(userId, cancellationToken);
-        if (existingEvent.OrgId != userOrgId)
-        {
-            throw new UnauthorizedAccessException("You do not have permission to update this event.");
-        }
+        // Note: Authorization is handled by IAuthorizationService in Controller
 
         // Validate business rules
         ValidateUpdateEventBusinessRules(request);
@@ -226,9 +220,8 @@ public class EventService : IEventService
         var updatedEvent = await _eventRepository.UpdateAsync(existingEvent, cancellationToken);
 
         _logger.LogInformation(
-            "Event {EventId} updated by user {UserId}",
-            eventId,
-            userId);
+            "Event {EventId} updated",
+            eventId);
 
         // Map to response DTO
         return new UpdateEventResponse
@@ -248,7 +241,7 @@ public class EventService : IEventService
         };
     }
 
-    public async Task DeleteEventAsync(Guid eventId, Guid userId, CancellationToken cancellationToken = default)
+    public async Task DeleteEventAsync(Guid eventId, CancellationToken cancellationToken = default)
     {
         // Get existing event
         var existingEvent = await _eventRepository.GetByIdAsync(eventId, cancellationToken);
@@ -258,35 +251,14 @@ public class EventService : IEventService
             throw new EntityNotFoundException("Event", eventId.ToString(), $"Event with ID {eventId} not found.");
         }
 
-        // Validate user has permission to delete this event (belongs to same organization)
-        var userOrgId = await GetUserOrganizationIdAsync(userId, cancellationToken);
-        if (existingEvent.OrgId != userOrgId)
-        {
-            throw new UnauthorizedAccessException("You do not have permission to delete this event.");
-        }
+        // Note: Authorization is handled by IAuthorizationService in Controller
 
         // Delete the event
         await _eventRepository.DeleteAsync(existingEvent, cancellationToken);
 
         _logger.LogInformation(
-            "Event {EventId} deleted by user {UserId}",
-            eventId,
-            userId);
-    }
-
-    private async Task<Guid> GetUserOrganizationIdAsync(Guid userId, CancellationToken cancellationToken)
-    {
-        var user = await _context.Users
-            .Where(u => u.Id == userId)
-            .Select(u => new { u.OrgId })
-            .FirstOrDefaultAsync(cancellationToken);
-
-        if (user == null)
-        {
-            throw new EntityNotFoundException("User", userId.ToString(), $"User with ID {userId} not found.");
-        }
-
-        return user.OrgId;
+            "Event {EventId} deleted",
+            eventId);
     }
 
     private static void ValidateEventBusinessRules(CreateEventRequest request)

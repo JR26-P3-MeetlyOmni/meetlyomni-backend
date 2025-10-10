@@ -42,17 +42,17 @@ public interface IEventService
     /// </summary>
     /// <param name="eventId">Event ID to update.</param>
     /// <param name="request">Update request payload.</param>
-    /// <param name="userId">Authenticated user ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>Update response DTO.</returns>
-    Task<UpdateEventResponse> UpdateEventAsync(Guid eventId, UpdateEventRequest request, Guid userId, CancellationToken cancellationToken = default);
+    /// <remarks>Authorization should be checked before calling this method.</remarks>
+    Task<UpdateEventResponse> UpdateEventAsync(Guid eventId, UpdateEventRequest request, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Delete an event.
     /// </summary>
     /// <param name="eventId">Event ID to delete.</param>
-    /// <param name="userId">Authenticated user ID.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>Task representing the asynchronous operation.</returns>
-    Task DeleteEventAsync(Guid eventId, Guid userId, CancellationToken cancellationToken = default);
+    /// <remarks>Authorization should be checked before calling this method.</remarks>
+    Task DeleteEventAsync(Guid eventId, CancellationToken cancellationToken = default);
 }

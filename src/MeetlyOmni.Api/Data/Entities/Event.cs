@@ -2,10 +2,12 @@
 // Copyright (c) MeetlyOmni. All rights reserved.
 // </copyright>
 
+using MeetlyOmni.Api.Authorization;
 using MeetlyOmni.Api.Common.Enums.Event;
 
 namespace MeetlyOmni.Api.Data.Entities;
-public class Event
+
+public class Event : IOrganizationResource
 {
     public Guid EventId { get; set; }
 
