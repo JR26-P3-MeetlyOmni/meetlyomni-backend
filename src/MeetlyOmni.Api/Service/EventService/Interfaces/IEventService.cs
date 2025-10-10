@@ -24,12 +24,10 @@ public interface IEventService
     /// <summary>
     /// Get paginated list of events for an organization.
     /// </summary>
-    /// <param name="orgId">Organization ID.</param>
-    /// <param name="pageNumber">Page number (1-based).</param>
-    /// <param name="pageSize">Number of items per page.</param>
+    /// <param name="request">Get event list request with pagination parameters.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>Paginated event list response.</returns>
-    Task<GetEventListResponse> GetEventListAsync(Guid orgId, int pageNumber, int pageSize, CancellationToken cancellationToken = default);
+    Task<GetEventListResponse> GetEventListAsync(GetEventListRequest request, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Get event by ID.

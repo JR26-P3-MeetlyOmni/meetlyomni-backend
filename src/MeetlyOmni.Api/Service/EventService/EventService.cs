@@ -40,40 +40,27 @@ public class EventService : IEventService
 
     /// <inheritdoc />
     public async Task<GetEventListResponse> GetEventListAsync(
-        Guid orgId,
-        int pageNumber,
-        int pageSize,
+        GetEventListRequest request,
         CancellationToken cancellationToken = default)
     {
         // Validate organization exists
-        var organizationExists = await _eventRepository.OrganizationExistsAsync(orgId, cancellationToken);
+        var organizationExists = await _eventRepository.OrganizationExistsAsync(request.OrgId, cancellationToken);
         if (!organizationExists)
         {
-            throw new EntityNotFoundException("Organization", orgId.ToString(), $"Organization with ID {orgId} not found.");
+            throw new EntityNotFoundException("Organization", request.OrgId.ToString(), $"Organization with ID {request.OrgId} not found.");
         }
 
-        // Validate pagination parameters
-        if (pageNumber < 1)
-        {
-            throw new DomainValidationException(
-                new Dictionary<string, string[]> { { "PageNumber", new[] { "Page number must be greater than 0." } } });
-        }
-
-        if (pageSize < 1 || pageSize > 100)
-        {
-            throw new DomainValidationException(
-                new Dictionary<string, string[]> { { "PageSize", new[] { "Page size must be between 1 and 100." } } });
-        }
+        // Note: Pagination parameters are validated by DataAnnotations in the DTO
 
         // Get paginated events
         var (events, totalCount) = await _eventRepository.GetEventsByOrganizationWithPaginationAsync(
-            orgId,
-            pageNumber,
-            pageSize,
+            request.OrgId,
+            request.PageNumber,
+            request.PageSize,
             cancellationToken);
 
         // Calculate total pages
-        var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
+        var totalPages = (int)Math.Ceiling(totalCount / (double)request.PageSize);
 
         // Map to response DTOs
         var eventDtos = events.Select(e => new EventListItemDto
@@ -95,16 +82,16 @@ public class EventService : IEventService
         _logger.LogInformation(
             "Retrieved {Count} events for organization {OrgId} (Page {PageNumber}/{TotalPages})",
             eventDtos.Count,
-            orgId,
-            pageNumber,
+            request.OrgId,
+            request.PageNumber,
             totalPages);
 
         return new GetEventListResponse
         {
             Events = eventDtos,
             TotalCount = totalCount,
-            PageNumber = pageNumber,
-            PageSize = pageSize,
+            PageNumber = request.PageNumber,
+            PageSize = request.PageSize,
             TotalPages = totalPages,
         };
     }
