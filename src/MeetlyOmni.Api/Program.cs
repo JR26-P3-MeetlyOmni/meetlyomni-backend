@@ -126,7 +126,7 @@ builder.Services.AddAuthorization(options =>
 });
 
 // Register authorization handlers
-builder.Services.AddScoped<Microsoft.AspNetCore.Authorization.IAuthorizationHandler, 
+builder.Services.AddScoped<Microsoft.AspNetCore.Authorization.IAuthorizationHandler,
     MeetlyOmni.Api.Authorization.Handlers.SameOrganizationAuthorizationHandler<MeetlyOmni.Api.Data.Entities.Event>>();
 
 // ---- Repositories ----
@@ -177,8 +177,12 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
 builder.Services.AddAntiforgery(options =>
 {
     options.HeaderName = "X-XSRF-TOKEN";
-    options.Cookie.SecurePolicy = builder.Environment.IsDevelopment() ? CookieSecurePolicy.None : CookieSecurePolicy.Always;
-    options.Cookie.SameSite = SameSiteMode.Lax;
+    options.Cookie.SecurePolicy = builder.Environment.IsDevelopment() 
+        ? CookieSecurePolicy.None 
+        : CookieSecurePolicy.Always;
+    options.Cookie.SameSite = builder.Environment.IsDevelopment() 
+        ? SameSiteMode.Lax 
+        : SameSiteMode.None;
     options.Cookie.IsEssential = true;
     options.Cookie.Path = AuthCookieExtensions.CookiePaths.Root;
 
