@@ -26,6 +26,9 @@ using MeetlyOmni.Api.Service.Email;
 using MeetlyOmni.Api.Service.Email.Interfaces;
 using MeetlyOmni.Api.Service.EventService;
 using MeetlyOmni.Api.Service.EventService.Interfaces;
+using MeetlyOmni.Api.Service.Invitation;
+using MeetlyOmni.Api.Service.Invitation.Interfaces;
+
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
@@ -131,6 +134,7 @@ builder.Services.AddScoped<ILogoutService, LogoutService>();
 builder.Services.AddScoped<ISignUpService, SignUpService>();
 builder.Services.AddScoped<IResetPasswordService, ResetPasswordService>();
 builder.Services.AddScoped<IEventService, EventService>();
+builder.Services.AddScoped<IInvitationService, InvitationService>();
 
 // ---- Common Services ----
 builder.Services.AddScoped<IClientInfoService, ClientInfoService>();

@@ -8,4 +8,5 @@ public enum EmailType
 {
     ResetPassword = 0,
     VerifyEmail = 1,
+    MemberInvitation = 2,
 }

@@ -11,4 +11,6 @@ public interface IOrganizationRepository
     Task<Organization> AddOrganizationAsync(Organization organization);
 
     Task<bool> OrganizationCodeExistsAsync(string organizationCode);
+
+    Task<Organization?> GetByIdAsync(Guid orgId, CancellationToken ct = default);
 }

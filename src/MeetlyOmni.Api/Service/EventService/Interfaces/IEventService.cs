@@ -21,5 +21,3 @@ public interface IEventService
     /// <returns>Create response DTO.</returns>
     Task<CreateEventResponse> CreateEventAsync(CreateEventRequest request, Guid creatorId, string creatorName, CancellationToken cancellationToken = default);
 }
-
-
