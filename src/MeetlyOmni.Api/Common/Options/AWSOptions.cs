@@ -8,22 +8,24 @@ using Amazon;
 using Amazon.Runtime;
 using Amazon.Runtime.CredentialManagement;
 
-namespace MeetlyOmni.Api.Common.Options
-{
+namespace MeetlyOmni.Api.Common.Options;
+
 public class AWSOptions
 {
     public AWSCredentials Credentials { get; set; }
+
     public RegionEndpoint Region { get; set; }
+
     public string BucketName { get; set; }
 
     /// <summary>
     /// Initialize AWSOptions from a specified AWS profile.
     /// Supports regular IAM profiles and SSO profiles.
     /// </summary>
-        /// <param name="profileName">The AWS profile name</param>
-        /// <param name="region">The AWS region, e.g. "ap-southeast-2"</param>
-        /// <param name="bucketName">The S3 bucket name</param>
-        /// <returns>An AWSOptions instance</returns>
+    /// <param name="profileName">The AWS profile name.</param>
+    /// <param name="region">The AWS region, e.g. "ap-southeast-2".</param>
+    /// <param name="bucketName">The S3 bucket name.</param>
+    /// <returns>An AWSOptions instance.</returns>
     public static AWSOptions FromProfile(string profileName, string region, string bucketName)
     {
         try
@@ -35,7 +37,7 @@ public class AWSOptions
                 {
                     Credentials = credentials,
                     Region = Amazon.RegionEndpoint.GetBySystemName(region),
-                        BucketName = bucketName
+                    BucketName = bucketName,
                 };
             }
 
@@ -48,7 +50,7 @@ public class AWSOptions
             {
                 Credentials = envCredentials,
                 Region = Amazon.RegionEndpoint.GetBySystemName(region),
-                    BucketName = bucketName
+                BucketName = bucketName,
             };
         }
         catch (Exception ex)
@@ -61,7 +63,7 @@ public class AWSOptions
                 {
                     Credentials = defaultCredentials,
                     Region = Amazon.RegionEndpoint.GetBySystemName(region),
-                        BucketName = bucketName
+                    BucketName = bucketName,
                 };
             }
 
@@ -70,9 +72,8 @@ public class AWSOptions
             {
                 Credentials = new AnonymousAWSCredentials(),
                 Region = Amazon.RegionEndpoint.GetBySystemName(region),
-                    BucketName = bucketName
+                BucketName = bucketName,
             };
         }
     }
-}
 }
