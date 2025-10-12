@@ -1,16 +1,20 @@
-using Microsoft.AspNetCore.Http;
+// <copyright file="MediaUploadRequest.cs" company="MeetlyOmni">
+// Copyright (c) MeetlyOmni. All rights reserved.
+// </copyright>
+
 using System.ComponentModel.DataAnnotations;
 
-namespace MeetlyOmni.Api.Controllers.Requests
+using Microsoft.AspNetCore.Http;
+
+namespace MeetlyOmni.Api.Controllers.Requests;
+
+public class MediaUploadRequest
 {
-    public class MediaUploadRequest
-    {
-        [Required]
-        public IFormFile File { get; set; } = default!;
+    [Required]
+    public IFormFile File { get; set; } = default!;
 
-        [Required]
-        public Guid OrgId { get; set; }
+    [Required]
+    public Guid OrgId { get; set; }
 
-        public string? Folder { get; set; }
-    }
+    public string? Folder { get; set; }
 }

@@ -1,11 +1,19 @@
+// <copyright file="MediaController.cs" company="MeetlyOmni">
+// Copyright (c) MeetlyOmni. All rights reserved.
+// </copyright>
+
 using System.Security.Claims;
+
 using Amazon.S3;
 using Amazon.S3.Model;
+
 using MeetlyOmni.Api.Common.Options;
 using MeetlyOmni.Api.Controllers.Requests;
+
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
+
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Formats;
 using SixLabors.ImageSharp.PixelFormats;
@@ -133,8 +141,7 @@ public class MediaController : ControllerBase
             key,
             file.Length,
             HttpContext.Connection.RemoteIpAddress,
-            Request.Headers["User-Agent"].ToString()
-);
+            Request.Headers["User-Agent"].ToString());
 
         return Created(string.Empty, new
         {
@@ -156,27 +163,46 @@ public class MediaController : ControllerBase
         var orgId = request.OrgId;
 
         if (file == null || file.Length == 0)
+        {
             return BadRequest("File is required.");
+        }
+
         if (string.IsNullOrWhiteSpace(key))
+        {
             return BadRequest("key is required.");
+        }
+
         if (orgId == Guid.Empty)
+        {
             return BadRequest("orgId is required.");
+        }
+
         if (file.Length > _maxFileSize)
+        {
             return StatusCode(413, "File too large.");
+        }
+
         if (!_allowedMimeTypes.Contains(file.ContentType))
+        {
             return StatusCode(415, "Unsupported media type.");
+        }
 
         // file content validation
         using var img = await Image.LoadAsync(file.OpenReadStream());
         if (img.Width > 6000 || img.Height > 6000)
+        {
             return BadRequest("Image dimensions too large.");
+        }
+
         img.Metadata.ExifProfile = null;
 
         // authorization: ensure the key belongs to the specified org
         var envName = _env.EnvironmentName.ToLowerInvariant();
         var orgKeyPrefix = $"{envName}/{orgId}/";
         if (!key.StartsWith(orgKeyPrefix, StringComparison.OrdinalIgnoreCase))
+        {
             return Forbid("Key does not belong to the specified org.");
+        }
 
         // delete the old file if exists
         try
@@ -249,8 +275,7 @@ public class MediaController : ControllerBase
             response.ETag,
             file.Length,
             HttpContext.Connection.RemoteIpAddress,
-            Request.Headers["User-Agent"].ToString()
-        );
+            Request.Headers["User-Agent"].ToString());
 
         return Ok(new
         {

@@ -1,13 +1,17 @@
 ﻿using Amazon.S3;
 using Amazon.S3.Model;
+
 using MeetlyOmni.Api.Common.Options;
 using MeetlyOmni.Api.Controllers.Requests;
+
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+
 using Moq;
+
 using Xunit;
 
 public class MediaControllerTests

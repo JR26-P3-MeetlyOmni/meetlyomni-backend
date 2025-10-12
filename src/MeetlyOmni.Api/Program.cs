@@ -3,13 +3,16 @@
 // </copyright>
 
 using System.IdentityModel.Tokens.Jwt;
+
 using Amazon;
 using Amazon.Runtime;
 using Amazon.Runtime.CredentialManagement;
 using Amazon.S3;
 using Amazon.SimpleEmailV2;
+
 using Asp.Versioning;
 using Asp.Versioning.ApiExplorer;
+
 using MeetlyOmni.Api.Common.Extensions;
 using MeetlyOmni.Api.Common.Options;
 using MeetlyOmni.Api.Data;
@@ -31,6 +34,7 @@ using MeetlyOmni.Api.Service.Invitation.Interfaces;
 
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+
 using Npgsql;
 
 var builder = default(WebApplicationBuilder);
@@ -165,6 +169,16 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
     options.KnownProxies.Clear();
 });
 
+// ForwardedHeaders configuration for ALB HTTPS termination
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedFor |
+                               Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedProto |
+                               Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedHost;
+    options.KnownNetworks.Clear();
+    options.KnownProxies.Clear();
+});
+
 // Antiforgery Configuration for CSRF protection
 builder.Services.AddAntiforgery(options =>
 {
@@ -221,9 +235,9 @@ builder.Services.Configure<AntiforgeryProtectionOptions>(
 // Amazon S3 Configuration
 var awsSection = builder.Configuration.GetSection("AWS");
 var isCi = Environment.GetEnvironmentVariable("CI") == "true";
-var profileName = awsSection["Profile"] ?? (isCi ? "" : throw new InvalidOperationException("AWS:Profile is not configured."));
-var region = awsSection["Region"] ?? (isCi ? "" : throw new InvalidOperationException("AWS:Region is not configured."));
-var bucketName = awsSection["BucketName"] ?? (isCi ? "" : throw new InvalidOperationException("AWS:BucketName is not configured."));
+var profileName = awsSection["Profile"] ?? (isCi ? string.Empty : throw new InvalidOperationException("AWS:Profile is not configured."));
+var region = awsSection["Region"] ?? (isCi ? string.Empty : throw new InvalidOperationException("AWS:Region is not configured."));
+var bucketName = awsSection["BucketName"] ?? (isCi ? string.Empty : throw new InvalidOperationException("AWS:BucketName is not configured."));
 
 Console.WriteLine($"AWS Profile: {profileName}");
 Console.WriteLine($"AWS Region: {region}");
