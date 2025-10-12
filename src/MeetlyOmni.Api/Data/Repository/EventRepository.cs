@@ -47,9 +47,45 @@ public class EventRepository : IEventRepository
     }
 
     /// <inheritdoc />
+    public async Task<(List<Event> Events, int TotalCount)> GetEventsByOrganizationWithPaginationAsync(
+        Guid orgId,
+        int pageNumber,
+        int pageSize,
+        CancellationToken cancellationToken = default)
+    {
+        var query = _context.Events
+            .Where(e => e.OrgId == orgId);
+
+        var totalCount = await query.CountAsync(cancellationToken);
+
+        var events = await query
+            .OrderByDescending(e => e.CreatedAt)
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync(cancellationToken);
+
+        return (events, totalCount);
+    }
+
+    /// <inheritdoc />
     public async Task<bool> OrganizationExistsAsync(Guid orgId, CancellationToken cancellationToken = default)
     {
         return await _context.Organizations
             .AnyAsync(o => o.OrgId == orgId, cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public async Task<Event> UpdateAsync(Event eventEntity, CancellationToken cancellationToken = default)
+    {
+        _context.Events.Update(eventEntity);
+        await _context.SaveChangesAsync(cancellationToken);
+        return eventEntity;
+    }
+
+    /// <inheritdoc />
+    public async Task DeleteAsync(Event eventEntity, CancellationToken cancellationToken = default)
+    {
+        _context.Events.Remove(eventEntity);
+        await _context.SaveChangesAsync(cancellationToken);
     }
 }
