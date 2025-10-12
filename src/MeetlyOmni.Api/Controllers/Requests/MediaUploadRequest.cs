@@ -3,14 +3,14 @@ using System.ComponentModel.DataAnnotations;
 
 namespace MeetlyOmni.Api.Controllers.Requests
 {
-    public class MediaUploadRequest
-    {
-        [Required]
-        public IFormFile File { get; set; } = default!;
+public class MediaUploadRequest
+{
+    [Required]
+    public IFormFile File { get; set; } = default!;
 
-        [Required]
-        public Guid OrgId { get; set; }
+    [Required]
+    public Guid OrgId { get; set; }
 
-        public string? Folder { get; set; }
-    }
+    public string? Folder { get; set; }
+}
 }
