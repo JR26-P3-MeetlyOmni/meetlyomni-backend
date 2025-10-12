@@ -141,8 +141,7 @@ public class MediaController : ControllerBase
             key,
             file.Length,
             HttpContext.Connection.RemoteIpAddress,
-            Request.Headers["User-Agent"].ToString()
-);
+            Request.Headers["User-Agent"].ToString());
 
         return Created(string.Empty, new
         {
@@ -276,8 +275,7 @@ public class MediaController : ControllerBase
             response.ETag,
             file.Length,
             HttpContext.Connection.RemoteIpAddress,
-            Request.Headers["User-Agent"].ToString()
-        );
+            Request.Headers["User-Agent"].ToString());
 
         return Ok(new
         {
