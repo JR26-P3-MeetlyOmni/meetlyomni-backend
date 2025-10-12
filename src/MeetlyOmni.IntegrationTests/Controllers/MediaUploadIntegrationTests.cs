@@ -143,5 +143,4 @@ public class MediaUploadIntegrationTests : IClassFixture<WebApplicationFactory<P
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 }
-}
 

@@ -128,5 +128,4 @@ public class MediaControllerReuploadIntegrationTests : IClassFixture<WebApplicat
         Assert.Equal((HttpStatusCode)415, response.StatusCode);
     }
 }
-}
 
