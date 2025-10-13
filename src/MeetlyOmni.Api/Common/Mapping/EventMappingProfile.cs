@@ -3,6 +3,7 @@
 // </copyright>
 
 using AutoMapper;
+
 using MeetlyOmni.Api.Data.Entities;
 using MeetlyOmni.Api.Models.Event;
 
@@ -20,4 +21,3 @@ public class EventMappingProfile : Profile
             .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
     }
 }
-

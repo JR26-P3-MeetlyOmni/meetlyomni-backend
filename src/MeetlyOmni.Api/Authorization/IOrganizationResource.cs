@@ -14,4 +14,3 @@ public interface IOrganizationResource
     /// </summary>
     Guid OrgId { get; }
 }
-

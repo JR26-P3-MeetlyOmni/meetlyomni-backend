@@ -102,4 +102,3 @@ public class GetEventListResponse
     /// </summary>
     public int TotalPages { get; set; }
 }
-
