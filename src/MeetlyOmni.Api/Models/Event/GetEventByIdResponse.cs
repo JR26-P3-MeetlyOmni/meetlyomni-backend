@@ -76,4 +76,3 @@ public class GetEventByIdResponse
     /// </summary>
     public DateTimeOffset UpdatedAt { get; set; }
 }
-

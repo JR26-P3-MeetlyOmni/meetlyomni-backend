@@ -5,6 +5,7 @@
 using System.ComponentModel.DataAnnotations;
 
 using AutoMapper;
+
 using MeetlyOmni.Api.Data;
 using MeetlyOmni.Api.Data.Entities;
 using MeetlyOmni.Api.Data.Repository.Interfaces;
@@ -204,6 +205,7 @@ public class EventService : IEventService
     /// </summary>
     /// <param name="request">The create event request.</param>
     /// <exception cref="ValidationAppException">Thrown when business rules are violated.</exception>
+    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous operation.</placeholder></returns>
     public async Task<UpdateEventResponse> UpdateEventAsync(
         Guid eventId,
         UpdateEventRequest request,

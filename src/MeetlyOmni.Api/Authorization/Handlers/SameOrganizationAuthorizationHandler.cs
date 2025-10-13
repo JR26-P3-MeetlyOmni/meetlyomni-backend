@@ -3,6 +3,7 @@
 // </copyright>
 
 using MeetlyOmni.Api.Authorization.Requirements;
+
 using Microsoft.AspNetCore.Authorization;
 
 namespace MeetlyOmni.Api.Authorization.Handlers;
@@ -62,4 +63,3 @@ public class SameOrganizationAuthorizationHandler<TResource> : AuthorizationHand
         return Task.CompletedTask;
     }
 }
-

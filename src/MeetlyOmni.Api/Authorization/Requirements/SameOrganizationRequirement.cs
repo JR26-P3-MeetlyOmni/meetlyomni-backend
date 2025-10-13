@@ -13,4 +13,3 @@ public class SameOrganizationRequirement : IAuthorizationRequirement
 {
     // No additional properties needed
 }
-
