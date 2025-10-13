@@ -205,7 +205,7 @@ public class EventService : IEventService
     /// </summary>
     /// <param name="request">The create event request.</param>
     /// <exception cref="ValidationAppException">Thrown when business rules are violated.</exception>
-    /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
+    /// <returns><placeholder>A <see cref="Task"/> representing the asynchronous operation.</placeholder></returns>
     public async Task<UpdateEventResponse> UpdateEventAsync(
         Guid eventId,
         UpdateEventRequest request,
