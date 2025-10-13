@@ -1,4 +1,4 @@
-// <git copyright file="AuthController.cs" company="MeetlyOmni">
+// <copyright file="AuthController.cs" company="MeetlyOmni">
 // Copyright (c) MeetlyOmni. All rights reserved.
 // </copyright>
 

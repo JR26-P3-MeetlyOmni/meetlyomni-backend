@@ -12,21 +12,20 @@ namespace MeetlyOmni.Api.Models.Event;
 public class GetEventListRequest
 {
     /// <summary>
-    /// Organization ID to filter events.
+    /// Gets or sets organization ID to filter events.
     /// </summary>
     [Required(ErrorMessage = "Organization ID is required.")]
     public Guid OrgId { get; set; }
 
     /// <summary>
-    /// Page number (1-based). Default is 1.
+    /// Gets or sets page number (1-based). Default is 1.
     /// </summary>
     [Range(1, int.MaxValue, ErrorMessage = "Page number must be greater than 0.")]
     public int PageNumber { get; set; } = 1;
 
     /// <summary>
-    /// Number of items per page. Default is 20, max is 100.
+    /// Gets or sets number of items per page. Default is 20, max is 100.
     /// </summary>
     [Range(1, 100, ErrorMessage = "Page size must be between 1 and 100.")]
     public int PageSize { get; set; } = 20;
 }
-

@@ -3,6 +3,7 @@
 // </copyright>
 
 using Asp.Versioning;
+
 using MeetlyOmni.Api.Authorization.Requirements;
 using MeetlyOmni.Api.Models.Event;
 using MeetlyOmni.Api.Service.EventService.Interfaces;
