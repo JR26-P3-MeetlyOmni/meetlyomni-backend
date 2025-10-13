@@ -7,12 +7,20 @@
 	<UserSecretsId>MeetlyOmni-Api-Dev</UserSecretsId>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <PreserveCompilationContext>true</PreserveCompilationContext>
+	<CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+  </PropertyGroup>
+
   <ItemGroup>
     <PackageReference Include="Asp.Versioning.Mvc" Version="8.1.0" />
     <PackageReference Include="Asp.Versioning.Mvc.ApiExplorer" Version="8.1.0" />
     <PackageReference Include="AspNetCore.HealthChecks.NpgSql" Version="8.0.0" />
-    <PackageReference Include="AWSSDK.Core" Version="4.0.0.28" />
+    <PackageReference Include="AWSSDK.Core" Version="4.0.0.32" />
     <PackageReference Include="AWSSDK.SimpleEmailV2" Version="4.0.5.2" />
+    <PackageReference Include="AWSSDK.S3" Version="4.0.7.4" />
+    <PackageReference Include="AWSSDK.SSO" Version="4.0.1.6" />
+    <PackageReference Include="AWSSDK.SSOOIDC" Version="4.0.2.3" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.10" />
     <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="8.0.10" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.10" />
@@ -28,6 +36,7 @@
     <PackageReference Include="Microsoft.IdentityModel.Tokens" Version="8.14.0" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="8.0.10" />
     <PackageReference Include="AutoMapper" Version="13.0.1" />
+    <PackageReference Include="SixLabors.ImageSharp" Version="3.1.11" />
     <PackageReference Include="StyleCop.Analyzers" Version="1.1.118">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -41,7 +50,6 @@
   </ItemGroup>	
 
   <ItemGroup>
-    <Folder Include="Controllers\" />
     <Folder Include="Common\Constants\" />
     <Folder Include="Data\Repository\" />
     <Folder Include="Middlewares\" />

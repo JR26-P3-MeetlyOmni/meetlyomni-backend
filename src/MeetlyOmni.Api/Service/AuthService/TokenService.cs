@@ -305,4 +305,15 @@ public class TokenService : ITokenService
         var existingToken = await _unitOfWork.RefreshTokens.FindByFamilyIdAsync(familyId, ct);
         return existingToken?.FamilyExpiresAt ?? DateTimeOffset.UtcNow.AddMinutes(_jwtOptions.RefreshTokenExpirationMinutes);
     }
+
+    public async Task<LoginResponse> GenerateTokensAsync(Member user, CancellationToken ct = default)
+    {
+        var accessTokenExpiresAt = DateTimeOffset.UtcNow.AddMinutes(_jwtOptions.AccessTokenExpirationMinutes);
+
+        return new LoginResponse
+        {
+            ExpiresAt = accessTokenExpiresAt,
+            TokenType = "Bearer",
+        };
+    }
 }

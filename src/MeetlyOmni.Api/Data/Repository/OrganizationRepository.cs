@@ -28,4 +28,10 @@ public class OrganizationRepository : IOrganizationRepository
         return await this._context.Organizations
             .AnyAsync(o => o.OrganizationCode == organizationCode);
     }
+
+    public async Task<Entities.Organization?> GetByIdAsync(Guid orgId, CancellationToken ct = default)
+    {
+        return await this._context.Organizations
+            .FirstOrDefaultAsync(o => o.OrgId == orgId, ct);
+    }
 }

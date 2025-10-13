@@ -12,13 +12,34 @@
 	<ItemGroup>
 		<PackageReference Include="Asp.Versioning.Mvc" Version="8.1.0" />
 		<PackageReference Include="coverlet.collector" Version="6.0.0" />
+		<PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="8.0.0" />
 		<PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
+		<PackageReference Include="Moq" Version="4.20.69" />
 		<PackageReference Include="xunit" Version="2.5.3" />
 		<PackageReference Include="xunit.runner.visualstudio" Version="2.5.3" />
 	</ItemGroup>
 
 	<ItemGroup>
+	  <ProjectReference Include="..\MeetlyOmni.Api\MeetlyOmni.Api.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
 		<Using Include="Xunit" />
 	</ItemGroup>
+
+	<PropertyGroup>
+		<PreserveCompilationContext>true</PreserveCompilationContext>
+		<CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+	</PropertyGroup>
+
+	<Target Name="CopyTestHostDeps" BeforeTargets="Test">
+		<ItemGroup>
+			<TestDeps Include="$(OutputPath)*.deps.json" />
+			<TestRuntime Include="$(OutputPath)*.runtimeconfig.json" />
+		</ItemGroup>
+		<Copy SourceFiles="@(TestDeps)" DestinationFolder="$(OutDir)" SkipUnchangedFiles="true" />
+		<Copy SourceFiles="@(TestRuntime)" DestinationFolder="$(OutDir)" SkipUnchangedFiles="true" />
+	</Target>
+
 
 </Project>

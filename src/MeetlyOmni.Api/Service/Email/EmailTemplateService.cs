@@ -23,6 +23,7 @@ public sealed class EmailTemplateService : IEmailTemplateService
         {
             EmailType.ResetPassword => BuildResetPassword(to, data),
             EmailType.VerifyEmail => BuildVerifyEmail(to, data),
+            EmailType.MemberInvitation => BuildMemberInvitation(to, data),
             _ => throw new NotSupportedException(type.ToString())
         };
     }
@@ -74,6 +75,40 @@ If you didn't request this, ignore this email.
 Please open the link to verify: {link}
 
 This link will expire soon.
+{_fromName}";
+
+        return new EmailMessage { To = to, Subject = subject, HtmlBody = html, TextBody = text };
+    }
+
+    private EmailMessage BuildMemberInvitation(string to, IDictionary<string, string> d)
+    {
+        var organizationName = d["organizationName"];
+        var invitationLink = d["invitationLink"];
+        var message = d["message"];
+
+        var subject = $"You're invited to join {organizationName} on MeetlyOmni";
+        var html = $@"
+            <div style=""font-family:Segoe UI,Arial,sans-serif;font-size:14px"">
+              <h2>You're invited to join {organizationName}!</h2>
+              <p>You've been invited to join <strong>{organizationName}</strong> on MeetlyOmni.</p>
+              {(string.IsNullOrEmpty(message) ? string.Empty : $"<p><em>Message: {message}</em></p>")}
+              <p>Click the button below to accept the invitation and create your account:</p>
+              <p><a href=""{invitationLink}""
+                    style=""background:#4f46e5;color:#fff;padding:10px 16px;border-radius:6px;text-decoration:none;"">
+                    Accept Invitation
+                  </a></p>
+              <p>This invitation will expire in 7 days for security reasons.</p>
+              <hr/><p style=""color:#777"">{_fromName}</p>
+            </div>";
+
+        var text = $@"You're invited to join {organizationName}!
+
+You've been invited to join {organizationName} on MeetlyOmni.
+{(string.IsNullOrEmpty(message) ? string.Empty : $"Message: {message}")}
+
+Accept the invitation: {invitationLink}
+
+This invitation will expire in 7 days.
 {_fromName}";
 
         return new EmailMessage { To = to, Subject = subject, HtmlBody = html, TextBody = text };

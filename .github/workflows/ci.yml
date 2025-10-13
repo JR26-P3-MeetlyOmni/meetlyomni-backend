@@ -1,0 +1,92 @@
+name: CI-dev
+
+on:
+  push:
+    branches: ["feat/*", "devops/*", "feature/*", "fix/*", "dev", "hotfix/*"]
+  pull_request:
+    branches: [dev]
+  workflow_dispatch:
+
+env:
+  DOTNET_VERSION: 8.0
+  SOLUTION_PATH: ./MeetlyOmni.sln
+  API_PROJECT: src/MeetlyOmni.Api/MeetlyOmni.Api.csproj
+  CONTEXT: .
+  TAG_ENV: dev
+  REPO: meetlyomni-backend
+  CI: true 
+
+jobs:
+  CI:
+    runs-on: ubuntu-latest
+    environment: dev
+    services:
+      postgres:
+        image: postgres:16
+        ports: ["5432:5432"]
+        env:
+          POSTGRES_USER: usr
+          POSTGRES_PASSWORD: pass
+          POSTGRES_DB: testdb
+        options: >-
+          --health-cmd="pg_isready -U usr -d testdb"
+          --health-interval=5s --health-timeout=5s --health-retries=20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Restore
+        run: dotnet restore ${{ env.SOLUTION_PATH }}
+
+      - name: Build Solution
+        run: dotnet build ${{ env.SOLUTION_PATH }} -c Release --no-restore
+
+      - name: Build Unit Tests
+        run: dotnet build src/MeetlyOmni.Unit.tests/MeetlyOmni.Unit.tests.csproj -c Release
+
+      - name: Unit Test
+        run: dotnet test src/MeetlyOmni.Unit.tests/MeetlyOmni.Unit.tests.csproj -c Release --no-build --no-restore
+
+      - name: Wait Testdb ready
+        run: |
+          for i in {1..60}; do
+            pg_isready -h localhost -p 5432 -U usr -d testdb && break || sleep 1
+          done
+
+      - name: Run API for Integration Test
+        env:
+          ASPNETCORE_URLS: http://localhost:7011
+          ASPNETCORE_ENVIRONMENT: Development
+          ConnectionStrings__MeetlyOmniDb: Host=localhost;Port=5432;Database=testdb;Username=usr;Password=pass
+          CI: true 
+        run: |
+          nohup dotnet run --configuration Release \
+            --project src/MeetlyOmni.Api/MeetlyOmni.Api.csproj --urls http://127.0.0.1:7011 > api.log 2>&1 &
+          echo $! > api.pid
+          for i in {1..120}; do
+            if curl -fsS --max-time 2 --retry 1 --retry-connrefused http://127.0.0.1:7011/swagger/index.html > /dev/null; then
+              echo "API is up"; break; fi
+            sleep 1
+          done
+          if ! curl -fsS --max-time 2 http://127.0.0.1:7011/swagger/index.html > /dev/null; then
+            echo "API failed to start. Dumping logs:"
+            grep -E "Now listening on|Started|fail|error|warn" -i api.log || true
+            tail -n 200 api.log || true
+            exit 1
+          fi
+
+      - name: Integration Test
+        env:
+          BASE_URL: http://localhost:7011
+          CI: true
+        run: |
+          dotnet test src/MeetlyOmni.IntegrationTests/MeetlyOmni.IntegrationTests.csproj -c Release
+          kill $(cat api.pid) || true
+        continue-on-error: true
+

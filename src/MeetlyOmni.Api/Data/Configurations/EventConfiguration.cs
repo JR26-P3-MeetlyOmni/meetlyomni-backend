@@ -1,4 +1,4 @@
-﻿// <copyright file="EventConfiguration.cs" company="MeetlyOmni">
+// <copyright file="EventConfiguration.cs" company="MeetlyOmni">
 // Copyright (c) MeetlyOmni. All rights reserved.
 // </copyright>
 
@@ -13,6 +13,8 @@ public class EventConfiguration : IEntityTypeConfiguration<Event>
 {
     public void Configure(EntityTypeBuilder<Event> builder)
     {
+        builder.ToTable("Event");
+
         builder.HasKey(e => e.EventId);
 
         builder.Property(e => e.OrgId).IsRequired();

@@ -32,4 +32,6 @@ public interface ITokenService
         string userAgent,
         string ipAddress,
         CancellationToken ct = default);
+
+    Task<LoginResponse> GenerateTokensAsync(Member user, CancellationToken ct = default);
 }
