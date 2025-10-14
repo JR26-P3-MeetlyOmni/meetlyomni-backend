@@ -1,11 +1,12 @@
 {
-  "family": "meetly-omni-backend-task",
+  "family": "meetlyomni-prod-backend",
   "networkMode": "awsvpc",
-  "executionRoleArn": "arn:aws:iam::351889159066:role/meetly-omni-backend-ecs-task-execution",
+  "executionRoleArn": "arn:aws:iam::120456573741:role/meetlyomni-prod-ecs-execution-role",
+  "taskRoleArn":"arn:aws:iam::120456573741:role/meetlyomni-prod-ecs-task-role",
   "containerDefinitions": [
     {
       "name": "meetly-omni-backend",
-      "image": "351889159066.dkr.ecr.ap-southeast-2.amazonaws.com/meetly-omni-backend-dev:latest",
+      "image": "120456573741.dkr.ecr.ap-southeast-2.amazonaws.com/meetly-omni-backend-prod:latest",
       "portMappings": [
         {
           "containerPort": 80,
@@ -17,21 +18,39 @@
       "environment": [
         {
           "name": "ASPNETCORE_ENVIRONMENT",
-          "value": "Development"
+          "value": "Production"
         },
         {
           "name": "ASPNETCORE_URLS",
           "value": "http://0.0.0.0:80"
         },
         {
+          "name": "Jwt__Issuer",
+          "value": "https://api.meetlyomni.com"
+        },
+        {
+          "name": "Jwt__Audience",
+          "value": "https://api.meetlyomni.com"
+        },
+        {
+          "name": "NODE_ENV",
+          "value": "prod"
+        }
+      ],
+      "secrets": [
+        {
           "name": "ConnectionStrings__MeetlyOmniDb",
-          "value": "Host=pg-161cfda4-meetlyomini-dev.c.aivencloud.com;Port=28623;Database=meetlyomni_dev;Username=avnadmin;Password=AVNS_I6rJ2zD4wgYhg6nCRiz"
+          "valueFrom": "arn:aws:ssm:ap-southeast-2:120456573741:parameter/meetlyomni/prod/backend/DB_CONNECTION_STRING"
+        },
+        {
+          "name": "JWT_SIGNING_KEY",
+          "valueFrom": "arn:aws:ssm:ap-southeast-2:120456573741:parameter/meetlyomni/prod/backend/JWT_SIGNING_KEY"
         }
       ],
       "logConfiguration": {
         "logDriver": "awslogs",
         "options": {
-          "awslogs-group": "/ecs/meetly-omni-backend-task",
+          "awslogs-group": "/ecs/meetlyomni/prod/backend",
           "awslogs-region": "ap-southeast-2",
           "awslogs-stream-prefix": "ecs"
         }
