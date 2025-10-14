@@ -69,29 +69,18 @@ jobs:
              --arg DP_PARAM "${DATA_PROTECTION_PARAMETER}" \
              --arg SES_PARAM "${SES_FROM_EMAIL_PARAM}" \
              --arg SES_NAME "${SES_FROM_NAME}" '
-            (.containerDefinitions[] | select(.name == $CONTAINER) | .image) |= $IMAGE
-            | (.containerDefinitions[] | select(.name == $CONTAINER) | .environment) |= (
-                ( . // [] ) as $existing
-                | (if ($DP_PARAM | length) > 0
-                    then ($existing
-                        | map(select(.name != "DataProtection__ParameterName"))
-                        | . + [{ "name": "DataProtection__ParameterName", "value": $DP_PARAM }])
-                    else $existing
-                  ) as $withDp
-                | ($existing | map(select(.name == "Ses__FromName")) | last? | .value // "MeetlyOmni") as $currentFromName
-                | ($withDp
-                    | map(select(.name != "Ses__FromName"))
-                    | . + [{ "name": "Ses__FromName", "value": (if ($SES_NAME | length) > 0 then $SES_NAME else $currentFromName end) }])
-              )
-            | (.containerDefinitions[] | select(.name == $CONTAINER) | .secrets) |= (
-                ( . // [] ) as $existing
-                | (if ($SES_PARAM | length) > 0
-                    then ($existing
-                        | map(select(.name != "Ses__FromEmail"))
-                        | . + [{ "name": "Ses__FromEmail", "valueFrom": $SES_PARAM }])
-                    else $existing
-                  )
-              )
+            (.containerDefinitions[] | select(.name == $CONTAINER)) |= (
+              .image = $IMAGE
+              | .environment = (
+                  ( .environment // [] | map(select(.name != "DataProtection__ParameterName" and .name != "Ses__FromName")) )
+                  + (if $DP_PARAM != "" then [{ "name": "DataProtection__ParameterName", "value": $DP_PARAM }] else [] end)
+                  + [{ "name": "Ses__FromName", "value": (if $SES_NAME != "" then $SES_NAME else "MeetlyOmni" end) }]
+                )
+              | .secrets = (
+                  ( .secrets // [] | map(select(.name != "Ses__FromEmail")) )
+                  + (if $SES_PARAM != "" then [{ "name": "Ses__FromEmail", "valueFrom": $SES_PARAM }] else [] end)
+                )
+            )
             | del(.taskDefinitionArn,
                   .revision,
                   .status,
