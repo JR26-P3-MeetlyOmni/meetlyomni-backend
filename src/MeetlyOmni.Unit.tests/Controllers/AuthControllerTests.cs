@@ -155,23 +155,23 @@ public class AuthControllerTests
             .WithMessage(exceptionMessage);
     }
 
-    [Fact]
-    public void GetCsrf_ShouldReturnOk()
-    {
-        // Arrange
-        var tokens = new AntiforgeryTokenSet("request-token", "cookie-token", "form-field-name", "header-name");
-        _mockAntiforgery
-            .Setup(x => x.GetAndStoreTokens(It.IsAny<HttpContext>()))
-            .Returns(tokens);
+    // [Fact] - Disabled since CSRF is disabled
+    // public void GetCsrf_ShouldReturnOk()
+    // {
+    //     // Arrange
+    //     var tokens = new AntiforgeryTokenSet("request-token", "cookie-token", "form-field-name", "header-name");
+    //     _mockAntiforgery
+    //         .Setup(x => x.GetAndStoreTokens(It.IsAny<HttpContext>()))
+    //         .Returns(tokens);
 
-        // Act
-        var result = _authController.GetCsrf();
+    //     // Act
+    //     var result = _authController.GetCsrf();
 
-        // Assert
-        result.Should().BeOfType<OkObjectResult>();
-        var okResult = result as OkObjectResult;
-        okResult!.Value.Should().BeEquivalentTo(new { message = "CSRF token generated" });
-    }
+    //     // Assert
+    //     result.Should().BeOfType<OkObjectResult>();
+    //     var okResult = result as OkObjectResult;
+    //     okResult!.Value.Should().BeEquivalentTo(new { message = "CSRF token generated" });
+    // }
 
     [Fact]
     public async Task RefreshTokenAsync_WithValidToken_ShouldReturnOk()
