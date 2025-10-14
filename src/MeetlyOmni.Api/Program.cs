@@ -233,29 +233,22 @@ builder.Services.Configure<AntiforgeryProtectionOptions>(
 
 // Amazon S3 Configuration
 var awsSection = builder.Configuration.GetSection("AWS");
-var isCi = Environment.GetEnvironmentVariable("CI") == "true";
-var profileName = awsSection["Profile"] ?? (isCi ? string.Empty : throw new InvalidOperationException("AWS:Profile is not configured."));
-var region = awsSection["Region"] ?? (isCi ? string.Empty : throw new InvalidOperationException("AWS:Region is not configured."));
-var bucketName = awsSection["BucketName"] ?? (isCi ? string.Empty : throw new InvalidOperationException("AWS:BucketName is not configured."));
-
-Console.WriteLine($"AWS Profile: {profileName}");
-Console.WriteLine($"AWS Region: {region}");
-Console.WriteLine($"AWS Bucket: {bucketName}");
-
-if (isCi && (string.IsNullOrEmpty(profileName) || string.IsNullOrEmpty(region) || string.IsNullOrEmpty(bucketName)))
-{
-    Console.WriteLine("Running in CI: skipping AWS initialization.");
-}
+var region = awsSection["Region"] ?? throw new InvalidOperationException("AWS:Region is not configured.");
+var bucketName = awsSection["BucketName"] ?? throw new InvalidOperationException("AWS:BucketName is not configured.");
 
 // Initialize AWSOptions using the profile
-var awsOptions = AWSOptions.FromProfile(profileName, region, bucketName);
+var awsOptions = new AWSOptions
+{
+    Region = Amazon.RegionEndpoint.GetBySystemName(region),
+    BucketName = bucketName
+};
 
 // Register AWSOptions and S3 client in DI
 builder.Services.AddSingleton(awsOptions);
 builder.Services.AddSingleton<IAmazonS3>(sp =>
 {
     var options = sp.GetRequiredService<AWSOptions>();
-    return new AmazonS3Client(options.Credentials, options.Region);
+    return new AmazonS3Client(options.Region);
 });
 
 builder.Services.AddControllers();
