@@ -254,7 +254,7 @@ builder.Services.Configure<AntiforgeryProtectionOptions>(
 // Amazon S3 Configuration
 var awsSection = builder.Configuration.GetSection("AWS");
 var isCi = Environment.GetEnvironmentVariable("CI") == "true";
-var profileName = awsSection["Profile"] ?? (isCi ? string.Empty : throw new InvalidOperationException("AWS:Profile is not configured."));
+var profileName = awsSection["Profile"] ?? awsSection["ProfileName"] ?? string.Empty;
 var region = awsSection["Region"] ?? (isCi ? string.Empty : throw new InvalidOperationException("AWS:Region is not configured."));
 var bucketName = awsSection["BucketName"] ?? (isCi ? string.Empty : throw new InvalidOperationException("AWS:BucketName is not configured."));
 
