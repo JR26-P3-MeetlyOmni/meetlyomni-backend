@@ -26,7 +26,6 @@ jobs:
       IMAGE_TAG: ${{ github.sha }}
       SLACK_CHANNEL: C09CW7ZQZD3
       DATA_PROTECTION_PARAMETER: ${{ vars.DATA_PROTECTION_PARAMETER }}
-      SES_FROM_EMAIL_PARAM: ${{ vars.SES_FROM_EMAIL_PARAM }}
       SES_FROM_NAME: ${{ vars.SES_FROM_NAME }}
     steps:
       - name: Checkout
@@ -67,7 +66,6 @@ jobs:
           jq --arg IMAGE "${ECR_REPOSITORY}:${IMAGE_TAG}" \
              --arg CONTAINER "${ECS_CONTAINER_NAME}" \
              --arg DP_PARAM "${DATA_PROTECTION_PARAMETER}" \
-             --arg SES_PARAM "${SES_FROM_EMAIL_PARAM}" \
              --arg SES_NAME "${SES_FROM_NAME}" '
             (.containerDefinitions[] | select(.name == $CONTAINER)) |= (
               .image = $IMAGE
@@ -76,10 +74,7 @@ jobs:
                   + (if (($DP_PARAM // "") | length) > 0 then [{ "name": "DataProtection__ParameterName", "value": ($DP_PARAM // "") }] else [] end)
                   + [{ "name": "Ses__FromName", "value": (if (($SES_NAME // "") | length) > 0 then ($SES_NAME // "") else "MeetlyOmni" end) }]
                 )
-              | .secrets = (
-                  ( .secrets // [] | map(select(.name != "Ses__FromEmail")) )
-                  + (if (($SES_PARAM // "") | length) > 0 then [{ "name": "Ses__FromEmail", "valueFrom": ($SES_PARAM // "") }] else [] end)
-                )
+              | .secrets = ( .secrets // [] | map(select(.name != "Ses__FromEmail")) )
             )
             | del(.taskDefinitionArn,
                   .revision,

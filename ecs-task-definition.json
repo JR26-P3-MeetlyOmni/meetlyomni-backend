@@ -53,10 +53,6 @@
         {
           "name": "JWT_SIGNING_KEY",
           "valueFrom": "arn:aws:ssm:ap-southeast-2:120456573741:parameter/meetlyomni/prod/backend/JWT_SIGNING_KEY"
-        },
-        {
-          "name": "Ses__FromEmail",
-          "valueFrom": "arn:aws:ssm:ap-southeast-2:120456573741:parameter/meetlyomni/prod/backend/SES_FROM_EMAIL"
         }
       ],
       "logConfiguration": {
