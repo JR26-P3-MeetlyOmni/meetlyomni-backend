@@ -73,12 +73,12 @@ jobs:
               .image = $IMAGE
               | .environment = (
                   ( .environment // [] | map(select(.name != "DataProtection__ParameterName" and .name != "Ses__FromName")) )
-                  + (if $DP_PARAM != "" then [{ "name": "DataProtection__ParameterName", "value": $DP_PARAM }] else [] end)
-                  + [{ "name": "Ses__FromName", "value": (if $SES_NAME != "" then $SES_NAME else "MeetlyOmni" end) }]
+                  + (if (($DP_PARAM // "") | length) > 0 then [{ "name": "DataProtection__ParameterName", "value": ($DP_PARAM // "") }] else [] end)
+                  + [{ "name": "Ses__FromName", "value": (if (($SES_NAME // "") | length) > 0 then ($SES_NAME // "") else "MeetlyOmni" end) }]
                 )
               | .secrets = (
                   ( .secrets // [] | map(select(.name != "Ses__FromEmail")) )
-                  + (if $SES_PARAM != "" then [{ "name": "Ses__FromEmail", "valueFrom": $SES_PARAM }] else [] end)
+                  + (if (($SES_PARAM // "") | length) > 0 then [{ "name": "Ses__FromEmail", "valueFrom": ($SES_PARAM // "") }] else [] end)
                 )
             )
             | del(.taskDefinitionArn,
