@@ -16,11 +16,12 @@
     <PackageReference Include="Asp.Versioning.Mvc" Version="8.1.0" />
     <PackageReference Include="Asp.Versioning.Mvc.ApiExplorer" Version="8.1.0" />
     <PackageReference Include="AspNetCore.HealthChecks.NpgSql" Version="8.0.0" />
-    <PackageReference Include="AWSSDK.Core" Version="4.0.0.32" />
+    <PackageReference Include="AWSSDK.Core" Version="4.0.1" />
     <PackageReference Include="AWSSDK.SimpleEmailV2" Version="4.0.5.2" />
     <PackageReference Include="AWSSDK.S3" Version="4.0.7.4" />
     <PackageReference Include="AWSSDK.SSO" Version="4.0.1.6" />
     <PackageReference Include="AWSSDK.SSOOIDC" Version="4.0.2.3" />
+    <PackageReference Include="AWSSDK.SimpleSystemsManagement" Version="4.0.4.5" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.10" />
     <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="8.0.10" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.10" />

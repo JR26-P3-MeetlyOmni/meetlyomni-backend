@@ -9,10 +9,12 @@ using Amazon.Runtime;
 using Amazon.Runtime.CredentialManagement;
 using Amazon.S3;
 using Amazon.SimpleEmailV2;
+using Amazon.SimpleSystemsManagement;
 
 using Asp.Versioning;
 using Asp.Versioning.ApiExplorer;
 
+using MeetlyOmni.Api.Common.DataProtection;
 using MeetlyOmni.Api.Common.Extensions;
 using MeetlyOmni.Api.Common.Options;
 using MeetlyOmni.Api.Data;
@@ -32,10 +34,13 @@ using MeetlyOmni.Api.Service.EventService.Interfaces;
 using MeetlyOmni.Api.Service.Invitation;
 using MeetlyOmni.Api.Service.Invitation.Interfaces;
 
+using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.DataProtection.KeyManagement;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 using Npgsql;
 
@@ -111,6 +116,17 @@ builder.Services.AddOptions<JwtOptions>()
         .ValidateDataAnnotations()
         .ValidateOnStart();
 
+builder.Services.AddOptions<SesOptions>()
+        .Bind(builder.Configuration.GetSection("Ses"))
+        .ValidateDataAnnotations()
+        .Validate(
+            options => !string.IsNullOrWhiteSpace(options.FromEmail),
+            "Ses:FromEmail must be configured.")
+        .Validate(
+            options => !string.IsNullOrWhiteSpace(options.Region),
+            "Ses:Region must be configured.")
+        .ValidateOnStart();
+
 // Identity Services
 builder.Services.AddApplicationIdentity();
 builder.Services.Configure<IdentityOptions>(options =>
@@ -155,11 +171,15 @@ builder.Services.AddScoped<IClientInfoService, ClientInfoService>();
 
 // Email Services
 builder.Services.AddSingleton<IEmailTemplateService, EmailTemplateService>();
-builder.Services.AddSingleton<IEmailSender, AwsSesEmailSender>();
 builder.Services.AddScoped<IEmailLinkService, EmailLinkService>();
 builder.Services.AddScoped<AccountMailer>();
 builder.Services.AddSingleton<IAmazonSimpleEmailServiceV2>(sp =>
-    new AmazonSimpleEmailServiceV2Client(RegionEndpoint.APSoutheast2));
+{
+    var options = sp.GetRequiredService<IOptions<SesOptions>>().Value;
+    var region = RegionEndpoint.GetBySystemName(options.Region);
+    return new AmazonSimpleEmailServiceV2Client(region);
+});
+builder.Services.AddSingleton<IEmailSender, AwsSesEmailSender>();
 
 // Global exception handling is now handled by middleware
 
@@ -258,6 +278,39 @@ builder.Services.AddSingleton<IAmazonS3>(sp =>
     return new AmazonS3Client(options.Credentials, options.Region);
 });
 
+var dataProtectionBuilder = builder.Services.AddDataProtection()
+    .SetApplicationName("MeetlyOmni.Api");
+
+var dataProtectionParameterName = builder.Configuration["DataProtection:ParameterName"]
+    ?? Environment.GetEnvironmentVariable("DataProtection__ParameterName");
+
+if (!string.IsNullOrWhiteSpace(dataProtectionParameterName))
+{
+    builder.Services.AddSingleton<IAmazonSimpleSystemsManagement>(sp =>
+    {
+        var options = sp.GetRequiredService<AWSOptions>();
+        return new AmazonSimpleSystemsManagementClient(options.Credentials, options.Region);
+    });
+
+    dataProtectionBuilder.Services.AddSingleton<SystemsManagerXmlRepository>(sp =>
+        new SystemsManagerXmlRepository(
+            sp.GetRequiredService<IAmazonSimpleSystemsManagement>(),
+            dataProtectionParameterName,
+            sp.GetRequiredService<ILogger<SystemsManagerXmlRepository>>()));
+
+    dataProtectionBuilder.Services.AddSingleton<IConfigureOptions<KeyManagementOptions>>(sp =>
+        new ConfigureOptions<KeyManagementOptions>(options =>
+        {
+            options.XmlRepository = sp.GetRequiredService<SystemsManagerXmlRepository>();
+        }));
+
+    Console.WriteLine($"DataProtection keys persisted to SSM parameter '{dataProtectionParameterName}'.");
+}
+else
+{
+    Console.WriteLine("DataProtection:ParameterName not configured. Using ephemeral in-memory keys.");
+}
+
 builder.Services.AddControllers();
 
 var app = builder.Build();
@@ -305,5 +358,3 @@ app.MapControllers();
 app.MapHealthChecks("/health");
 
 app.Run();
-
-

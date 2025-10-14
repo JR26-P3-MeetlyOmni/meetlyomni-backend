@@ -2,12 +2,13 @@
 // Copyright (c) MeetlyOmni. All rights reserved.
 // </copyright>
 
-using Amazon;
 using Amazon.SimpleEmailV2;
 using Amazon.SimpleEmailV2.Model;
 
+using MeetlyOmni.Api.Common.Options;
 using MeetlyOmni.Api.Models.Email;
 using MeetlyOmni.Api.Service.Email.Interfaces;
+using Microsoft.Extensions.Options;
 
 namespace MeetlyOmni.Api.Service.Email;
 public sealed class AwsSesEmailSender : IEmailSender
@@ -17,15 +18,17 @@ public sealed class AwsSesEmailSender : IEmailSender
     private readonly string _fromName;
     private readonly ILogger<AwsSesEmailSender> _logger;
 
-    public AwsSesEmailSender(IConfiguration cfg, ILogger<AwsSesEmailSender> logger)
+    public AwsSesEmailSender(
+        IOptions<SesOptions> options,
+        IAmazonSimpleEmailServiceV2 ses,
+        ILogger<AwsSesEmailSender> logger)
     {
-        _logger = logger;
-        _fromEmail = cfg["Ses:FromEmail"] ?? throw new ArgumentNullException("Ses:FromEmail");
-        _fromName = cfg["Ses:FromName"] ?? "MeetlyOmni";
+        var sesOptions = options?.Value ?? throw new ArgumentNullException(nameof(options));
 
-        // local variable/IAM role credentials - uses default credential chain
-        var region = RegionEndpoint.GetBySystemName(cfg["Ses:Region"] ?? "ap-southeast-2");
-        _ses = new AmazonSimpleEmailServiceV2Client(region);
+        _logger = logger;
+        _ses = ses ?? throw new ArgumentNullException(nameof(ses));
+        _fromEmail = sesOptions.FromEmail;
+        _fromName = string.IsNullOrWhiteSpace(sesOptions.FromName) ? "MeetlyOmni" : sesOptions.FromName;
     }
 
     public async Task<string> SendAsync(EmailMessage message, CancellationToken ct = default)
