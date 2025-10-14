@@ -102,20 +102,19 @@ public class AuthController : ControllerBase
         });
     }
 
-    /// <summary>
-    /// Get CSRF token for form protection.
-    /// </summary>
-    /// <returns>CSRF token information.</returns>
-    [HttpGet("csrf")]
-    [AllowAnonymous]
-    [SkipAntiforgery]
-    [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
-    public IActionResult GetCsrf()
-    {
-        var tokens = _antiforgery.GetAndStoreTokens(HttpContext);
-        Response.SetCsrfTokenCookie(tokens.RequestToken ?? string.Empty);
-        return Ok(new { message = "CSRF token generated" });
-    }
+    // /// <summary>
+    // /// Get CSRF token for form protection.
+    // /// </summary>
+    // /// <returns>CSRF token information.</returns>
+    // [HttpGet("csrf")]
+    // [AllowAnonymous]
+    // [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
+    // public IActionResult GetCsrf()
+    // {
+    //     var tokens = _antiforgery.GetAndStoreTokens(HttpContext);
+    //     Response.SetCsrfTokenCookie(tokens.RequestToken ?? string.Empty);
+    //     return Ok(new { message = "CSRF token generated" });
+    // }
 
     /// <summary>
     /// Refresh access token using refresh token.

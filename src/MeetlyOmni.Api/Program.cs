@@ -299,7 +299,11 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 // Antiforgery protection (after auth, before endpoints)
-app.UseAntiforgeryProtection();
+var enableCsrf = builder.Configuration.GetValue<bool>("EnableCSRF", false);
+if (enableCsrf)
+{
+    app.UseAntiforgeryProtection();
+}
 
 app.MapControllers();
 app.MapHealthChecks("/health");
