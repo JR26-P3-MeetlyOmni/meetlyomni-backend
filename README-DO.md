@@ -61,8 +61,42 @@ docker-compose down
 
 ## Environment Configuration
 
-The `.env` file contains all necessary environment variables for local development. Key configurations:
+The `.env` file contains all necessary environment variables for local development. Here's the complete configuration:
 
+```env
+# Database Configuration
+DB_NAME=meetlyomni_dev
+DB_USER=postgres
+DB_PASS=password123
+
+# Backend API Configuration
+ASPNETCORE_ENVIRONMENT=Development
+ConnectionStrings__MeetlyOmniDb=Host=db;Port=5432;Database=${DB_NAME};Username=${DB_USER};Password=${DB_PASS}
+
+# JWT Configuration
+Jwt__Issuer=MeetlyOmni-API
+Jwt__Audience=localhost3000
+Jwt__AccessTokenExpirationMinutes=15
+Jwt__RefreshTokenExpirationMinutes=43200
+
+# CORS Configuration
+Cors__AllowedOrigins__0=http://localhost:3000
+Cors__AllowedOrigins__1=https://localhost:3000
+Cors__AllowedOrigins__2=http://frontend:3000
+
+# Frontend URLs
+Frontend__BaseUrl=http://localhost:3000
+Backend__ApiBaseUrl=http://localhost:5000/api/v1.0
+
+# Frontend Environment Variables
+NEXT_PUBLIC_API_BASE_URL=http://localhost:5000/api/v1.0
+
+# Database Performance Settings
+POSTGRES_SHARED_BUFFERS=512MB
+POSTGRES_MAX_CONNECTIONS=20
+```
+
+**Key configurations:**
 - Database credentials
 - JWT settings
 - CORS origins
