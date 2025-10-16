@@ -182,7 +182,7 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
 builder.Services.AddAntiforgery(options =>
 {
     options.HeaderName = "X-XSRF-TOKEN";
-    options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+    options.Cookie.SecurePolicy = builder.Environment.IsProduction() ? CookieSecurePolicy.Always : CookieSecurePolicy.None;
     options.Cookie.SameSite = SameSiteMode.None;
     options.Cookie.IsEssential = true;
     options.Cookie.Path = AuthCookieExtensions.CookiePaths.Root;
@@ -231,32 +231,37 @@ builder.Services.AddAutoMapper(typeof(MappingProfile));
 builder.Services.Configure<AntiforgeryProtectionOptions>(
     builder.Configuration.GetSection("AntiforgeryProtection"));
 
-// Amazon S3 Configuration
+// Amazon S3 Configuration - Skip for local development
 var awsSection = builder.Configuration.GetSection("AWS");
 var isCi = Environment.GetEnvironmentVariable("CI") == "true";
-var profileName = awsSection["Profile"] ?? (isCi ? string.Empty : throw new InvalidOperationException("AWS:Profile is not configured."));
-var region = awsSection["Region"] ?? (isCi ? string.Empty : throw new InvalidOperationException("AWS:Region is not configured."));
-var bucketName = awsSection["BucketName"] ?? (isCi ? string.Empty : throw new InvalidOperationException("AWS:BucketName is not configured."));
+var profileName = awsSection["Profile"];
+var region = awsSection["Region"];
+var bucketName = awsSection["BucketName"];
 
-Console.WriteLine($"AWS Profile: {profileName}");
-Console.WriteLine($"AWS Region: {region}");
-Console.WriteLine($"AWS Bucket: {bucketName}");
-
-if (isCi && (string.IsNullOrEmpty(profileName) || string.IsNullOrEmpty(region) || string.IsNullOrEmpty(bucketName)))
+// Only configure AWS if all required values are present
+if (!string.IsNullOrEmpty(profileName) && !string.IsNullOrEmpty(region) && !string.IsNullOrEmpty(bucketName))
 {
-    Console.WriteLine("Running in CI: skipping AWS initialization.");
+    Console.WriteLine($"AWS Profile: {profileName}");
+    Console.WriteLine($"AWS Region: {region}");
+    Console.WriteLine($"AWS Bucket: {bucketName}");
+
+    // Initialize AWSOptions using the profile
+    var awsOptions = AWSOptions.FromProfile(profileName, region, bucketName);
+
+    // Register AWSOptions and S3 client in DI
+    builder.Services.AddSingleton(awsOptions);
+    builder.Services.AddSingleton<IAmazonS3>(sp =>
+    {
+        var options = sp.GetRequiredService<AWSOptions>();
+        return new AmazonS3Client(options.Credentials, options.Region);
+    });
 }
-
-// Initialize AWSOptions using the profile
-var awsOptions = AWSOptions.FromProfile(profileName, region, bucketName);
-
-// Register AWSOptions and S3 client in DI
-builder.Services.AddSingleton(awsOptions);
-builder.Services.AddSingleton<IAmazonS3>(sp =>
+else
 {
-    var options = sp.GetRequiredService<AWSOptions>();
-    return new AmazonS3Client(options.Credentials, options.Region);
-});
+    Console.WriteLine("AWS configuration not found - skipping AWS services initialization for local development.");
+    // Register a null implementation or mock for IAmazonS3 if needed
+    builder.Services.AddSingleton<IAmazonS3>(sp => null);
+}
 
 builder.Services.AddControllers();
 

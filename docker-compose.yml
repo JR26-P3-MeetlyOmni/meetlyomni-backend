@@ -1,4 +1,5 @@
 services:
+  # PostgreSQL Database
   db:
     image: postgres:alpine
     restart: always
@@ -10,27 +11,61 @@ services:
       POSTGRES_MAX_CONNECTIONS: 20
     ports:
       - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
     mem_limit: 2g
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
+  # .NET Backend API
   api:
     build:
-      context: ./src/MeetlyOmni.Api
+      context: .
+      dockerfile: ./src/MeetlyOmni.Api/Dockerfile
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - DB_NAME=${DB_NAME}
       - DB_USER=${DB_USER}
       - DB_PASS=${DB_PASS}
       - ConnectionStrings__MeetlyOmniDb=Host=db;Port=5432;Database=${DB_NAME};Username=${DB_USER};Password=${DB_PASS}
+      - Jwt__Issuer=MeetlyOmni-API
+      - Jwt__Audience=localhost3000
+      - Jwt__AccessTokenExpirationMinutes=15
+      - Jwt__RefreshTokenExpirationMinutes=43200
+      - Cors__AllowedOrigins__0=http://localhost:3000
+      - Cors__AllowedOrigins__1=https://localhost:3000
+      - Cors__AllowedOrigins__2=http://frontend:3000
+      - Frontend__BaseUrl=http://localhost:3000
+      - Backend__ApiBaseUrl=http://localhost:5000/api/v1.0
     ports:
       - "5000:80"
-    volumes:
-      - ./src/MeetlyOmni.Api:/app
-    working_dir: /app
-    command: sh -c "dotnet ef database update && dotnet watch run --urls=http://0.0.0.0:80"
     mem_limit: 2g
+    # Health check removed for local development - wget not available in .NET container
 
+  # Next.js Frontend
+  frontend:
+    build:
+      context: ../meetlyomni-frontend
+      dockerfile: Dockerfile
+      args:
+        - NEXT_PUBLIC_API_BASE_URL=http://localhost:5000/api/v1.0
+    depends_on:
+      - api
+    environment:
+      - NODE_ENV=production
+      - NEXT_PUBLIC_API_BASE_URL=http://localhost:5000/api/v1.0
+    ports:
+      - "3000:3000"
+    mem_limit: 1g
+    # Health check removed for local development
+
+  # Database Admin Interface (Optional)
   adminer:
     image: adminer
     restart: always
@@ -39,3 +74,6 @@ services:
     depends_on:
       - db
     mem_limit: 512m
+
+volumes:
+  postgres_data:
